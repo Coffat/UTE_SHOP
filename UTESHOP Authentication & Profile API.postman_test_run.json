@@ -1,0 +1,198 @@
+{
+	"id": "cdec4597-f970-4622-854b-5cdcf78e402b",
+	"name": "UTESHOP Authentication & Profile API",
+	"timestamp": "2026-05-09T20:36:54.276Z",
+	"collection_id": "47863220-65c2f1ea-1bdf-42ec-acb4-fe44798ce25e",
+	"folder_id": 0,
+	"environment_id": "47863220-d4ff2cab-764b-40d2-8f32-c906cbf00984",
+	"totalPass": 0,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-05-09T20:36:54.028Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "fd70b197-e7f9-454d-9bd8-43fb5dbdbf5a",
+			"name": "Register",
+			"url": "http://localhost:3000/api/auth/register",
+			"time": 5,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "a3c8652b-024b-4e00-8f69-d0da74216766",
+			"name": "Verify OTP (Register)",
+			"url": "http://localhost:3000/api/auth/verify-otp",
+			"time": 3,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "c9567409-835e-48ea-98ab-658614d9d69d",
+			"name": "Login",
+			"url": "http://localhost:3000/api/auth/login",
+			"time": 2,
+			"responseCode": {
+				"code": 429,
+				"name": "Too Many Requests"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "7ce5d120-03d1-4021-9a19-7dc064f21ff8",
+			"name": "Forgot Password",
+			"url": "http://localhost:3000/api/auth/forgot-password",
+			"time": 2,
+			"responseCode": {
+				"code": 429,
+				"name": "Too Many Requests"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "7794fe76-62e6-4ccf-87a8-b4d80984bf8c",
+			"name": "Reset Password",
+			"url": "http://localhost:3000/api/auth/reset-password",
+			"time": 7,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				7
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "d8e6dbe3-7c68-4abc-a559-a0a3cf3a3ac8",
+			"name": "Logout",
+			"url": "http://localhost:3000/api/auth/logout",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "dd017df0-3ab6-434d-be27-8cdb9e179f55",
+			"name": "Get Profile",
+			"url": "http://localhost:3000/api/user/profile",
+			"time": 2,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "7c325667-be78-412b-9198-f6e8b19c0417",
+			"name": "Edit Profile",
+			"url": "http://localhost:3000/api/user/profile",
+			"time": 2,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 25,
+	"collection": {
+		"requests": [
+			{
+				"id": "fd70b197-e7f9-454d-9bd8-43fb5dbdbf5a",
+				"method": "POST"
+			},
+			{
+				"id": "a3c8652b-024b-4e00-8f69-d0da74216766",
+				"method": "POST"
+			},
+			{
+				"id": "c9567409-835e-48ea-98ab-658614d9d69d",
+				"method": "POST"
+			},
+			{
+				"id": "7ce5d120-03d1-4021-9a19-7dc064f21ff8",
+				"method": "POST"
+			},
+			{
+				"id": "7794fe76-62e6-4ccf-87a8-b4d80984bf8c",
+				"method": "POST"
+			},
+			{
+				"id": "d8e6dbe3-7c68-4abc-a559-a0a3cf3a3ac8",
+				"method": "POST"
+			},
+			{
+				"id": "dd017df0-3ab6-434d-be27-8cdb9e179f55",
+				"method": "GET"
+			},
+			{
+				"id": "7c325667-be78-412b-9198-f6e8b19c0417",
+				"method": "PUT"
+			}
+		]
+	}
+}
