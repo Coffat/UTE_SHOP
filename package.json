@@ -17,5 +17,16 @@
   "bugs": {
     "url": "https://github.com/Coffat/BaiTap2/issues"
   },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.5.1",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.5.0",
+    "redis": "^5.12.1"
+  },
   "homepage": "https://github.com/Coffat/BaiTap2#readme"
 }
