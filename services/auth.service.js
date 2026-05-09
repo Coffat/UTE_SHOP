@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const redisClient = require('../config/redis');
 const { sendOtpEmail } = require('../utils/email');
+const { hashToken } = require('../utils/hash');
+const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -69,8 +71,80 @@ const verifyRegistrationOtp = async (email, otp) => {
 
   return { message: 'Email verified successfully. Your account is now active.' };
 };
+const loginUser = async (email, password) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (!user.is_active) {
+    throw new Error('Please verify your email first');
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    throw new Error('Invalid credentials');
+  }
+
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
+
+  const hashedToken = hashToken(refreshToken);
+  await redisClient.set(`refresh:${user._id}`, hashedToken, { EX: 7 * 24 * 60 * 60 });
+
+  return { user, accessToken, refreshToken };
+};
+
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+const forgotPassword = async (email) => {
+  // 1. Verify the user exists
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // 2. Generate a 6-digit numeric OTP
+  const otp = generateOtp();
+
+  // 3. Persist OTP in Redis with 5-minute TTL
+  await redisClient.setEx(`otp_forgot:${email}`, 300, otp);
+
+  // 4. Deliver the OTP via email
+  await sendOtpEmail(email, otp);
+
+  return { message: 'Password recovery OTP sent. Please check your email.' };
+};
+
+// ─── Reset Password ───────────────────────────────────────────────────────────
+const resetPassword = async (email, otp, newPassword) => {
+  // 1. Retrieve OTP from Redis
+  const storedOtp = await redisClient.get(`otp_forgot:${email}`);
+
+  // 2. Validate OTP
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('Invalid or expired OTP');
+  }
+
+  // 3. Hash the new password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  // 4. Persist the new password in MongoDB
+  await User.findOneAndUpdate(
+    { email },
+    { password: hashedPassword }
+  );
+
+  // 5. Invalidate the used OTP
+  await redisClient.del(`otp_forgot:${email}`);
+
+  return { message: 'Password has been reset successfully.' };
+};
 
 module.exports = {
   registerUser,
   verifyRegistrationOtp,
+  loginUser,
+  forgotPassword,
+  resetPassword,
 };

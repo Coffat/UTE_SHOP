@@ -38,8 +38,100 @@ const verifyOtp = async (req, res) => {
     });
   }
 };
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    const { user, accessToken, refreshToken } = await authService.loginUser(email, password);
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    const redirectUrl = user.role === 'admin' ? '/admin/profile' : '/user/profile';
+
+    res.status(200).json({
+      success: true,
+      message: 'Login success',
+      redirectUrl
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Login failed'
+    });
+  }
+};
+
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const response = await authService.forgotPassword(email);
+    res.status(200).json({
+      success: true,
+      message: response.message
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to send password recovery email'
+    });
+  }
+};
+
+// ─── Reset Password ───────────────────────────────────────────────────────────
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, OTP, and new password are required'
+      });
+    }
+
+    const response = await authService.resetPassword(email, otp, newPassword);
+    res.status(200).json({
+      success: true,
+      message: response.message
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Password reset failed'
+    });
+  }
+};
 
 module.exports = {
   register,
-  verifyOtp
+  verifyOtp,
+  login,
+  forgotPassword,
+  resetPassword
 };
