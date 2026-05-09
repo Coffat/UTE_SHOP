@@ -36,4 +36,29 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+/**
+ * Middleware: authorize
+ *
+ * Role-Based Access Control (RBAC) guard.
+ * Must be used AFTER verifyToken so that `req.user` is already populated.
+ *
+ * Usage:
+ *   router.get('/admin', verifyToken, authorize('admin'), handler);
+ *   router.get('/dashboard', verifyToken, authorize('user', 'admin'), handler);
+ *
+ * @param  {...string} allowedRoles  One or more roles permitted to access the route.
+ * @returns {Function} Express middleware
+ */
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this resource',
+      });
+    }
+    next();
+  };
+};
+
+module.exports = { verifyToken, authorize };

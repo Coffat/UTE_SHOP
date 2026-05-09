@@ -18,16 +18,18 @@ app.use(cookieParser());
 app.use(express.json()); // Parse JSON payloads
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded payloads
 
-// IMPORT ROUTES 
-const authRoutes = require('./routes/auth.routes'); 
+// IMPORT ROUTES
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
 // Basic test route
 app.get('/', (req, res) => {
   res.send('UTESHOP API is running...');
 });
 
-// DEFINE ROUTES 
-app.use('/api/auth', authRoutes); 
+// DEFINE ROUTES
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 
