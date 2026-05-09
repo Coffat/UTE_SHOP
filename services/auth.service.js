@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const redisClient = require('../config/redis');
 const { sendOtpEmail } = require('../utils/email');
@@ -141,10 +142,33 @@ const resetPassword = async (email, otp, newPassword) => {
   return { message: 'Password has been reset successfully.' };
 };
 
+// ─── Logout ──────────────────────────────────────────────────────────────────
+/**
+ * logoutUser
+ *
+ * Removes the refresh-token hash from Redis so the token can never be reused,
+ * even if it hasn't expired yet. If the token is absent, invalid, or already
+ * expired we silently continue – the controller will still clear the cookies.
+ *
+ * @param {string|undefined} refreshToken - Value from the HttpOnly cookie.
+ */
+const logoutUser = async (refreshToken) => {
+  if (!refreshToken) return;
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    await redisClient.del(`refresh:${decoded.id}`);
+  } catch (err) {
+    // Token is invalid or expired – silently ignore so the user can still
+    // log out and have their cookies cleared by the controller.
+  }
+};
+
 module.exports = {
   registerUser,
   verifyRegistrationOtp,
   loginUser,
   forgotPassword,
   resetPassword,
+  logoutUser,
 };

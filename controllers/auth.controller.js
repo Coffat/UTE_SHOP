@@ -128,10 +128,35 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ─── Logout ──────────────────────────────────────────────────────────────────
+const logout = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    // Attempt to remove the refresh token from Redis (fails gracefully)
+    await authService.logoutUser(refreshToken);
+
+    // Clear both HttpOnly cookies regardless of Redis outcome
+    res.clearCookie('accessToken',  { httpOnly: true, sameSite: 'strict' });
+    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Logout failed',
+    });
+  }
+};
+
 module.exports = {
   register,
   verifyOtp,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  logout,
 };

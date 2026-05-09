@@ -64,4 +64,13 @@ router.post(
   authController.resetPassword
 );
 
+// @route   POST /api/auth/logout
+// @desc    Clear cookies and invalidate refresh token in Redis
+// @access  Private (cookie required, but no hard auth guard so even
+//          expired-token users can cleanly log out)
+router.post(
+  '/logout',
+  authController.logout
+);
+
 module.exports = router;
