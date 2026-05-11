@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 
 export function Header() {
@@ -52,13 +53,13 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              aria-label="Account"
+            <Link
+              to="/user/profile"
+              aria-label="Tài khoản"
               className="text-deep-plum hover:text-primary transition-colors"
             >
               <MaterialIcon name="person" />
-            </button>
+            </Link>
             <button
               type="button"
               aria-label="Cart"
