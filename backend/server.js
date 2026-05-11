@@ -12,8 +12,30 @@ connectDB();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware — SPA gửi cookie: origin phải khớp chính xác (kể cả localhost vs 127.0.0.1)
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+const extraOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+  : [];
+const allowOrigin = [...new Set([...defaultOrigins, ...extraOrigins])];
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowOrigin.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin not allowed: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json()); // Parse JSON payloads
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded payloads

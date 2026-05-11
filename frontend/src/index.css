@@ -60,6 +60,8 @@
   --color-petal-pink: #fbcfe8;
   --color-plum-surface: #2d1b4b;
   --color-on-surface-variant: #4c4452;
+  --color-login-gradient-from: #ff758c;
+  --color-login-gradient-to: #7158e2;
 
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
@@ -79,6 +81,7 @@
   --font-hero-display: "Playfair Display", serif;
   --font-section-title: "Playfair Display", serif;
   --font-price-display: "Inter", sans-serif;
+  --font-slogan: "Dancing Script", cursive;
 
   --text-ui-label: 14px;
   --text-ui-label--line-height: 1;
@@ -142,6 +145,25 @@
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+  }
+
+  .login-gradient-text {
+    background-image: linear-gradient(
+      to right,
+      var(--color-login-gradient-from),
+      var(--color-login-gradient-to)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .login-gradient-bg {
+    background-image: linear-gradient(
+      to right,
+      var(--color-login-gradient-from),
+      var(--color-login-gradient-to)
+    );
   }
 
   .material-symbols-outlined {
