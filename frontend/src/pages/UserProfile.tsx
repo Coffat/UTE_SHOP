@@ -99,7 +99,7 @@ export function UserProfile() {
   );
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-margin-mobile pt-28 pb-16 md:px-margin-desktop md:pt-32 lg:pt-36">
+    <section className="mx-auto w-full max-w-[1440px] px-margin-mobile pt-28 pb-16 md:max-w-[1600px] md:px-margin-desktop md:pt-32 lg:pt-36 2xl:max-w-[1760px] 3xl:max-w-[1920px]">
       <div className="grid gap-6 xl:grid-cols-12">
         <aside className="space-y-4 xl:col-span-3">
           <div className="glass-panel rounded-[24px] p-6 text-center shadow-[0_10px_40px_rgba(168,85,247,0.05)]">
@@ -432,8 +432,16 @@ export function UserProfile() {
                 </button>
               </article>
 
-              <article className="relative overflow-hidden rounded-[22px] border border-white/60 bg-gradient-to-r from-soft-amethyst/60 to-pure-ivory/70 p-5 shadow-[0_10px_40px_rgba(168,85,247,0.06)]">
-                <div className="absolute -right-6 -bottom-8 size-32 rounded-full bg-soft-amethyst/50 blur-xl" />
+              <article
+                className="relative overflow-hidden rounded-[22px] border border-white/60 p-5 min-h-[190px] shadow-[0_10px_40px_rgba(168,85,247,0.06)]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to right, rgba(233,213,255,0.35), rgba(255,255,255,0.42)), url('/images/uu_dai_danh_rieng.png')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
                 <h3 className="font-section-title text-[30px] text-deep-plum">Ưu đãi dành riêng cho bạn</h3>
                 <p className="mt-2 max-w-[250px] text-sm leading-6 text-midnight-purple/85">
                   Nhận ngay ưu đãi sinh nhật đặc biệt và nhiều phần quà hấp dẫn khác.

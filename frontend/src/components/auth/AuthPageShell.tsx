@@ -19,10 +19,10 @@ export function AuthPageShell({ brandingBodyText, children }: AuthPageShellProps
         aria-hidden
       />
 
-      <div className="relative z-10 flex flex-1 flex-col px-4 py-8 sm:px-6 md:py-10 lg:px-10">
-        <div className="mx-auto flex w-full max-w-[1100px] flex-1 items-center justify-center">
+      <div className="relative z-10 flex flex-1 flex-col px-margin-mobile py-8 md:px-margin-desktop md:py-10 lg:py-12">
+        <div className="mx-auto flex w-full max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] flex-1 items-center justify-center">
           <div
-            className="w-full rounded-[28px] border border-white/50 bg-pure-ivory/20 p-6 shadow-[0_10px_40px_rgba(168,85,247,0.08)] backdrop-blur-[28px] sm:rounded-[32px] sm:p-8 md:p-10 lg:grid lg:grid-cols-[1fr_minmax(320px,420px)] lg:gap-10 lg:p-12"
+            className="w-full max-w-[1200px] rounded-[28px] border border-white/50 bg-pure-ivory/20 p-6 shadow-[0_10px_40px_rgba(168,85,247,0.08)] backdrop-blur-[28px] sm:rounded-[32px] sm:p-8 md:p-10 lg:grid lg:grid-cols-[1fr_minmax(320px,440px)] lg:gap-10 lg:p-12"
             style={{ WebkitBackdropFilter: "blur(28px)" }}
           >
             <AuthBrandingColumn bodyText={brandingBodyText} />
