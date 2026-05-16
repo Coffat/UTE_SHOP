@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthSocialOAuthSection } from "@/components/auth/AuthSocialOAuthSection";
 import {
   clearForgotPasswordError,
   clearResetPasswordError,
@@ -101,6 +102,8 @@ export function ForgotPassword() {
                   <MaterialIcon name="send" className="text-pure-ivory text-[20px]" />
                 </button>
               </form>
+
+              <AuthSocialOAuthSection />
             </>
           ) : (
             <>

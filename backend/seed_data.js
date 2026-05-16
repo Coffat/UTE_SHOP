@@ -1,65 +1,81 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const dotenv = require('dotenv');
-const User = require('./models/User');
+/**
+ * seed_data.js – Tạo dữ liệu mẫu ban đầu (ESM)
+ *
+ * Chạy: node seed_data.js
+ *
+ * Tạo:
+ *  - 1 Admin account
+ *  - 1 Customer account (đã verify email)
+ */
+
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+// Import models từ modules/ mới
+import '../modules/user/models/Customer.js'; // đảm bảo discriminator CUSTOMER đã đăng ký
+import '../modules/user/models/Admin.js';    // đảm bảo discriminator ADMIN đã đăng ký
+import User from '../modules/user/models/User.js';
+import Customer from '../modules/user/models/Customer.js';
+import Admin from '../modules/user/models/Admin.js';
+import UserStatus from '../shared/enums/UserStatus.js';
 
 dotenv.config();
 
-const users = [
+const seedUsers = [
   {
-    fullName: 'System Admin',
-    email: 'admin@example.com',
-    password: '123456',
-    phone: '0000000000',
-    role: 'admin',
-    is_active: true
+    model: Admin,
+    data: {
+      ownerName: 'System Admin',
+      email: 'admin@uteshop.vn',
+      passwordHash: '123456',
+      phone: '0000000000',
+      status: UserStatus.ACTIVE,
+    },
   },
   {
-    fullName: 'Thang Vu',
-    email: 'vuthang@example.com',
-    password: 'password123',
-    phone: '0123456789',
-    role: 'user',
-    is_active: true
-  }
+    model: Customer,
+    data: {
+      fullName: 'Thang Vu',
+      email: 'vuthang@uteshop.vn',
+      passwordHash: 'password123',
+      phone: '0123456789',
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+    },
+  },
 ];
 
 const seedData = async () => {
-  console.log('Starting seed data script...');
-  const uri = process.env.MONGO_URI.replace('localhost', '127.0.0.1');
-  console.log('URI:', uri);
-  
+  console.log('🌱 Starting seed data script...');
+  const uri = process.env.MONGO_URI;
+
+  if (!uri) {
+    console.error('❌ Missing MONGO_URI in .env');
+    process.exit(1);
+  }
+
   try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000
-    });
-    console.log('Connected to MongoDB successfully');
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    console.log('✅ Connected to MongoDB');
 
-    for (const userData of users) {
-      const existingUser = await User.findOne({ email: userData.email });
+    for (const { model, data } of seedUsers) {
+      const existing = await User.findOne({ email: data.email });
 
-      if (existingUser) {
-        console.log(`User ${userData.email} already exists. Updating password...`);
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.password, salt);
-        await User.findOneAndUpdate({ email: userData.email }, { password: hashedPassword, is_active: true, role: userData.role });
-      } else {
-        console.log(`Creating user: ${userData.email}`);
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.password, salt);
-        
-        const newUser = new User({
-          ...userData,
-          password: hashedPassword
-        });
-        await newUser.save();
+      if (existing) {
+        console.log(`⚠️  User ${data.email} already exists — skipping.`);
+        continue;
       }
+
+      const passwordHash = await bcrypt.hash(data.passwordHash, 10);
+      await model.create({ ...data, passwordHash });
+      console.log(`✅ Created: ${data.email} (role: ${model.modelName})`);
     }
 
-    console.log('Seed data completed successfully');
+    console.log('\n✅ Seed completed.');
     process.exit(0);
-  } catch (error) {
-    console.error('Error during seeding:', error.message);
+  } catch (err) {
+    console.error('❌ Seed error:', err.message);
     process.exit(1);
   }
 };

@@ -1,0 +1,4 @@
+[      77ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=440d7c93:20102
+[  129114ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:864
+[  129460ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=440d7c93:20102
+[ 1978168ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://mcp.figma.com/mcp/capture/9e4d7766-b2ca-4e96-8b90-b6039ccd867b/submit:0

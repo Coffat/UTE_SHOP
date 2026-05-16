@@ -1,78 +1,160 @@
-import { Link } from "react-router-dom";
+import { useEffect, useId, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
+import { AppLogo } from "@/components/ui/AppLogo";
+
+const NAV_LINKS = [
+  { label: "Trang chủ", href: "/" },
+  { label: "Loại hoa lẻ", href: "#" },
+  { label: "Bó hoa theo ngân sách", href: "#" },
+  { label: "Tiệc & Sự kiện", href: "#" },
+  { label: "Blog", href: "#" },
+  { label: "Hỗ trợ", href: "#" },
+] as const;
+
+function navLinkClassName(active: boolean) {
+  const base =
+    "font-home-heading rounded-2xl px-4 py-2.5 text-sm font-medium text-midnight-purple transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:px-0 lg:py-0 lg:hover:bg-transparent";
+  const desktopActive =
+    "lg:border-b-2 lg:border-primary lg:rounded-none lg:pb-0.5 lg:text-primary";
+  return [base, active ? desktopActive : ""].filter(Boolean).join(" ");
+}
 
 export function Header() {
-  return (
-    <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] z-50">
-      <div className="glass-panel rounded-full px-4 md:px-6 lg:px-8 xl:px-10 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3 text-deep-plum">
-          <div className="size-6 text-primary">
-            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-          <h2 className="text-deep-plum text-xl font-bold font-sub-heading tracking-widest">
-            UTESHOP
-          </h2>
-        </div>
+  const { pathname } = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navId = useId();
+  const sheetId = `${navId}-sheet`;
 
-        <div className="flex-1 justify-center hidden lg:flex relative mx-8">
-          <div className="w-full max-w-md xl:max-w-lg 3xl:max-w-xl relative flex items-center bg-pure-ivory/60 rounded-full border border-crystal-border px-4 py-2 focus-within:bg-pure-ivory focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <MaterialIcon name="search" className="text-dusk-gray text-[20px] mr-2" />
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
+  return (
+    <header className="fixed top-4 left-1/2 z-50 w-[calc(100%-32px)] max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] -translate-x-1/2 md:top-6">
+      <div className="glass-panel relative z-[70] flex items-center justify-between gap-3 rounded-full px-4 py-2.5 shadow-sm md:gap-4 md:px-5 md:py-3 lg:px-6">
+        <Link to="/" aria-label="UTESHOP trang chủ" className="flex shrink-0 items-center">
+          <AppLogo variant="header" withText textClassName="text-base md:text-lg font-home-heading font-bold tracking-wide text-deep-plum" />
+        </Link>
+
+        <nav
+          id={navId}
+          aria-label="Chính"
+          className="absolute left-1/2 top-full z-40 mt-3 hidden w-[min(92vw,720px)] -translate-x-1/2 flex-col gap-1 rounded-3xl border border-crystal-border bg-pure-ivory/95 p-3 shadow-lg backdrop-blur-xl lg:static lg:z-auto lg:mt-0 lg:flex lg:w-auto lg:max-w-none lg:translate-x-0 lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none xl:gap-8"
+        >
+          {NAV_LINKS.map((item) => {
+            const active = item.href === "/" && pathname === "/";
+            return (
+              <Link
+                key={item.label}
+                to={item.href}
+                className={navLinkClassName(active)}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          <div className="relative hidden min-w-0 items-center rounded-full border border-crystal-border bg-pure-ivory/70 px-3 py-1.5 transition-all focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/15 sm:flex md:max-w-[200px] lg:max-w-[240px] xl:max-w-[280px]">
+            <MaterialIcon name="search" className="mr-1.5 shrink-0 text-dusk-gray text-[18px]" />
             <input
-              className="bg-transparent border-none w-full text-sm font-ui-label text-midnight-purple placeholder:text-dusk-gray focus:outline-none focus:ring-0 p-0"
-              placeholder="Search for blooms..."
-              type="text"
+              className="min-w-0 flex-1 bg-transparent p-0 font-home-heading text-xs text-midnight-purple placeholder:text-dusk-gray focus:outline-none focus:ring-0 md:text-sm"
+              placeholder="Tìm kiếm sản phẩm..."
+              type="search"
+              aria-label="Tìm kiếm sản phẩm"
             />
           </div>
-        </div>
 
-        <div className="flex items-center gap-4 md:gap-6 lg:gap-8">
-          <nav className="hidden md:flex items-center gap-6">
-            <a
-              className="text-deep-plum font-ui-label text-sm hover:text-primary transition-colors"
-              href="#"
-            >
-              Bouquets
-            </a>
-            <a
-              className="text-deep-plum font-ui-label text-sm hover:text-primary transition-colors"
-              href="#"
-            >
-              Occasions
-            </a>
-            <a
-              className="text-deep-plum font-ui-label text-sm hover:text-primary transition-colors"
-              href="#"
-            >
-              Collections
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <Link
               to="/user/profile"
               aria-label="Tài khoản"
-              className="text-deep-plum hover:text-primary transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
             >
-              <MaterialIcon name="person" />
+              <MaterialIcon name="person" className="text-[22px]" />
             </Link>
             <button
               type="button"
-              aria-label="Cart"
-              className="text-deep-plum hover:text-primary transition-colors relative"
+              aria-label="Danh sách yêu thích"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
             >
-              <MaterialIcon name="shopping_bag" />
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-pure-ivory border border-pure-ivory">
+              <MaterialIcon name="favorite" className="text-[22px]" />
+            </button>
+            <button
+              type="button"
+              aria-label="Giỏ hàng"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+            >
+              <MaterialIcon name="shopping_bag" className="text-[22px]" />
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-0.5 text-[10px] font-bold text-pure-ivory">
                 2
               </span>
+            </button>
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:hidden"
+              aria-expanded={mobileOpen}
+              aria-controls={sheetId}
+              aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
+              onClick={() => setMobileOpen((o) => !o)}
+            >
+              <MaterialIcon name={mobileOpen ? "close" : "menu"} className="text-[24px]" />
             </button>
           </div>
         </div>
       </div>
+
+      {mobileOpen ? (
+        <div
+          className="fixed inset-0 top-0 z-[55] bg-midnight-purple/40 backdrop-blur-sm lg:hidden"
+          aria-hidden
+          onClick={() => setMobileOpen(false)}
+        />
+      ) : null}
+
+      <nav
+        className={`fixed inset-x-4 top-[calc(5rem+env(safe-area-inset-top))] z-[60] max-h-[min(70vh,520px)] overflow-y-auto rounded-3xl border border-crystal-border bg-pure-ivory/98 p-4 shadow-xl backdrop-blur-xl transition-all lg:hidden ${
+          mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden={!mobileOpen}
+        id={sheetId}
+      >
+        <div className="mb-3 flex items-center rounded-full border border-crystal-border bg-lavender-mist/80 px-3 py-2">
+          <MaterialIcon name="search" className="mr-2 text-dusk-gray text-[20px]" />
+          <input
+            className="w-full bg-transparent font-home-heading text-sm text-midnight-purple placeholder:text-dusk-gray focus:outline-none"
+            placeholder="Tìm kiếm sản phẩm..."
+            type="search"
+            aria-label="Tìm kiếm sản phẩm"
+          />
+        </div>
+        <ul className="flex flex-col gap-1">
+          {NAV_LINKS.map((item) => {
+            const active = item.href === "/" && pathname === "/";
+            return (
+              <li key={item.label}>
+                <Link
+                  to={item.href}
+                  className={`block rounded-2xl px-3 py-3 font-home-heading text-sm font-medium hover:bg-soft-amethyst/35 hover:text-primary ${
+                    active ? "border-l-4 border-primary bg-soft-amethyst/25 text-primary" : "text-midnight-purple"
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </header>
   );
 }

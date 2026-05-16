@@ -6,7 +6,7 @@ export function Layout() {
   return (
     <>
       <Header />
-      <main className="flex flex-col gap-20 md:gap-section pb-20 md:pb-section">
+      <main className="flex flex-col gap-16 pb-16 md:gap-24 md:pb-24 lg:gap-[5.5rem] lg:pb-28">
         <Outlet />
       </main>
       <Footer />

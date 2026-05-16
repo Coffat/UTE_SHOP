@@ -1,45 +1,84 @@
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
+import { BgImage } from "@/components/ui/BgImage";
 import { images } from "@/lib/images";
 
-const hero = images.hero.background;
+const bg = images.hero.backgroundSection;
+const primary = images.hero.primaryBouquet;
 
 export function Hero() {
   return (
     <section
-      aria-label={hero.alt}
-      data-alt={hero.alt}
-      className="relative w-full min-h-[640px] md:min-h-[760px] lg:min-h-[860px] xl:min-h-[920px] 3xl:min-h-[1040px] overflow-hidden"
+      aria-label="Giới thiệu UTESHOP"
+      className="relative w-full overflow-hidden pt-28 pb-16 md:min-h-[min(92vh,880px)] md:pt-32 md:pb-20 lg:pt-36 lg:pb-24"
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url('${hero.src}')` }}
+      <BgImage
+        src={bg.src}
+        alt=""
+        className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        aria-hidden
       />
       <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none bg-gradient-to-b from-lavender-mist/90 via-lavender-mist/60 to-lavender-mist/40 md:bg-gradient-to-r md:from-lavender-mist/85 md:via-lavender-mist/40 md:to-transparent"
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-pure-ivory/25 via-transparent to-lavender-mist/30"
       />
 
-      <div className="relative z-10 max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] mx-auto px-margin-mobile md:px-margin-desktop pt-28 md:pt-32 lg:pt-36 xl:pt-40 3xl:pt-44 pb-20 flex items-center min-h-[inherit]">
-        <div className="flex flex-col gap-6 max-w-[560px] xl:max-w-[640px] 3xl:max-w-[720px]">
-          <h1 className="font-hero-display font-normal uppercase text-deep-plum tracking-[0.02em] leading-[1.1] text-[clamp(3rem,2rem+4vw,7rem)]">
-            Hoa nói
-            <br />
-            lời yêu
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-margin-mobile md:px-margin-desktop lg:max-w-[1600px] lg:grid lg:grid-cols-12 lg:items-center lg:gap-8 xl:gap-10 2xl:max-w-[1760px] 3xl:max-w-[1920px]">
+        <div className="flex max-w-xl flex-col gap-5 lg:col-span-4 lg:max-w-none lg:py-4 xl:gap-6">
+          <h1 className="font-slogan text-[clamp(1.5rem,0.95rem+2.2vw,2.65rem)] font-bold uppercase italic leading-snug tracking-wide text-deep-plum">
+            Trao gửi chân tình qua từng cành hoa
           </h1>
-          <p className="font-body-standard text-midnight-purple/80 max-w-md text-base md:text-lg">
-            Bó hoa thủ công cho từng khoảnh khắc đặc biệt trong cuộc sống.
+          <p className="font-home-heading max-w-lg text-base leading-relaxed text-midnight-purple/90 md:text-lg">
+            Mỗi bó hoa là cả tấm lòng, thay bạn nói lời yêu thương đến những người trân quý.
           </p>
-          <div className="pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
               type="button"
-              className="group inline-flex items-center gap-3 self-start pl-7 pr-2 py-2 rounded-full bg-pure-ivory/70 backdrop-blur-md border border-crystal-border text-deep-plum font-ui-label tracking-[0.2em] uppercase shadow-sm hover:bg-pure-ivory transition-all"
+              className="btn-hero-cta-gradient font-home-heading inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold transition md:px-9"
             >
-              <span>Mua ngay</span>
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-deep-plum/10 text-deep-plum group-hover:bg-deep-plum group-hover:text-pure-ivory transition-colors">
-                <MaterialIcon name="arrow_forward" className="text-[18px]" />
-              </span>
+              Đặt hoa ngay
             </button>
+            <button
+              type="button"
+              className="font-home-heading inline-flex items-center justify-center rounded-full border border-crystal-border bg-surface-container-high px-7 py-3 text-sm font-semibold text-deep-plum shadow-sm transition hover:bg-pure-ivory md:px-8"
+            >
+              Xem bộ sưu tập
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-6 pt-3 md:gap-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-tertiary-fixed/50 text-tertiary">
+                <MaterialIcon name="diamond" filled className="text-[22px]" />
+              </span>
+              <div>
+                <p className="font-home-heading text-sm font-semibold text-deep-plum">Giao nhanh 2h</p>
+                <p className="font-home-heading text-xs text-dusk-gray">Nội thành chọn khu vực</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-safe-mint/50 text-primary">
+                <MaterialIcon name="local_florist" className="text-[22px]" />
+              </span>
+              <div>
+                <p className="font-home-heading text-sm font-semibold text-deep-plum">Hoa tươi mỗi ngày</p>
+                <p className="font-home-heading text-xs text-dusk-gray">Nhập mới theo đơn</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative flex w-full justify-center lg:col-span-8 lg:justify-end lg:pl-2">
+          <div className="relative w-full max-w-[min(100%,340px)] sm:max-w-[min(100%,380px)] md:max-w-[min(100%,400px)] lg:max-w-[min(100%,420px)] xl:max-w-[min(100%,460px)]">
+            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/80 bg-pure-ivory/40 p-2.5 shadow-[0_20px_48px_rgba(49,27,146,0.12)] backdrop-blur-[2px] sm:rounded-[2rem] sm:p-3 md:rounded-[2.25rem] md:p-3.5">
+              <img
+                src={primary.src}
+                alt={primary.alt}
+                className="aspect-[4/5] w-full rounded-[1.25rem] object-cover object-center sm:rounded-[1.5rem]"
+                width={460}
+                height={575}
+                loading="eager"
+                decoding="async"
+              />
+            </div>
           </div>
         </div>
       </div>

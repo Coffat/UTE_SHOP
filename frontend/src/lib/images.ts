@@ -18,6 +18,20 @@ export const images = {
       src: "/images/hero/hero_section_background.png",
       alt: "A hyper-realistic, elegant floral arrangement featuring pastel purple and white roses, peonies, and delicate greenery, softly lit by morning sunlight. The setting is a minimalist, modern room with bright, airy light-mode aesthetics. The overall color palette emphasizes lavender, ivory, and soft greens, creating a serene, dreamy, and poetic atmosphere perfect for a premium digital floral boutique.",
     } satisfies ImageAsset,
+    /** Nền full-width hero (mockup). */
+    backgroundSection: {
+      src: "/images/background_hero_section.png",
+      alt: "Nền hero pastel: bokeh, cánh hoa, khoảng trống cho tiêu đề UTESHOP.",
+    } satisfies ImageAsset,
+    /** Ảnh bouquet chính trên hero. */
+    primaryBouquet: {
+      src: "/images/primary_image_hero_section.png",
+      alt: "Bó hoa hồng và tím, giấy gói pastel — hình chính hero UTESHOP.",
+    } satisfies ImageAsset,
+    bouquet: {
+      src: "/images/primary_image_hero_section.png",
+      alt: "Bó hoa pastel tím và hồng, khung ảnh bo tròn trên nền sáng cho trang chủ UTESHOP.",
+    } satisfies ImageAsset,
   },
 
   products: {
@@ -85,5 +99,75 @@ export const images = {
       // Local: "/images/avatars/avatar_anh_tuan.webp",
       alt: "A small circular avatar placeholder image showing a softly lit portrait, matching the neo-glassmorphism digital boutique aesthetic.",
     } satisfies ImageAsset,
+    /** Avatar thứ ba cho khối đánh giá — thay bằng `/images/avatars/avatar_lan_huong.webp` khi có file. */
+    lanHuong: {
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBeA924tgP7WvaX_ntUDl_8Sc_OugAlSkD-fuoYCdlMXXmwdCW9cGogR22bEf85k_qlFAd2jUrnmumyKEGORmUJLn-AYpq8QCto3JDaDDvO9eDnaCOVZUPQ5Q1ReEpKP_vSsj890UREgDKBv3Fgd4hRHESxdCQXgEbtGSbF8fZdU9UXS_HS4wpYRXs2T5UXueInyBpazfdh1xDqfiRPaU-Cg2I8kYF_bBm7jYnAPSDYNBZ7R5yK2XMWoS8EVOoT5iiOujFk-y9Hj4c",
+      alt: "Chân dung khách hàng Lan Hương, phong cách pastel nhẹ nhàng.",
+    } satisfies ImageAsset,
+  },
+
+  /**
+   * Ảnh mock home — đổi `src` sang `/images/home/...` khi bạn thêm file (xem README).
+   */
+  home: {
+    categories: {
+      birthday: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBMJ3-Ea78WayHPejlpSsoKWf1DwuqSaorqxZlE1AYjedTSblB_rw4YLRo3EfhUKAFUeK0uA58HUTegsNVoC7VtCq1xEhmSyyYGFwP2nEwZnDoKBLVVQuSgBHrrkRcGazkkBg7znr9K5u6fFHr5fcZS1_i64eKHiXxwnT3D5zhVM2xGOKUbjYd8luykmalu7UFC-ksfGICcmQF00nJbLC67Jd0hlDnEziL4cuRHV4RrJkozf_Nm3pPj7NM9upneSv9mKYqkmgDaizM",
+        alt: "Danh mục bó hoa sinh nhật.",
+      } satisfies ImageAsset,
+      opening: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCkGhQKhNnsTQNcM_rC8J39dS63WTeSMiDze5Tsbbt1KCmDyPoayq0VAr0vVKKdTVEbXoFfYBQG9fFXBBu7E1ELlkRuMXsCTNFz--Q-ZpThT3mjPeL5hAWp6nW695YiyULbKPmoTVUybg--Mi_P6NI-DmV7HMiiR9qSc4VSXB60ECR5g6yLXasWSLCZw_bQKFUFRw2GJTAyqafgdVxTiJz9hkUKroOCPupeEtV4y4cFquqDpbJKWoIcgLWcJhjaQ0Dm3A455Cfye-g",
+        alt: "Danh mục hoa khai trương.",
+      } satisfies ImageAsset,
+      love: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDysIEo02W9N261jOSacMu-nD2cPoS1aDCI_GV3VTTvY73MjTWGDs279UpPCJqaGHJOsSr85iFhV77maiQlgcUkuANVx-OL7nyXFUv8FWaA8EE-PNYjkU5T7aoIy82xgcNQdPCasnYCor2dxYu9vuN0GlLoZQG2xxkqu6yJMPDb72kOj-Bjztu3Mkfp47O7tV1hHdowFotEi0be7PMaYdpUSEI7GuzVqN6lcn9Keyp1_n4_TO3MWI3D46dzReeGieLuLkpcdhAOqVg",
+        alt: "Danh mục hoa tình yêu.",
+      } satisfies ImageAsset,
+      congrats: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCfsWnNw4MKxqVcCeLg1GGERN9IJDWiZAG3V2us6po9uKjLAerhrUi_ggSCEl7uRlQTOHCmhiCmoSooQaFHK9AkBoNU55Sfc-IiZVO98LUAtINcQ_WmTEAETI_dagUR4ZlToNDF_1Rl_N8HjEutW1BvHanUjkWoKT9BhHlX2v0-Fu_K33dY6RL2zd53KEZQnkx-G2o8gVnSwpk4fpc6Vj93RqjTaiPMelguUKQYiFLAqPjOWyZ1Kp-dtHAxowDokfh6QqngRoCvrT4",
+        alt: "Danh mục hoa chúc mừng.",
+      } satisfies ImageAsset,
+      sympathy: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuC99UKcgUE7S2NPIobsQBhi_Tt23vPpaJgfo2ctOLGuIJw9VJtoa7pcF0Gv2JJXcYy6fbmaj5wzFnY5zA6ud-XbhEgkhVl35kb5C6cKel4-ri7RuvXCs6ldKyRvPC1IUlSaisBUmttC22xEpLmuCH2jtn4Z7-yVfBaie6hZyKqVqDJ3gbsYg6Req_jamcUmOUAgEdinHLdyuBDqHcBJeWRNFHW6AJ27qI9b5ww8Js5x-dusrPbSI5RJjhixetGe118hrH4VMD5Hs2g",
+        alt: "Danh mục hoa chia buồn.",
+      } satisfies ImageAsset,
+      custom: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDp4Oo_A1y38qTQuopx1UM-uv4CZrUawtgBk_pVGLh4jR0gVSZXWGY5K4oRXYwUjepMgTj8nOqaFzP8iw8JH-_eSV7-IwZiVY6hToJkXmMgDi4_VOJxRa_eeWazlyyg8FMiK38NY1-HwiVbBrc8hwkevbiCrbs37V9zQRRaXyGCylzxywQBp0hmT90Z4LpVmua2hCOdOA2kNKITnshBr9FfUqbUokw5pXmogSkTLXseUC7ZuQK-dcw-YpRyQ6_-AHDsXQtGFUuk2iQ",
+        alt: "Danh mục đặt hoa theo yêu cầu.",
+      } satisfies ImageAsset,
+    },
+    occasions: {
+      valentine: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBMJ3-Ea78WayHPejlpSsoKWf1DwuqSaorqxZlE1AYjedTSblB_rw4YLRo3EfhUKAFUeK0uA58HUTegsNVoC7VtCq1xEhmSyyYGFwP2nEwZnDoKBLVVQuSgBHrrkRcGazkkBg7znr9K5u6fFHr5fcZS1_i64eKHiXxwnT3D5zhVM2xGOKUbjYd8luykmalu7UFC-ksfGICcmQF00nJbLC67Jd0hlDnEziL4cuRHV4RrJkozf_Nm3pPj7NM9upneSv9mKYqkmgDaizM",
+        alt: "Bó hoa cho ngày Valentine.",
+      } satisfies ImageAsset,
+      womensDay: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCkGhQKhNnsTQNcM_rC8J39dS63WTeSMiDze5Tsbbt1KCmDyPoayq0VAr0vVKKdTVEbXoFfYBQG9fFXBBu7E1ELlkRuMXsCTNFz--Q-ZpThT3mjPeL5hAWp6nW695YiyULbKPmoTVUybg--Mi_P6NI-DmV7HMiiR9qSc4VSXB60ECR5g6yLXasWSLCZw_bQKFUFRw2GJTAyqafgdVxTiJz9hkUKroOCPupeEtV4y4cFquqDpbJKWoIcgLWcJhjaQ0Dm3A455Cfye-g",
+        alt: "Bó hoa cho ngày 8/3.",
+      } satisfies ImageAsset,
+      mothersDay: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDysIEo02W9N261jOSacMu-nD2cPoS1aDCI_GV3VTTvY73MjTWGDs279UpPCJqaGHJOsSr85iFhV77maiQlgcUkuANVx-OL7nyXFUv8FWaA8EE-PNYjkU5T7aoIy82xgcNQdPCasnYCor2dxYu9vuN0GlLoZQG2xxkqu6yJMPDb72kOj-Bjztu3Mkfp47O7tV1hHdowFotEi0be7PMaYdpUSEI7GuzVqN6lcn9Keyp1_n4_TO3MWI3D46dzReeGieLuLkpcdhAOqVg",
+        alt: "Bó hoa cho Ngày của Mẹ.",
+      } satisfies ImageAsset,
+      graduation: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCfsWnNw4MKxqVcCeLg1GGERN9IJDWiZAG3V2us6po9uKjLAerhrUi_ggSCEl7uRlQTOHCmhiCmoSooQaFHK9AkBoNU55Sfc-IiZVO98LUAtINcQ_WmTEAETI_dagUR4ZlToNDF_1Rl_N8HjEutW1BvHanUjkWoKT9BhHlX2v0-Fu_K33dY6RL2zd53KEZQnkx-G2o8gVnSwpk4fpc6Vj93RqjTaiPMelguUKQYiFLAqPjOWyZ1Kp-dtHAxowDokfh6QqngRoCvrT4",
+        alt: "Bó hoa chúc mừng tốt nghiệp.",
+      } satisfies ImageAsset,
+    },
+    promo: {
+      bouquet: {
+        src: "https://lh3.googleusercontent.com/aida-public/AB6AXuC99UKcgUE7S2NPIobsQBhi_Tt23vPpaJgfo2ctOLGuIJw9VJtoa7pcF0Gv2JJXcYy6fbmaj5wzFnY5zA6ud-XbhEgkhVl35kb5C6cKel4-ri7RuvXCs6ldKyRvPC1IUlSaisBUmttC22xEpLmuCH2jtn4Z7-yVfBaie6hZyKqVqDJ3gbsYg6Req_jamcUmOUAgEdinHLdyuBDqHcBJeWRNFHW6AJ27qI9b5ww8Js5x-dusrPbSI5RJjhixetGe118hrH4VMD5Hs2g",
+        alt: "Bó hoa lớn cho banner khuyến mãi.",
+      } satisfies ImageAsset,
+      /** Pattern hoa mờ — để trống sẽ dùng gradient/CSS trong component. */
+      pattern: {
+        src: "",
+        alt: "",
+      } satisfies ImageAsset,
+      ctaBackground: {
+        src: "/images/background_cta.png",
+        alt: "Nền banner khuyến mãi pastel UTESHOP.",
+      } satisfies ImageAsset,
+    },
   },
 } as const;

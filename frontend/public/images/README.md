@@ -1,16 +1,30 @@
 # UTESHOP Image Assets
 
 Thư mục này chứa toàn bộ ảnh tĩnh dùng trong UTESHOP frontend. Tất cả file ở đây
-đều được Next.js phục vụ trực tiếp tại đường dẫn `/images/<subfolder>/<file>`.
+đều được Vite phục vụ trực tiếp tại đường dẫn `/images/<subfolder>/<file>`.
 
-> Quản lý đường dẫn tập trung tại [`lib/images.ts`](../../lib/images.ts).
+> Quản lý đường dẫn tập trung tại [`lib/images.ts`](../../src/lib/images.ts).
 > Khi thay/đổi tên file, cập nhật cả constant trong file đó.
+
+## Thư mục `home/` (mockup trang chủ)
+
+Đặt file tại `public/images/home/` rồi cập nhật `src` trong `src/lib/images.ts` (`hero.bouquet`, `home.categories`, `home.occasions`, `home.promo`, `avatars.lanHuong`).
+
+| File gợi ý | Dùng cho |
+| :--- | :--- |
+| `home/hero_bouquet.webp` | Bouquet cột phải hero |
+| `home/category_*.webp` (x6) | Danh mục nổi bật |
+| `home/occasion_*.webp` (x4) | Thẻ “Bó hoa tặng theo dịp” |
+| `home/promo_bouquet.webp` | Ảnh trái banner khuyến mãi |
+| `home/promo_pattern.webp` | Pattern hoa mờ (tile); có thể để `pattern.src` rỗng |
+| `avatars/avatar_lan_huong.webp` | Avatar đánh giá thứ ba |
 
 ## Cấu trúc thư mục
 
 ```
 public/images/
-├── hero/         # Ảnh nền của Hero Section
+├── hero/         # Ảnh hero (nền / bouquet — xem `lib/images.ts`)
+├── home/         # Asset mockup home: bouquet hero, danh mục, dịp, pattern banner
 ├── products/     # Ảnh các sản phẩm hoa (best sellers, listing,...)
 ├── campaigns/    # Ảnh banner cho seasonal/marketing campaign
 ├── gallery/      # Ảnh Instagram-style gallery (Social Proof)
@@ -73,4 +87,4 @@ Mỗi entry trong `lib/images.ts` có:
 - `alt`: mô tả nghệ thuật / accessibility.
 
 Khi có ảnh thật, chỉ cần đổi `src` từ URL `lh3.googleusercontent.com` sang
-`/images/hero/hero_section_background.jpg` trong [`lib/images.ts`](../../lib/images.ts) — không cần sửa component.
+`/images/hero/hero_section_background.jpg` trong [`src/lib/images.ts`](../../src/lib/images.ts) — không cần sửa component.

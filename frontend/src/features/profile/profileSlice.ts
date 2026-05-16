@@ -61,11 +61,33 @@ type UpdateProfilePayload = {
   address: string;
 };
 
+/** Chỉ dev + env: dùng khi capture Figma/screenshot không có backend đăng nhập. Không bật trên production. */
+function getProfileCaptureMock(): UserProfileDto | null {
+  if (!import.meta.env.DEV || import.meta.env.VITE_PROFILE_CAPTURE_MOCK !== "true") {
+    return null;
+  }
+  return {
+    _id: "mock-profile-id",
+    fullName: "Nguyễn Minh Anh",
+    email: "minhanh@uteshop.example",
+    phone: "0901 234 567",
+    address: "Quận 3, TP. Hồ Chí Minh",
+    role: "user",
+    is_active: true,
+    createdAt: "2024-06-15T08:00:00.000Z",
+    updatedAt: "2025-05-01T10:00:00.000Z",
+  };
+}
+
 export const fetchProfile = createAsyncThunk<
   UserProfileDto,
   void,
   { rejectValue: string }
 >("profile/fetchProfile", async (_, { rejectWithValue }) => {
+  const mock = getProfileCaptureMock();
+  if (mock) {
+    return mock;
+  }
   try {
     const { data } = await api.get<ProfileResponse>("/api/user/profile");
     if (!data.success || !data.data) {
@@ -82,6 +104,16 @@ export const updateProfile = createAsyncThunk<
   UpdateProfilePayload,
   { rejectValue: string }
 >("profile/updateProfile", async (payload, { rejectWithValue }) => {
+  const mockBase = getProfileCaptureMock();
+  if (mockBase) {
+    return {
+      ...mockBase,
+      fullName: payload.fullName,
+      phone: payload.phone,
+      address: payload.address,
+      updatedAt: new Date().toISOString(),
+    };
+  }
   try {
     const { data } = await api.put<ProfileResponse>("/api/user/profile", payload);
     if (!data.success || !data.data) {

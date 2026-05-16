@@ -1,5 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./Layout";
+import { Forbidden } from "./pages/errors/Forbidden";
+import { NotFound } from "./pages/errors/NotFound";
+import { RouteErrorPage } from "./pages/errors/RouteErrorPage";
+import { ServerError } from "./pages/errors/ServerError";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
@@ -8,24 +12,32 @@ import { UserProfile } from "./pages/UserProfile";
 
 export const router = createBrowserRouter([
   {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
-  },
-  {
-    path: "/",
-    element: <Layout />,
+    errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <Home /> },
-      { path: "user/profile", element: <UserProfile /> },
-      { path: "admin/profile", element: <UserProfile /> },
+      {
+        path: "/login",
+        element: <Login />,
+      },
+      {
+        path: "/register",
+        element: <Register />,
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPassword />,
+      },
+      {
+        path: "/",
+        element: <Layout />,
+        children: [
+          { index: true, element: <Home /> },
+          { path: "user/profile", element: <UserProfile /> },
+          { path: "admin/profile", element: <UserProfile /> },
+          { path: "403", element: <Forbidden /> },
+          { path: "500", element: <ServerError /> },
+          { path: "*", element: <NotFound /> },
+        ],
+      },
     ],
   },
 ]);

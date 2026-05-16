@@ -1,4 +1,5 @@
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
+import { AppLogo } from "@/components/ui/AppLogo";
 
 type AuthBrandingColumnProps = {
   /** Đoạn mô tả dưới slogan (khác nhau giữa login / đăng ký / quên MK) */
@@ -8,22 +9,19 @@ type AuthBrandingColumnProps = {
 export function AuthBrandingColumn({ bodyText }: AuthBrandingColumnProps) {
   return (
     <div className="flex flex-col justify-center pb-10 lg:pb-0 lg:pr-4">
-      <div className="mb-8 flex items-center gap-3 text-pure-ivory">
-        <div className="flex size-10 items-center justify-center rounded-xl border border-white/50 bg-petal-pink/90 shadow-sm">
-          <MaterialIcon name="local_florist" className="text-[22px] text-primary" filled />
-        </div>
-        <span className="font-body-standard text-lg font-bold tracking-[0.2em] text-pure-ivory">
-          UTESHOP
-        </span>
+      <div className="mb-8 flex items-center">
+        <AppLogo
+          variant="auth"
+          withText
+          className="h-16 sm:h-18 lg:h-20"
+          textClassName="text-2xl sm:text-3xl"
+          alt="UTESHOP brand logo"
+        />
       </div>
-
-      <h1 className="login-gradient-text font-body-standard text-4xl font-bold uppercase tracking-wide sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
-        UTESHOP
-      </h1>
 
       <p className="font-slogan mt-4 flex flex-wrap items-center gap-2 text-2xl text-deep-plum sm:text-3xl">
         Trao hoa – Gửi yêu thương
-        <MaterialIcon name="favorite" className="text-[#ff758c] text-[1.35rem] icon-fill" />
+        <MaterialIcon name="favorite" filled className="text-[#ff758c] text-[1.35rem]" />
       </p>
 
       <p className="mt-5 max-w-md text-body-standard text-midnight-purple/95">{bodyText}</p>

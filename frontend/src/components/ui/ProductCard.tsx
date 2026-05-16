@@ -14,13 +14,49 @@ export type Product = {
   imageUrl: string;
   imageAlt: string;
   badge?: ProductBadge;
+  /** Số sao hiển thị 1–5, mặc định 5 */
+  rating?: number;
   className?: string;
 };
 
+const BADGE_PILL_BASE =
+  "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur-sm font-home-heading sm:px-3 sm:py-1 sm:text-xs";
+
 const BADGE_TONE: Record<NonNullable<ProductBadge["tone"]>, string> = {
-  default: "bg-pure-ivory/80",
-  pink: "bg-petal-pink/80",
+  default: "bg-primary/90 text-pure-ivory border-primary/20",
+  pink: "bg-petal-pink text-deep-plum border-petal-pink/80",
 };
+
+/** Tag giá trên ảnh — khác tone badge trạng thái (tím đặc / hồng). */
+const PRICE_TAG_ON_IMAGE =
+  "border-primary/30 bg-pure-ivory/92 text-primary shadow-sm";
+
+function StarRow({ rating }: { rating: number }) {
+  const n = Math.min(5, Math.max(0, Math.round(rating)));
+  return (
+    <div className="flex gap-0.5" aria-label={`${n} trên 5 sao`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <MaterialIcon
+          key={`star-${i}`}
+          name="star"
+          filled={i < n}
+          className={`text-[12px] sm:text-[13px] ${i < n ? "text-star-rating" : "text-dusk-gray/45"}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PriceOnImageTag({ price }: { price: string }) {
+  return (
+    <div
+      className={`absolute right-2.5 top-2.5 z-[1] max-w-[calc(100%-5rem)] text-right sm:right-3 sm:top-3 ${BADGE_PILL_BASE} ${PRICE_TAG_ON_IMAGE}`}
+      title={price}
+    >
+      <span className="block truncate">{price}</span>
+    </div>
+  );
+}
 
 export function ProductCard({
   name,
@@ -29,49 +65,45 @@ export function ProductCard({
   imageUrl,
   imageAlt,
   badge,
+  rating = 5,
   className = "",
 }: Product) {
   return (
     <article
-      className={`glass-panel p-4 rounded-3xl group hover:-translate-y-2 transition-transform duration-300 shadow-[0_10px_40px_rgba(168,85,247,0.05)] ${className}`}
+      className={`group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory shadow-[0_8px_28px_rgba(49,27,146,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(49,27,146,0.1)] sm:rounded-[1.35rem] ${className}`.trim()}
     >
-      <div className="relative h-[240px] sm:h-[280px] lg:h-[300px] xl:h-[340px] 3xl:h-[400px] w-full rounded-2xl overflow-hidden mb-4 bg-surface-container">
+      <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden rounded-t-2xl bg-surface-container sm:rounded-t-[1.35rem]">
         <BgImage
           src={imageUrl}
           alt={imageAlt}
-          className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
         />
-        <button
-          type="button"
-          aria-label="Add to wishlist"
-          className="absolute top-3 right-3 w-10 h-10 glass-panel rounded-full flex items-center justify-center text-dusk-gray hover:text-petal-pink transition-colors"
-        >
-          <MaterialIcon name="favorite" className="text-[20px]" />
-        </button>
         {badge ? (
           <div
-            className={`absolute bottom-3 left-3 ${BADGE_TONE[badge.tone ?? "default"]} backdrop-blur-md px-3 py-1 rounded-full border border-pure-ivory text-xs font-ui-label text-deep-plum`}
+            className={`absolute left-2.5 top-2.5 z-[1] sm:left-3 sm:top-3 ${BADGE_PILL_BASE} ${BADGE_TONE[badge.tone ?? "default"]}`}
           >
             {badge.label}
           </div>
         ) : null}
+        <PriceOnImageTag price={price} />
       </div>
 
-      <div className="px-2">
-        <h3 className="font-sub-heading text-[20px] text-deep-plum mb-1 truncate">
-          {name}
-        </h3>
-        <p className="font-body-standard text-sm text-dusk-gray mb-3 truncate">
-          {description}
-        </p>
-        <div className="flex items-center justify-between">
-          <span className="font-price-display text-deep-plum">{price}</span>
+      <div className="flex min-h-0 flex-1 flex-row items-stretch gap-2 border-t border-crystal-border/45 px-2.5 pb-2.5 pt-2 sm:gap-3 sm:px-3 sm:pb-3 sm:pt-2.5">
+        <div className="flex w-[min(100%,10.25rem)] max-w-[10.25rem] shrink-0 flex-col gap-1 sm:w-[min(100%,11.25rem)] sm:max-w-[11.25rem]">
+          <h3 className="font-home-heading line-clamp-2 text-sm font-bold leading-tight text-on-surface sm:text-[0.9375rem]">
+            {name}
+          </h3>
+          <StarRow rating={rating} />
+          <p className="font-home-heading line-clamp-2 text-[10px] leading-snug text-dusk-gray sm:text-[11px]">{description}</p>
+        </div>
+
+        <div className="flex min-h-0 min-w-0 flex-1 items-center justify-end pr-0.5">
           <button
             type="button"
-            aria-label={`Add ${name} to cart`}
-            className="w-10 h-10 bg-soft-amethyst/30 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-pure-ivory transition-colors"
+            aria-label={`Thêm ${name} vào giỏ`}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-pure-ivory shadow-sm transition hover:bg-deep-plum sm:h-10 sm:w-10"
           >
-            <MaterialIcon name="add_shopping_cart" className="text-[20px]" />
+            <MaterialIcon name="shopping_bag" filled={false} className="text-[16px] sm:text-[17px]" />
           </button>
         </div>
       </div>

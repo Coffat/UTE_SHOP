@@ -1,4 +1,5 @@
 node_modules/
+.venv-docx/
 .env
 .DS_Store
 cookies.txt

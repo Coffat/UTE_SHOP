@@ -1,0 +1,49 @@
+- generic [ref=e6]:
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - img "UTESHOP brand logo" [ref=e12]
+        - generic [ref=e13]: UTESHOP
+      - paragraph [ref=e14]: Trao hoa – Gửi yêu thương
+      - paragraph [ref=e15]: Đăng nhập để khám phá thế giới hoa tươi và những món quà ý nghĩa từ UTESHOP.
+      - generic [ref=e16]:
+        - generic [ref=e18]: Hoa tươi mỗi ngày
+        - generic [ref=e20]: Thanh toán an toàn
+        - generic [ref=e22]: Giao hàng toàn quốc
+    - generic [ref=e23]:
+      - img
+      - generic [ref=e24]:
+        - heading "Chào mừng trở lại!" [level=2] [ref=e25]
+        - paragraph [ref=e26]: Đăng nhập để tiếp tục trải nghiệm
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]: Email hoặc số điện thoại
+            - textbox "Email hoặc số điện thoại" [ref=e31]
+          - generic [ref=e32]:
+            - generic [ref=e33]: Mật khẩu
+            - generic [ref=e34]:
+              - textbox "Mật khẩu" [ref=e35]
+              - button "Hiện mật khẩu" [ref=e36]
+          - generic [ref=e37]:
+            - generic [ref=e38] [cursor=pointer]:
+              - checkbox "Ghi nhớ đăng nhập" [checked] [ref=e39]
+              - text: Ghi nhớ đăng nhập
+            - link "Quên mật khẩu?" [ref=e40] [cursor=pointer]:
+              - /url: /forgot-password
+          - button "Đăng nhập" [ref=e41] [cursor=pointer]: Đăng nhập
+        - generic [ref=e44]: hoặc
+        - generic [ref=e46]:
+          - button "Google" [ref=e47]:
+            - img [ref=e48]
+            - generic [ref=e53]: Google
+          - button "Facebook" [ref=e54]:
+            - img [ref=e55]
+            - generic [ref=e57]: Facebook
+          - button "Apple" [ref=e58]:
+            - img [ref=e59]
+            - generic [ref=e61]: Apple
+        - paragraph [ref=e62]:
+          - text: Chưa có tài khoản?
+          - link "Đăng ký ngay" [ref=e63] [cursor=pointer]:
+            - /url: /register
+  - paragraph [ref=e64]: © 2024 UTESHOP. All rights reserved.

@@ -1,20 +1,18 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const connectDB = async () => {
   const uri = process.env.MONGO_URI;
   if (typeof uri !== 'string' || !uri.trim()) {
-    console.error(
-      'Missing MONGO_URI. Tạo file backend/.env (xem .env.example) và set MONGO_URI=mongodb://...'
-    );
+    console.error('❌ Missing MONGO_URI. Tạo file backend/.env và set MONGO_URI=mongodb://...');
     process.exit(1);
   }
   try {
     const conn = await mongoose.connect(uri);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1); // Exit process with failure
+    console.error(`❌ MongoDB connection error: ${error.message}`);
+    process.exit(1);
   }
 };
 
-module.exports = connectDB;
+export default connectDB;

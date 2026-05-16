@@ -1,0 +1,177 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "UTESHOP home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]:
+          - img "UTESHOP logo" [ref=e7]
+          - generic [ref=e8]: UTESHOP
+      - textbox "Search for blooms..." [ref=e11]
+      - generic [ref=e12]:
+        - navigation [ref=e13]:
+          - link "Bouquets" [ref=e14] [cursor=pointer]:
+            - /url: "#"
+          - link "Occasions" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+          - link "Collections" [ref=e16] [cursor=pointer]:
+            - /url: "#"
+        - generic:
+          - link "Tài khoản":
+            - /url: /user/profile
+          - button "Cart":
+            - generic [ref=e17]: "2"
+  - main [ref=e18]:
+    - generic [ref=e20]:
+      - complementary [ref=e21]:
+        - generic [ref=e22]:
+          - img
+          - generic [ref=e23]:
+            - img "UTESHOP logo avatar" [ref=e26]
+            - button "Đổi ảnh đại diện" [ref=e27]
+          - heading "Nguyễn Minh Anh" [level=2] [ref=e28]
+          - paragraph [ref=e29]: minhanh@uteshop.example
+          - generic [ref=e30]: VIP
+        - list [ref=e32]:
+          - listitem [ref=e33]:
+            - button "Tổng quan" [ref=e34]:
+              - generic [ref=e35]: Tổng quan
+          - listitem [ref=e36]:
+            - button "Đơn hàng của tôi" [ref=e37]:
+              - generic [ref=e38]: Đơn hàng của tôi
+          - listitem [ref=e39]:
+            - button "Sổ địa chỉ" [ref=e40]:
+              - generic [ref=e41]: Sổ địa chỉ
+          - listitem [ref=e42]:
+            - button "Yêu thích" [ref=e43]:
+              - generic [ref=e44]: Yêu thích
+          - listitem [ref=e45]:
+            - button "Thông tin tài khoản" [ref=e46]:
+              - generic [ref=e47]: Thông tin tài khoản
+          - listitem [ref=e48]:
+            - button "Phương thức thanh toán" [ref=e49]:
+              - generic [ref=e50]: Phương thức thanh toán
+          - listitem [ref=e51]:
+            - button "Thông báo" [ref=e52]:
+              - generic [ref=e53]: Thông báo
+          - listitem [ref=e54]:
+            - button "Đăng xuất" [ref=e55]:
+              - generic [ref=e56]: Đăng xuất
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Thành viên VIP
+          - paragraph [ref=e59]: Bạn đang được hưởng nhiều ưu đãi đặc biệt
+          - button "Xem quyền lợi" [ref=e60]: Xem quyền lợi
+      - generic [ref=e61]:
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - paragraph [ref=e65]: Chào mừng trở lại,
+            - heading "Nguyễn Minh Anh" [level=1] [ref=e66]: Nguyễn Minh Anh
+            - paragraph [ref=e67]: "\"Mỗi bó hoa là một lời nhắn gửi yêu thương.\""
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - paragraph [ref=e70]: Tham gia từ
+                - paragraph [ref=e71]: 15/6/2024
+              - generic [ref=e72]:
+                - paragraph [ref=e73]: Hạng thành viên
+                - paragraph [ref=e74]: VIP
+              - generic [ref=e75]:
+                - paragraph [ref=e76]: Điểm tích lũy
+                - paragraph [ref=e77]: 1.250 điểm
+          - generic [ref=e78]:
+            - button "Chỉnh sửa hồ sơ" [ref=e79]: Chỉnh sửa hồ sơ
+            - button "Đổi mật khẩu" [ref=e80]: Đổi mật khẩu
+            - button "Cài đặt thông báo" [ref=e81]: Cài đặt thông báo
+        - generic [ref=e82]:
+          - article [ref=e83]:
+            - paragraph [ref=e84]: Đơn hàng
+            - paragraph [ref=e85]: "24"
+            - button "Xem chi tiết" [ref=e86]: Xem chi tiết
+          - article [ref=e87]:
+            - paragraph [ref=e88]: Sản phẩm yêu thích
+            - paragraph [ref=e89]: "18"
+            - button "Xem danh sách" [ref=e90]: Xem danh sách
+          - article [ref=e91]:
+            - paragraph [ref=e92]: Điểm tích lũy
+            - paragraph [ref=e93]: "1.250"
+            - button "Xem chi tiết" [ref=e94]: Xem chi tiết
+          - article [ref=e95]:
+            - paragraph [ref=e96]: Mã giảm giá
+            - paragraph [ref=e97]: "3"
+            - button "Xem mã của tôi" [ref=e98]: Xem mã của tôi
+        - generic [ref=e99]:
+          - article [ref=e100]:
+            - generic [ref=e101]:
+              - heading "Đơn hàng gần đây" [level=3] [ref=e102]
+              - button "Xem tất cả" [ref=e103]
+            - list [ref=e104]:
+              - listitem [ref=e105]:
+                - generic [ref=e107]:
+                  - paragraph [ref=e108]: Lavender Dream
+                  - paragraph [ref=e109]: 12/05/2025
+                - generic [ref=e110]: Đã giao
+                - paragraph [ref=e111]: 650.000đ
+              - listitem [ref=e112]:
+                - generic [ref=e114]:
+                  - paragraph [ref=e115]: Sweet Pink Roses
+                  - paragraph [ref=e116]: 28/04/2025
+                - generic [ref=e117]: Đã giao
+                - paragraph [ref=e118]: 750.000đ
+              - listitem [ref=e119]:
+                - generic [ref=e121]:
+                  - paragraph [ref=e122]: Pure White Lily
+                  - paragraph [ref=e123]: 15/04/2025
+                - generic [ref=e124]: Đã hủy
+                - paragraph [ref=e125]: 480.000đ
+            - button "Xem tất cả đơn hàng" [ref=e126]
+          - generic [ref=e127]:
+            - article [ref=e128]:
+              - generic [ref=e129]:
+                - heading "Sổ địa chỉ của tôi" [level=3] [ref=e130]
+                - button "Xem tất cả" [ref=e131]
+              - generic [ref=e133]:
+                - generic [ref=e134]:
+                  - paragraph [ref=e135]: Nhà riêng
+                  - paragraph [ref=e136]: Quận 3, TP. Hồ Chí Minh
+                  - paragraph [ref=e137]: "SĐT: 0901 234 567"
+                - generic [ref=e138]: Mặc định
+              - button "Thêm địa chỉ mới" [ref=e139]: Thêm địa chỉ mới
+            - article [ref=e140]:
+              - heading "Ưu đãi dành riêng cho bạn" [level=3] [ref=e141]
+              - paragraph [ref=e142]: Nhận ngay ưu đãi sinh nhật đặc biệt và nhiều phần quà hấp dẫn khác.
+              - button "Khám phá ngay" [ref=e143]: Khám phá ngay
+  - contentinfo [ref=e144]:
+    - generic [ref=e145]:
+      - generic [ref=e146]:
+        - link "UTESHOP" [ref=e147] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e149]: UTESHOP
+        - paragraph [ref=e150]: A digital floral boutique crafting poetic arrangements for your most cherished moments.
+      - generic [ref=e151]:
+        - heading "Explore" [level=4] [ref=e152]
+        - link "Our Story" [ref=e153] [cursor=pointer]:
+          - /url: "#"
+        - link "Collections" [ref=e154] [cursor=pointer]:
+          - /url: "#"
+        - link "Sustainability" [ref=e155] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=e156]:
+        - heading "Support" [level=4] [ref=e157]
+        - link "Floral Care" [ref=e158] [cursor=pointer]:
+          - /url: "#"
+        - link "Shipping & Returns" [ref=e159] [cursor=pointer]:
+          - /url: "#"
+        - link "Contact Us" [ref=e160] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=e161]:
+        - heading "Stay Connected" [level=4] [ref=e162]
+        - paragraph [ref=e163]: Subscribe for floral inspiration and exclusive offers.
+        - generic [ref=e164]:
+          - textbox "Email address" [ref=e165]:
+            - /placeholder: Your email address
+          - button "Subscribe" [ref=e166]
+    - generic [ref=e167]:
+      - paragraph [ref=e168]: © 2026 UTESHOP. All rights reserved. Neo-Glassmorphism Edition.
+      - generic [ref=e169]:
+        - link "Privacy Policy" [ref=e170] [cursor=pointer]:
+          - /url: "#"
+        - link "Terms of Service" [ref=e171] [cursor=pointer]:
+          - /url: "#"

@@ -1,0 +1,223 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "UTESHOP home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]:
+          - img "UTESHOP logo" [ref=e7]
+          - generic [ref=e8]: UTESHOP
+      - generic [ref=e10]:
+        - generic [ref=e11]: search
+        - textbox "Search for blooms..." [ref=e12]
+      - generic [ref=e13]:
+        - navigation [ref=e14]:
+          - link "Bouquets" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+          - link "Occasions" [ref=e16] [cursor=pointer]:
+            - /url: "#"
+          - link "Collections" [ref=e17] [cursor=pointer]:
+            - /url: "#"
+        - generic [ref=e18]:
+          - link "Tài khoản" [ref=e19] [cursor=pointer]:
+            - /url: /user/profile
+            - generic [ref=e20]: person
+          - button "Cart" [ref=e21]:
+            - generic [ref=e22]: shopping_bag
+            - generic [ref=e23]: "2"
+  - main [ref=e24]:
+    - region "A hyper-realistic, elegant floral arrangement featuring pastel purple and white roses, peonies, and delicate greenery, softly lit by morning sunlight. The setting is a minimalist, modern room with bright, airy light-mode aesthetics. The overall color palette emphasizes lavender, ivory, and soft greens, creating a serene, dreamy, and poetic atmosphere perfect for a premium digital floral boutique." [ref=e25]:
+      - generic [ref=e27]:
+        - img
+        - generic [ref=e28]:
+          - heading "Hoa nói lời yêu" [level=1] [ref=e29]:
+            - text: Hoa nói
+            - text: lời yêu
+          - paragraph [ref=e30]: Bó hoa thủ công cho từng khoảnh khắc đặc biệt trong cuộc sống.
+          - button "Mua ngay" [ref=e32]:
+            - generic [ref=e33]: Mua ngay
+            - generic [ref=e35]: arrow_forward
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - heading "Chọn hoa theo dịp" [level=2] [ref=e38]
+        - paragraph [ref=e39]: Tìm kiếm món quà hoàn hảo cho từng khoảnh khắc
+      - generic [ref=e40]:
+        - link "Sinh nhật" [ref=e41] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e43]: cake
+          - generic [ref=e44]: Sinh nhật
+        - link "Tình yêu" [ref=e45] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e47]: favorite
+          - generic [ref=e48]: Tình yêu
+        - link "Khai trương" [ref=e49] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e51]: storefront
+          - generic [ref=e52]: Khai trương
+        - link "Chúc mừng" [ref=e53] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e55]: celebration
+          - generic [ref=e56]: Chúc mừng
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - heading "Bó hoa được yêu thích nhất" [level=2] [ref=e60]
+          - paragraph [ref=e61]: Những thiết kế mang dấu ấn riêng của UTESHOP
+        - link "Xem tất cả" [ref=e62] [cursor=pointer]:
+          - /url: "#"
+          - text: Xem tất cả
+          - generic [ref=e63]: arrow_forward
+      - generic [ref=e64]:
+        - article [ref=e65]:
+          - generic [ref=e66]:
+            - img "A beautiful close-up of a pastel pink and soft purple peony bouquet elegantly wrapped in minimalist frosted paper. The lighting is soft and airy studio light, creating a dreamy light-mode neo-glassmorphism aesthetic against a clean, extremely soft lavender background." [ref=e67]
+            - button "Add to wishlist" [ref=e68]:
+              - generic [ref=e69]: favorite
+            - generic [ref=e70]: Bán chạy
+          - generic [ref=e71]:
+            - heading "Lavender Dream" [level=3] [ref=e72]
+            - paragraph [ref=e73]: Hoa hồng tím, cẩm chướng, lá bạc
+            - generic [ref=e74]:
+              - generic [ref=e75]: 850.000 ₫
+              - button "Add Lavender Dream to cart" [ref=e76]:
+                - generic [ref=e77]: add_shopping_cart
+        - article [ref=e78]:
+          - generic [ref=e79]:
+            - img "An elegant, modern arrangement of delicate blush pink tulips and white ranunculus in a clear glass vase. The scene is brightly lit with natural window light, reflecting softly off the glass. The background is a soft, pristine ivory color, matching a modern light-mode digital boutique aesthetic perfectly." [ref=e80]
+            - button "Add to wishlist" [ref=e81]:
+              - generic [ref=e82]: favorite
+          - generic [ref=e83]:
+            - heading "Blush Whisper" [level=3] [ref=e84]
+            - paragraph [ref=e85]: Tulip hồng, mao lương trắng
+            - generic [ref=e86]:
+              - generic [ref=e87]: 1.200.000 ₫
+              - button "Add Blush Whisper to cart" [ref=e88]:
+                - generic [ref=e89]: add_shopping_cart
+        - article [ref=e90]:
+          - generic [ref=e91]:
+            - img "A sophisticated digital shop product photo showing a vibrant yet pastel-toned bouquet of purple lisianthus, white hydrangeas, and eucalyptus leaves. Set against a luminous, minimal backdrop of lavender mist color, emphasizing a dreamy, premium floral design aesthetic." [ref=e92]
+            - button "Add to wishlist" [ref=e93]:
+              - generic [ref=e94]: favorite
+            - generic [ref=e95]: Mới
+          - generic [ref=e96]:
+            - heading "Purple Symphony" [level=3] [ref=e97]
+            - paragraph [ref=e98]: Cát tường tím, cẩm tú cầu
+            - generic [ref=e99]:
+              - generic [ref=e100]: 950.000 ₫
+              - button "Add Purple Symphony to cart" [ref=e101]:
+                - generic [ref=e102]: add_shopping_cart
+        - article [ref=e103]:
+          - generic [ref=e104]:
+            - img "A delicate and minimalist arrangement of pure white orchids and subtle green ferns in an elegant ceramic pot. The image features a bright, airy aesthetic with ultra-soft lighting, perfectly complementing a modern light-theme digital boutique environment centered on natural beauty." [ref=e105]
+            - button "Add to wishlist" [ref=e106]:
+              - generic [ref=e107]: favorite
+          - generic [ref=e108]:
+            - heading "Pure Elegance" [level=3] [ref=e109]
+            - paragraph [ref=e110]: Lan hồ điệp trắng cao cấp
+            - generic [ref=e111]:
+              - generic [ref=e112]: 2.500.000 ₫
+              - button "Add Pure Elegance to cart" [ref=e113]:
+                - generic [ref=e114]: add_shopping_cart
+    - img "A wide, cinematic shot of a lavish mother's day floral arrangement featuring luxurious pink and purple carnations, orchids, and soft foliage. The background is slightly out of focus, bathed in warm, romantic, soft natural light. The aesthetic is neo-glassmorphism inspired, highly elegant, serene, with a delicate pastel color scheme." [ref=e116]:
+      - generic [ref=e117]:
+        - generic [ref=e118]: Campaign Độc Quyền
+        - heading "Bộ sưu tập Ngày của Mẹ" [level=2] [ref=e119]
+        - paragraph [ref=e120]: Dành tặng những cánh hoa tươi thắm nhất thay cho lời cảm ơn chân thành tới người phụ nữ tuyệt vời nhất.
+        - button "Xem bộ sưu tập" [ref=e121]
+    - generic [ref=e123]:
+      - generic [ref=e124]:
+        - generic [ref=e126]: local_shipping
+        - generic [ref=e127]:
+          - heading "Giao trong ngày" [level=4] [ref=e128]
+          - paragraph [ref=e129]: Miễn phí nội thành HN & HCM
+      - generic [ref=e130]:
+        - generic [ref=e132]: local_florist
+        - generic [ref=e133]:
+          - heading "Hoa tươi mỗi ngày" [level=4] [ref=e134]
+          - paragraph [ref=e135]: Cam kết hoa tươi 100%
+      - generic [ref=e136]:
+        - generic [ref=e138]: photo_camera
+        - generic [ref=e139]:
+          - heading "Ảnh thật trước khi giao" [level=4] [ref=e140]
+          - paragraph [ref=e141]: Kiểm duyệt chất lượng gắt gao
+      - generic [ref=e142]:
+        - generic [ref=e144]: favorite
+        - generic [ref=e145]:
+          - heading "Hỗ trợ 24/7" [level=4] [ref=e146]
+          - paragraph [ref=e147]: Tư vấn tận tâm, nhiệt tình
+    - generic [ref=e148]:
+      - generic [ref=e149]:
+        - generic [ref=e150]:
+          - heading "Khách hàng yêu thích" [level=2] [ref=e151]
+          - paragraph [ref=e152]: Hơn 10,000+ lời khen từ những khách hàng đã trải nghiệm dịch vụ của UTESHOP.
+        - generic [ref=e153]:
+          - generic [ref=e154]:
+            - generic [ref=e156]: format_quote
+            - generic [ref=e157]:
+              - generic [ref=e158]: star
+              - generic [ref=e159]: star
+              - generic [ref=e160]: star
+              - generic [ref=e161]: star
+              - generic [ref=e162]: star
+            - paragraph [ref=e163]: "\"Hoa rất đẹp, giao hàng đúng giờ. Đặc biệt bạn nhân viên tư vấn chọn hoa tông pastel làm mình cực kỳ ưng ý. Chắc chắn sẽ quay lại!\""
+            - generic [ref=e164]:
+              - img "A small circular avatar placeholder image showing a softly lit, happy customer portrait, blending seamlessly with the elegant pastel UI aesthetics of the digital boutique." [ref=e165]
+              - generic [ref=e166]:
+                - heading "Chị Mai Anh" [level=5] [ref=e167]
+                - text: Khách hàng tại Hà Nội
+          - generic [ref=e168]:
+            - generic [ref=e169]:
+              - generic [ref=e170]: star
+              - generic [ref=e171]: star
+              - generic [ref=e172]: star
+              - generic [ref=e173]: star
+              - generic [ref=e174]: star_half
+            - paragraph [ref=e175]: "\"Đóng gói siêu cẩn thận, hộp hoa sang trọng như hàng hiệu. Người nhận rất bất ngờ và hạnh phúc.\""
+            - generic [ref=e176]:
+              - img "A small circular avatar placeholder image showing a softly lit portrait, matching the neo-glassmorphism digital boutique aesthetic." [ref=e177]
+              - generic [ref=e178]:
+                - heading "Anh Tuấn" [level=5] [ref=e179]
+                - text: Khách hàng tại TP.HCM
+      - generic [ref=e180]:
+        - img "An artistic, Instagram-style top-down photo of scattered pastel flower petals and a small minimalist vase on a pristine white marble table. The lighting is extremely bright and soft, creating a serene, dreamy aesthetic suitable for a modern digital florist gallery." [ref=e182]
+        - img "A close-up aesthetic shot of a single blooming light purple rose against a blurred lavender background. Soft bokeh effect. The image is light, airy, and fits a high-end neo-glassmorphism floral shop visual language." [ref=e184]
+        - img "A soft-focus lifestyle image showing a person's hands holding a beautifully wrapped bouquet of white and blush peonies. Warm, golden hour lighting filters through a window, creating an emotional and deeply poetic visual for a high-end boutique." [ref=e186]
+        - img "A wide, aesthetic shot of a rustic yet modern florist workspace. Baskets of fresh lavender, shears, and delicate wrapping paper sit on a clean wooden desk. The space is flooded with bright, ethereal light, matching a dreamy pastel UI theme." [ref=e188]
+  - contentinfo [ref=e189]:
+    - generic [ref=e190]:
+      - generic [ref=e191]:
+        - link "UTESHOP" [ref=e192] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e194]: local_florist
+          - generic [ref=e195]: UTESHOP
+        - paragraph [ref=e196]: A digital floral boutique crafting poetic arrangements for your most cherished moments.
+      - generic [ref=e197]:
+        - heading "Explore" [level=4] [ref=e198]
+        - link "Our Story" [ref=e199] [cursor=pointer]:
+          - /url: "#"
+        - link "Collections" [ref=e200] [cursor=pointer]:
+          - /url: "#"
+        - link "Sustainability" [ref=e201] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=e202]:
+        - heading "Support" [level=4] [ref=e203]
+        - link "Floral Care" [ref=e204] [cursor=pointer]:
+          - /url: "#"
+        - link "Shipping & Returns" [ref=e205] [cursor=pointer]:
+          - /url: "#"
+        - link "Contact Us" [ref=e206] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=e207]:
+        - heading "Stay Connected" [level=4] [ref=e208]
+        - paragraph [ref=e209]: Subscribe for floral inspiration and exclusive offers.
+        - generic [ref=e210]:
+          - textbox "Email address" [ref=e211]:
+            - /placeholder: Your email address
+          - button "Subscribe" [ref=e212]:
+            - generic [ref=e213]: arrow_forward
+    - generic [ref=e214]:
+      - paragraph [ref=e215]: © 2026 UTESHOP. All rights reserved. Neo-Glassmorphism Edition.
+      - generic [ref=e216]:
+        - link "Privacy Policy" [ref=e217] [cursor=pointer]:
+          - /url: "#"
+        - link "Terms of Service" [ref=e218] [cursor=pointer]:
+          - /url: "#"

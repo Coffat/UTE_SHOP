@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthSocialOAuthSection } from "@/components/auth/AuthSocialOAuthSection";
 import {
   clearRegisterError,
   clearVerifyOtpError,
@@ -242,6 +243,8 @@ export function Register() {
                   <MaterialIcon name="arrow_forward" className="text-pure-ivory text-[20px]" />
                 </button>
               </form>
+
+              <AuthSocialOAuthSection />
             </>
           ) : (
             <>

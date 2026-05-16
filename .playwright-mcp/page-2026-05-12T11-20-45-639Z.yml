@@ -1,0 +1,50 @@
+- generic [ref=e6]:
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - img "UTESHOP brand logo" [ref=e12]
+        - generic [ref=e13]: UTESHOP
+      - paragraph [ref=e14]:
+        - text: Trao hoa – Gửi yêu thương
+        - generic [ref=e15]: favorite
+      - paragraph [ref=e16]: Khôi phục mật khẩu an toàn qua email — nhập địa chỉ đã đăng ký để nhận mã OTP.
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: local_florist
+          - generic [ref=e20]: Hoa tươi mỗi ngày
+        - generic [ref=e21]:
+          - generic [ref=e22]: shield
+          - generic [ref=e23]: Thanh toán an toàn
+        - generic [ref=e24]:
+          - generic [ref=e25]: card_giftcard
+          - generic [ref=e26]: Giao hàng toàn quốc
+    - generic [ref=e27]:
+      - img
+      - generic [ref=e28]:
+        - heading "Quên mật khẩu?" [level=2] [ref=e29]
+        - paragraph [ref=e30]: Nhập email tài khoản — chúng tôi sẽ gửi mã OTP để đặt lại mật khẩu.
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Email
+            - generic [ref=e34]:
+              - generic [ref=e35]: mail
+              - textbox "Email" [ref=e36]:
+                - /placeholder: Email đã đăng ký
+          - button "Gửi mã OTP" [ref=e37] [cursor=pointer]:
+            - text: Gửi mã OTP
+            - generic [ref=e38]: send
+        - generic [ref=e41]: hoặc
+        - generic [ref=e43]:
+          - button "Google" [ref=e44]:
+            - img [ref=e45]
+            - generic [ref=e50]: Google
+          - button "Facebook" [ref=e51]:
+            - img [ref=e52]
+            - generic [ref=e54]: Facebook
+          - button "Apple" [ref=e55]:
+            - img [ref=e56]
+            - generic [ref=e58]: Apple
+        - paragraph [ref=e59]:
+          - link "Quay lại đăng nhập" [ref=e60] [cursor=pointer]:
+            - /url: /login
+  - paragraph [ref=e61]: © 2024 UTESHOP. All rights reserved.

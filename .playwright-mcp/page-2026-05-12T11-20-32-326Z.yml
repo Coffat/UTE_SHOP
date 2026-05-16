@@ -1,0 +1,76 @@
+- generic [ref=e6]:
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - img "UTESHOP brand logo" [ref=e12]
+        - generic [ref=e13]: UTESHOP
+      - paragraph [ref=e14]:
+        - text: Trao hoa – Gửi yêu thương
+        - generic [ref=e15]: favorite
+      - paragraph [ref=e16]: Tạo tài khoản UTESHOP để đặt hoa tươi, theo dõi đơn và nhận ưu đãi dành riêng cho bạn.
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: local_florist
+          - generic [ref=e20]: Hoa tươi mỗi ngày
+        - generic [ref=e21]:
+          - generic [ref=e22]: shield
+          - generic [ref=e23]: Thanh toán an toàn
+        - generic [ref=e24]:
+          - generic [ref=e25]: card_giftcard
+          - generic [ref=e26]: Giao hàng toàn quốc
+    - generic [ref=e27]:
+      - img
+      - generic [ref=e28]:
+        - heading "Tạo tài khoản" [level=2] [ref=e29]
+        - paragraph [ref=e30]: Điền thông tin để bắt đầu — chúng tôi sẽ gửi mã xác minh qua email.
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Họ và tên
+            - generic [ref=e34]:
+              - generic [ref=e35]: badge
+              - textbox "Họ và tên" [ref=e36]
+          - generic [ref=e37]:
+            - generic [ref=e38]: Email
+            - generic [ref=e39]:
+              - generic [ref=e40]: mail
+              - textbox "Email" [ref=e41]
+          - generic [ref=e42]:
+            - generic [ref=e43]: Số điện thoại
+            - generic [ref=e44]:
+              - generic [ref=e45]: call
+              - textbox "Số điện thoại" [ref=e46]
+          - generic [ref=e47]:
+            - generic [ref=e48]: Mật khẩu
+            - generic [ref=e49]:
+              - generic [ref=e50]: lock
+              - textbox "Mật khẩu" [ref=e51]:
+                - /placeholder: Mật khẩu (tối thiểu 6 ký tự)
+              - button "Hiện mật khẩu" [ref=e52]:
+                - generic [ref=e53]: visibility
+          - generic [ref=e54]:
+            - generic [ref=e55]: Xác nhận mật khẩu
+            - generic [ref=e56]:
+              - generic [ref=e57]: key
+              - textbox "Xác nhận mật khẩu" [ref=e58]:
+                - /placeholder: Nhập lại mật khẩu
+              - button "Hiện mật khẩu" [ref=e59]:
+                - generic [ref=e60]: visibility
+          - button "Đăng ký" [ref=e61] [cursor=pointer]:
+            - text: Đăng ký
+            - generic [ref=e62]: arrow_forward
+        - generic [ref=e65]: hoặc
+        - generic [ref=e67]:
+          - button "Google" [ref=e68]:
+            - img [ref=e69]
+            - generic [ref=e74]: Google
+          - button "Facebook" [ref=e75]:
+            - img [ref=e76]
+            - generic [ref=e78]: Facebook
+          - button "Apple" [ref=e79]:
+            - img [ref=e80]
+            - generic [ref=e82]: Apple
+        - paragraph [ref=e83]:
+          - text: Đã có tài khoản?
+          - link "Đăng nhập" [ref=e84] [cursor=pointer]:
+            - /url: /login
+  - paragraph [ref=e85]: © 2024 UTESHOP. All rights reserved.
