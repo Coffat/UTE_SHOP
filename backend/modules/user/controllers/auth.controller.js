@@ -65,3 +65,23 @@ export const logout = asyncHandler(async (req, res) => {
 
   sendSuccess(res, 200, 'Đăng xuất thành công');
 });
+
+// POST /api/v1/auth/refresh
+export const refreshToken = asyncHandler(async (req, res) => {
+  const oldRefreshToken = req.cookies?.refreshToken;
+  if (!oldRefreshToken) {
+    return sendError(res, 401, 'Không có refresh token');
+  }
+
+  const { accessToken, refreshToken } = await authService.rotateRefreshToken(oldRefreshToken);
+
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true, sameSite: 'strict', secure: isProd, maxAge: 15 * 60 * 1000,
+  });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true, sameSite: 'strict', secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  sendSuccess(res, 200, 'Refresh token thành công');
+});

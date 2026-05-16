@@ -32,4 +32,7 @@ router.post('/reset-password', validateResetPassword, authController.resetPasswo
 // POST /api/v1/auth/logout
 router.post('/logout', authController.logout);
 
+// POST /api/v1/auth/refresh
+router.post('/refresh', authController.refreshToken);
+
 export default router;

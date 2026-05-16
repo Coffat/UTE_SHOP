@@ -1,22 +1,42 @@
 import express from 'express';
 import * as orderController from '../controllers/order.controller.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
+import {
+  validatePlaceOrder,
+  validateChangeStatus,
+  validateCancelOrder,
+} from '../middlewares/order.validator.js';
 
 const router = express.Router();
 
-// Danh sách đơn (admin thấy tất, customer thấy của mình)
+// GET /api/v1/orders – Danh sách đơn (admin thấy tất, customer thấy của mình)
 router.get('/', authenticate, orderController.listOrders);
 
-// Chi tiết đơn
+// GET /api/v1/orders/:id – Chi tiết đơn
 router.get('/:id', authenticate, orderController.getOrder);
 
-// Đặt hàng – chỉ CUSTOMER
-router.post('/', authenticate, authorize('CUSTOMER'), orderController.placeOrder);
+// POST /api/v1/orders – Đặt hàng – chỉ CUSTOMER
+router.post(
+  '/',
+  authenticate, authorize('CUSTOMER'),
+  validatePlaceOrder,
+  orderController.placeOrder
+);
 
-// Thay đổi trạng thái – ADMIN, SALES, STORE_STAFF
-router.patch('/:id/status', authenticate, authorize('ADMIN', 'SALES', 'STORE_STAFF'), orderController.changeStatus);
+// PATCH /api/v1/orders/:id/status – ADMIN, SALES, STORE_STAFF
+router.patch(
+  '/:id/status',
+  authenticate, authorize('ADMIN', 'SALES', 'STORE_STAFF'),
+  validateChangeStatus,
+  orderController.changeStatus
+);
 
-// Hủy đơn – CUSTOMER (đơn của mình) hoặc ADMIN
-router.post('/:id/cancel', authenticate, authorize('CUSTOMER', 'ADMIN'), orderController.cancelOrder);
+// POST /api/v1/orders/:id/cancel – CUSTOMER (đơn của mình) hoặc ADMIN
+router.post(
+  '/:id/cancel',
+  authenticate, authorize('CUSTOMER', 'ADMIN'),
+  validateCancelOrder,
+  orderController.cancelOrder
+);
 
 export default router;

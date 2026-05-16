@@ -2,8 +2,11 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
 import v1Router from './routes/index.js';
+import { generalLimiter } from './shared/middlewares/rateLimiter.js';
 
 // Load environment variables BEFORE anything else
 dotenv.config();
@@ -12,6 +15,12 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// ─── Trust proxy (nếu deploy sau nginx/load balancer) ─────────────────────────
+app.set('trust proxy', 1);
+
+// ─── HTTP Security Headers (helmet) ───────────────────────────────────────────
+app.use(helmet());
 
 // ─── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
@@ -33,10 +42,16 @@ app.use(
   })
 );
 
-// ─── Global Middlewares ────────────────────────────────────────────────────────
+// ─── Body Parser với giới hạn kích thước (chống DoS payload lớn) ──────────────
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// ─── NoSQL Injection Sanitizer (loại bỏ $ và . trong req.body/params/query) ───
+app.use(mongoSanitize());
+
+// ─── Global Rate Limiter (10 req/phút mọi route) ─────────────────────────────
+app.use('/api', generalLimiter);
 
 // ─── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (_req, res) => res.json({ status: 'ok', message: 'UTESHOP API is running 🚀' }));
@@ -44,19 +59,24 @@ app.get('/', (_req, res) => res.json({ status: 'ok', message: 'UTESHOP API is ru
 // ─── API v1 Routes ─────────────────────────────────────────────────────────────
 app.use('/api/v1', v1Router);
 
+// ─── 404 Handler ──────────────────────────────────────────────────────────────
+app.use((_req, res) => res.status(404).json({ success: false, message: 'Route not found.' }));
+
 // ─── Global Error Handler ──────────────────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error('[UNHANDLED ERROR]', err);
+  // Không lộ stack trace ra production
+  const isDev = process.env.NODE_ENV === 'development';
   res.status(err.status ?? 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
+    ...(isDev && { stack: err.stack }),
   });
 });
 
 // ─── Start server ──────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 UTESHOP API running on port ${PORT}`);
-  console.log(`   Docs: http://localhost:${PORT}/api/v1`);
+  console.log(` UTESHOP API running on port ${PORT} [${process.env.NODE_ENV ?? 'development'}]`);
 });

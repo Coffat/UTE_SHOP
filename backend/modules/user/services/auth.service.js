@@ -69,7 +69,8 @@ export const loginUser = async (email, password) => {
   const refreshToken = generateRefreshToken(user);
 
   const hashedToken = hashToken(refreshToken);
-  await redisClient.set(`refresh:${user._id}`, hashedToken, { EX: 7 * 24 * 60 * 60 });
+  // Store individual refresh token with TTL to support multiple sessions and rotation
+  await redisClient.setEx(`refresh:${user._id}:${hashedToken}`, 7 * 24 * 60 * 60, 'valid');
 
   return { user, accessToken, refreshToken };
 };
@@ -106,8 +107,56 @@ export const logoutUser = async (refreshToken) => {
   if (!refreshToken) return;
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    await redisClient.del(`refresh:${decoded.id}`);
+    const hashedToken = hashToken(refreshToken);
+    await redisClient.del(`refresh:${decoded.id}:${hashedToken}`);
   } catch {
     // Token hết hạn/invalid → vẫn cho logout thành công (cookies sẽ được xóa)
   }
+};
+
+// ─── Refresh Token (Rotation & Replay Attack Detection) ───────────────────────
+export const rotateRefreshToken = async (refreshToken) => {
+  if (!refreshToken) throw new Error('Không có refresh token');
+
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  } catch (err) {
+    throw new Error('Refresh token không hợp lệ hoặc đã hết hạn');
+  }
+
+  const userId = decoded.id;
+  const hashedToken = hashToken(refreshToken);
+
+  // Kiểm tra token trong Redis
+  const exists = await redisClient.get(`refresh:${userId}:${hashedToken}`);
+  
+  if (!exists) {
+    // REPLAY ATTACK DETECTION! Token hợp lệ về mặt chữ ký nhưng không có trong DB (đã bị dùng).
+    // => Thu hồi toàn bộ refresh tokens của user này.
+    const keys = await redisClient.keys(`refresh:${userId}:*`);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+    }
+    throw new Error('Phát hiện truy cập bất thường. Vui lòng đăng nhập lại.');
+  }
+
+  // Nếu hợp lệ, xóa token cũ (để không dùng lại được nữa)
+  await redisClient.del(`refresh:${userId}:${hashedToken}`);
+
+  // Tìm user để lấy thông tin mới nhất
+  const user = await User.findById(userId);
+  if (!user || user.status !== UserStatus.ACTIVE) {
+    throw new Error('Tài khoản không hợp lệ');
+  }
+
+  // Tạo cặp token mới
+  const newAccessToken = generateAccessToken(user);
+  const newRefreshToken = generateRefreshToken(user);
+  const newHashedToken = hashToken(newRefreshToken);
+
+  // Lưu token mới
+  await redisClient.setEx(`refresh:${userId}:${newHashedToken}`, 7 * 24 * 60 * 60, 'valid');
+
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 };
