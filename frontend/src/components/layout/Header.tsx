@@ -3,8 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { AppLogo } from "@/components/ui/AppLogo";
 
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/store";
+import { fetchProfile } from "@/features/profile/profileSlice";
 
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
@@ -29,6 +30,16 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navId = useId();
   const sheetId = `${navId}-sheet`;
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { profile, fetchStatus } = useSelector((state: RootState) => state.profile);
+
+  // Tự động tải thông tin người dùng một lần để kiểm tra trạng thái đăng nhập
+  useEffect(() => {
+    if (fetchStatus === "idle") {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, fetchStatus]);
 
   // Lấy tổng số lượng sản phẩm từ giỏ hàng trong Redux
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -82,13 +93,25 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-2">
-            <Link
-              to="/user/profile"
-              aria-label="Tài khoản"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
-            >
-              <MaterialIcon name="person" className="text-[22px]" />
-            </Link>
+            {profile ? (
+              <Link
+                to="/user/profile"
+                aria-label="Tài khoản"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+                title={`Chào ${profile.fullName}`}
+              >
+                <MaterialIcon name="person" className="text-[22px]" />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                aria-label="Đăng nhập"
+                className="flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1.5 text-xs font-bold text-deep-plum backdrop-blur-md hover:bg-primary hover:text-pure-ivory hover:border-primary transition-all duration-300 shadow-sm"
+              >
+                <MaterialIcon name="login" className="text-sm shrink-0" />
+                <span className="hidden sm:inline">Đăng nhập</span>
+              </Link>
+            )}
             <button
               type="button"
               aria-label="Danh sách yêu thích"
