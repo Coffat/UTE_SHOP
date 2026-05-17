@@ -5,6 +5,7 @@ import { AppLogo } from "@/components/ui/AppLogo";
 
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
+  { label: "Sản phẩm", href: "/products" },
   { label: "Loại hoa lẻ", href: "#" },
   { label: "Bó hoa theo ngân sách", href: "#" },
   { label: "Tiệc & Sự kiện", href: "#" },
@@ -48,7 +49,7 @@ export function Header() {
           className="absolute left-1/2 top-full z-40 mt-3 hidden w-[min(92vw,720px)] -translate-x-1/2 flex-col gap-1 rounded-3xl border border-crystal-border bg-pure-ivory/95 p-3 shadow-lg backdrop-blur-xl lg:static lg:z-auto lg:mt-0 lg:flex lg:w-auto lg:max-w-none lg:translate-x-0 lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none xl:gap-8"
         >
           {NAV_LINKS.map((item) => {
-            const active = item.href === "/" && pathname === "/";
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.label}
@@ -138,7 +139,7 @@ export function Header() {
         </div>
         <ul className="flex flex-col gap-1">
           {NAV_LINKS.map((item) => {
-            const active = item.href === "/" && pathname === "/";
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <li key={item.label}>
                 <Link
