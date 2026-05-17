@@ -13,12 +13,12 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 // Import models từ modules/ mới
-import '../modules/user/models/Customer.js'; // đảm bảo discriminator CUSTOMER đã đăng ký
-import '../modules/user/models/Admin.js';    // đảm bảo discriminator ADMIN đã đăng ký
-import User from '../modules/user/models/User.js';
-import Customer from '../modules/user/models/Customer.js';
-import Admin from '../modules/user/models/Admin.js';
-import UserStatus from '../shared/enums/UserStatus.js';
+import './modules/user/models/Customer.js'; // đảm bảo discriminator CUSTOMER đã đăng ký
+import './modules/user/models/Admin.js';    // đảm bảo discriminator ADMIN đã đăng ký
+import User from './modules/user/models/User.js';
+import Customer from './modules/user/models/Customer.js';
+import Admin from './modules/user/models/Admin.js';
+import UserStatus from './shared/enums/UserStatus.js';
 
 dotenv.config();
 
