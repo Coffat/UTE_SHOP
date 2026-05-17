@@ -43,6 +43,15 @@ export interface BackendProduct {
 
 export interface CatalogState {
   products: BackendProduct[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  } | null;
+  relatedProducts: BackendProduct[];
   homeProducts: {
     popular: BackendProduct[];
     comfort: BackendProduct[];
@@ -57,6 +66,8 @@ export interface CatalogState {
 
 const initialState: CatalogState = {
   products: [],
+  pagination: null,
+  relatedProducts: [],
   homeProducts: {
     popular: [],
     comfort: [],
@@ -189,16 +200,16 @@ export const MOCK_VARIANTS_MAP: Record<string, BackendVariant[]> = {
 // Async Thunks
 export const fetchProducts = createAsyncThunk(
   "catalog/fetchProducts",
-  async (params: { category?: string; tag?: string; search?: string } | undefined) => {
+  async (params: { page?: number; limit?: number; categoryId?: string; categorySlug?: string; color?: string; style?: string; minPrice?: number; maxPrice?: number; sortBy?: string; search?: string } | undefined) => {
     try {
       const response = await api.get("/api/v1/products", { params });
-      if (response.data?.success && Array.isArray(response.data?.data)) {
-        return response.data.data as BackendProduct[];
+      if (response.data?.success && response.data?.data?.items) {
+        return response.data.data as { items: BackendProduct[], pagination: NonNullable<CatalogState["pagination"]> };
       }
-      return MOCK_PRODUCTS;
+      return { items: MOCK_PRODUCTS, pagination: null };
     } catch (err) {
       console.warn("Backend products fetch failed, using fallback mock catalog.");
-      return MOCK_PRODUCTS;
+      return { items: MOCK_PRODUCTS, pagination: null };
     }
   }
 );
@@ -240,6 +251,22 @@ export const fetchProductVariants = createAsyncThunk(
   }
 );
 
+export const fetchRelatedProducts = createAsyncThunk(
+  "catalog/fetchRelatedProducts",
+  async (productId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/products/${productId}/related`);
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        return response.data.data as BackendProduct[];
+      }
+      return [];
+    } catch (err) {
+      console.warn(`Backend related products fetch for ${productId} failed.`);
+      return rejectWithValue("Lỗi tải sản phẩm liên quan");
+    }
+  }
+);
+
 export const fetchHomeProducts = createAsyncThunk(
   "catalog/fetchHomeProducts",
   async (_, { rejectWithValue }) => {
@@ -277,9 +304,10 @@ const catalogSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchProducts.fulfilled, (state, action: PayloadAction<BackendProduct[]>) => {
+      .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload;
+        state.products = action.payload.items;
+        state.pagination = action.payload.pagination;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
@@ -301,6 +329,10 @@ const catalogSlice = createSlice({
       // List Variants
       .addCase(fetchProductVariants.fulfilled, (state, action: PayloadAction<BackendVariant[]>) => {
         state.selectedVariants = action.payload;
+      })
+      // Related Products
+      .addCase(fetchRelatedProducts.fulfilled, (state, action: PayloadAction<BackendProduct[]>) => {
+        state.relatedProducts = action.payload;
       })
       // Home Products
       .addCase(fetchHomeProducts.pending, (state) => {

@@ -22,75 +22,78 @@ export const getProductImage = (slugOrId: string): string => {
 };
 
 // Định dạng giá tiền Việt Nam Đồng
-export const formatVND = (num: number): string => {
+export const formatVND = (num: any): string => {
+  let val = 0;
+  if (typeof num === 'number') val = num;
+  else if (typeof num === 'string') val = parseFloat(num);
+  else if (num && num.$numberDecimal) val = parseFloat(num.$numberDecimal);
+  
+  if (isNaN(val)) val = 0;
+  
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-  }).format(num);
+  }).format(val);
+};
+
+export const hasTag = (product: BackendProduct, slug: string) => {
+  if (!product.tags) return false;
+  return product.tags.some((t: any) => 
+    (typeof t === 'string' ? t === slug : t.slug === slug)
+  );
 };
 
 export function ProductList() {
   const dispatch = useDispatch<AppDispatch>();
-  const { products, loading } = useSelector((state: RootState) => state.catalog);
+  const { products, loading, pagination } = useSelector((state: RootState) => state.catalog);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("Tất cả");
   const [priceRange, setPriceRange] = useState("Mức giá: Tất cả");
   const [color, setColor] = useState("Màu sắc: Tất cả");
   const [style, setStyle] = useState("Kiểu dáng: Tất cả");
   const [sortBy, setSortBy] = useState("Mới nhất");
+  const [page, setPage] = useState(1);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, category, color, style, priceRange, sortBy]);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
-
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term));
-    }
-
-    if (category !== "Tất cả") {
-       if (category === "Hoa Kỷ Niệm") {
-          result = result.filter(p => p.tags?.includes("ky-niem") || p.name.includes("Kỷ niệm"));
-       } else if (category === "Hoa Chúc Mừng") {
-          result = result.filter(p => p.tags?.includes("chuc-mung") || p.name.includes("Chúc mừng"));
-       } else if (category === "Hoa Cưới") {
-          result = result.filter(p => p.tags?.includes("cuoi") || p.name.includes("Cưới"));
-       }
-    }
-
-    if (priceRange !== "Mức giá: Tất cả") {
-      result = result.filter(p => {
-        const price = p.minifiedVariants?.[0]?.price || 0;
-        if (priceRange === "Dưới 500k") return price < 500000;
-        if (priceRange === "500k - 1tr") return price >= 500000 && price <= 1000000;
-        if (priceRange === "Trên 1tr") return price > 1000000;
-        return true;
-      });
-    }
-
-    if (color !== "Màu sắc: Tất cả") {
-       const colorTerm = color.toLowerCase().replace("tone ", "");
-       result = result.filter(p => p.name.toLowerCase().includes(colorTerm) || p.description.toLowerCase().includes(colorTerm) || p.tags?.includes(colorTerm));
-    }
-    if (style !== "Kiểu dáng: Tất cả") {
-       const styleTerm = style.toLowerCase();
-       result = result.filter(p => p.name.toLowerCase().includes(styleTerm) || p.description.toLowerCase().includes(styleTerm) || p.tags?.includes(styleTerm));
-    }
-
-    if (sortBy === "Giá thấp đến cao") {
-      result.sort((a, b) => (a.minifiedVariants?.[0]?.price || 0) - (b.minifiedVariants?.[0]?.price || 0));
-    } else if (sortBy === "Giá cao xuống thấp") {
-      result.sort((a, b) => (b.minifiedVariants?.[0]?.price || 0) - (a.minifiedVariants?.[0]?.price || 0));
-    } else if (sortBy === "Bán chạy") {
-      result.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
-    }
+    const params: any = { page, limit: 12 };
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
     
-    return result;
-  }, [products, searchTerm, category, priceRange, color, style, sortBy]);
+    // Map category to slug for the backend to handle (or if backend accepts it)
+    if (category !== "Tất cả") {
+      if (category === "Hoa Kỷ Niệm") params.categorySlug = "hoa-ky-niem";
+      else if (category === "Hoa Chúc Mừng") params.categorySlug = "hoa-chuc-mung";
+      else if (category === "Hoa Cưới") params.categorySlug = "tiec-va-su-kien";
+    }
+
+    if (color !== "Màu sắc: Tất cả") params.color = color.replace("Tone ", "");
+    if (style !== "Kiểu dáng: Tất cả") params.style = style;
+    
+    if (priceRange === "Dưới 500k") { params.maxPrice = 500000; }
+    else if (priceRange === "500k - 1tr") { params.minPrice = 500000; params.maxPrice = 1000000; }
+    else if (priceRange === "Trên 1tr") { params.minPrice = 1000000; }
+
+    if (sortBy === "Giá thấp đến cao") params.sortBy = "price_asc";
+    else if (sortBy === "Giá cao xuống thấp") params.sortBy = "price_desc";
+    else if (sortBy === "Bán chạy") params.sortBy = "sold";
+    else params.sortBy = "newest";
+
+    dispatch(fetchProducts(params));
+  }, [dispatch, debouncedSearch, category, color, style, priceRange, sortBy, page]);
 
   return (
     <div className="min-h-screen bg-lavender-mist pt-24 pb-16">
@@ -254,7 +257,7 @@ export function ProductList() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-            {filteredProducts.map((product) => {
+            {products.map((product) => {
               const primaryVariant = product.minifiedVariants?.[0];
               const priceStr = primaryVariant ? formatVND(primaryVariant.price) : "Liên hệ";
               const descShort = product.description.length > 50 
@@ -268,10 +271,15 @@ export function ProductList() {
                     name={product.name}
                     description={descShort}
                     price={priceStr}
-                    imageUrl={getProductImage(product.slug || product._id)}
+                    imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
                     imageAlt={product.name}
                     rating={product.reviewStats?.ratingAverage ?? 5}
-                    badge={product.tags?.includes("ban-chay") ? { label: "Bán chạy", tone: "default" } : undefined}
+                    badge={
+                      hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :
+                      hasTag(product, "ban-chay") ? { label: "Bán chạy", tone: "default" } :
+                      hasTag(product, "moi-ve") ? { label: "Mới về", tone: "pink" } :
+                      undefined
+                    }
                   />
                   <Link to={`/product/${product._id}`} className="absolute inset-0 z-10" aria-label={`Xem chi tiết ${product.name}`}></Link>
                 </div>
@@ -280,12 +288,53 @@ export function ProductList() {
           </div>
         )}
 
-        {/* Load More */}
-        <div className="mt-16 flex justify-center">
-          <button className="btn-hero-cta-gradient rounded-full px-8 py-3 text-base font-medium shadow-lg hover:-translate-y-1 transition-transform">
-            Xem thêm thiết kế
-          </button>
-        </div>
+        {/* Pagination (Neo-Glassmorphism Style) */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="mt-16 flex items-center justify-center gap-3">
+            {/* Prev Button */}
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={!pagination.hasPrevPage}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-all duration-300 ${
+                !pagination.hasPrevPage 
+                  ? "opacity-50 cursor-not-allowed text-dusk-gray" 
+                  : "hover:bg-white/70 hover:shadow-sm text-midnight-purple hover:text-deep-plum hover:-translate-x-0.5"
+              }`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-2">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => { setPage(pageNum); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                    pageNum === pagination.page
+                      ? "bg-deep-plum text-white shadow-[0_0_0_4px_rgba(230,213,242,0.5)] border border-transparent"
+                      : "border border-white/60 bg-white/40 text-midnight-purple backdrop-blur-xl hover:bg-white/70 hover:shadow-sm hover:text-deep-plum"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => { setPage(p => Math.min(pagination.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={!pagination.hasNextPage}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-all duration-300 ${
+                !pagination.hasNextPage 
+                  ? "opacity-50 cursor-not-allowed text-dusk-gray" 
+                  : "hover:bg-white/70 hover:shadow-sm text-midnight-purple hover:text-deep-plum hover:translate-x-0.5"
+              }`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

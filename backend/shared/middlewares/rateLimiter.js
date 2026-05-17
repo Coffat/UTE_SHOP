@@ -36,9 +36,9 @@ export const forgotPasswordLimiter = createRateLimiter(
   'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau 15 phút.'
 );
 
-/** 10 request / phút – dành cho API chung (tránh brute-force) */
+/** 200 request / phút – dành cho API chung (tránh brute-force) */
 export const generalLimiter = createRateLimiter(
   60 * 1000,
-  10,
+  200,
   'Quá nhiều request. Vui lòng thử lại sau.'
 );

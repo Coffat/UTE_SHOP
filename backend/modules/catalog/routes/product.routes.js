@@ -14,6 +14,7 @@ const router = express.Router();
 // ─── Public ───────────────────────────────────────────────────────────────────
 router.get('/', validatePagination, productController.listProducts);
 router.get('/:id', validateProductId, productController.getProduct);
+router.get('/:id/related', validateProductId, productController.getRelatedProducts);
 router.get('/:id/variants', validateProductId, productController.listVariants);
 
 // ─── ADMIN only ───────────────────────────────────────────────────────────────

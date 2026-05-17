@@ -3,8 +3,12 @@ import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 
 export const listProducts = asyncHandler(async (req, res) => {
-  const { status, categoryId, search, page, limit } = req.query;
-  const result = await productService.getProducts({ status, categoryId, search, page: +page, limit: +limit });
+  const { status, categoryId, categorySlug, search, color, style, minPrice, maxPrice, sortBy, page, limit } = req.query;
+  const result = await productService.getProducts({ 
+    status, categoryId, categorySlug, search, color, style, minPrice, maxPrice, sortBy, 
+    page: page ? parseInt(page) : 1, 
+    limit: limit ? parseInt(limit) : 12 
+  });
   sendSuccess(res, 200, 'OK', result);
 });
 
@@ -12,6 +16,12 @@ export const getProduct = asyncHandler(async (req, res) => {
   const product = await productService.getProductById(req.params.id);
   if (!product) return sendError(res, 404, 'Không tìm thấy sản phẩm');
   sendSuccess(res, 200, 'OK', product);
+});
+
+export const getRelatedProducts = asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? +req.query.limit : 4;
+  const products = await productService.getRelatedProducts(req.params.id, limit);
+  sendSuccess(res, 200, 'OK', products);
 });
 
 export const createProduct = asyncHandler(async (req, res) => {

@@ -65,7 +65,9 @@ export function ProductDetail() {
   const activeImages =
     selectedVariant?.images && selectedVariant.images.length > 0
       ? selectedVariant.images
-      : [getProductImage(selectedProduct.slug || selectedProduct._id)];
+      : selectedProduct.mainImageUrl 
+        ? [selectedProduct.mainImageUrl] 
+        : [getProductImage(selectedProduct.slug || selectedProduct._id)];
 
   const activeStock = selectedVariant?.stock ?? 10;
   const activePrice = selectedVariant?.price ?? 1230000;

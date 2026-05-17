@@ -89,7 +89,7 @@ export const fetchProfile = createAsyncThunk<
     return mock;
   }
   try {
-    const { data } = await api.get<ProfileResponse>("/api/user/profile");
+    const { data } = await api.get<ProfileResponse>("/api/v1/users/profile");
     if (!data.success || !data.data) {
       return rejectWithValue(data.message ?? "Không tải được hồ sơ");
     }
@@ -115,7 +115,7 @@ export const updateProfile = createAsyncThunk<
     };
   }
   try {
-    const { data } = await api.put<ProfileResponse>("/api/user/profile", payload);
+    const { data } = await api.put<ProfileResponse>("/api/v1/users/profile", payload);
     if (!data.success || !data.data) {
       return rejectWithValue(data.message ?? "Cập nhật thất bại");
     }
