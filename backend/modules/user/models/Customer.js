@@ -15,6 +15,10 @@ const customerSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  loyalty: {
+    points: { type: Number, default: 0 },
+    tier: { type: String, default: 'BRONZE' },
+  },
   // địa chỉ được lưu ở module logistics/Address
 });
 
