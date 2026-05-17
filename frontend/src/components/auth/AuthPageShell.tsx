@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { AuthBrandingColumn } from "./AuthBrandingColumn";
 
 type AuthPageShellProps = {
@@ -20,15 +18,6 @@ export function AuthPageShell({ brandingBodyText, children }: AuthPageShellProps
         className="absolute inset-0 bg-gradient-to-br from-deep-plum/25 via-transparent to-primary/20"
         aria-hidden
       />
-
-      {/* Nút Về trang chủ nổi bật trên góc */}
-      <Link
-        to="/"
-        className="absolute top-4 left-4 z-20 flex items-center gap-1.5 rounded-full border border-white/60 bg-pure-ivory/20 px-3.5 py-2 font-ui-label text-xs font-bold text-pure-ivory backdrop-blur-md transition-all duration-300 hover:bg-pure-ivory hover:text-deep-plum hover:border-white shadow-sm md:top-6 md:left-8 md:text-sm md:px-4 md:py-2.5"
-      >
-        <MaterialIcon name="arrow_back" className="text-sm md:text-base shrink-0" />
-        <span>Về trang chủ</span>
-      </Link>
 
       <div className="relative z-10 flex flex-1 flex-col px-margin-mobile py-8 md:px-margin-desktop md:py-10 lg:py-12">
         <div className="mx-auto flex w-full max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] flex-1 items-center justify-center">
