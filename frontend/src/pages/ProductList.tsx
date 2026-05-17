@@ -1,70 +1,42 @@
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { MaterialIcon } from "@/components/ui/MaterialIcon";
+import { AppDispatch, RootState } from "@/store";
+import { fetchProducts } from "@/features/catalog/catalogSlice";
 import { images } from "@/lib/images";
 
-const { products } = images;
+const { products: imgProducts } = images;
 
-// Mock data cho danh sách
-const ALL_PRODUCTS = [
-  {
-    id: "lavender-dream",
-    name: "Bó Lavender Mộng Mơ",
-    description: "Hồng pastel, cẩm chướng, lá bạc",
-    price: "1.230.000đ",
-    imageUrl: products.lavenderDream.src,
-    imageAlt: products.lavenderDream.alt,
-    badge: { label: "Bán chạy", tone: "default" as const },
-    rating: 5,
-  },
-  {
-    id: "blush-whisper",
-    name: "Bó Blush Thì Thầm",
-    description: "Tulip hồng, mao lương trắng",
-    price: "1.200.000đ",
-    imageUrl: products.blushWhisper.src,
-    imageAlt: products.blushWhisper.alt,
-    rating: 5,
-  },
-  {
-    id: "purple-symphony",
-    name: "Bó Purple Symphony",
-    description: "Cát tường tím, cẩm tú cầu",
-    price: "950.000đ",
-    imageUrl: products.purpleSymphony.src,
-    imageAlt: products.purpleSymphony.alt,
-    badge: { label: "Mới", tone: "pink" as const },
-    rating: 5,
-  },
-  {
-    id: "pure-elegance",
-    name: "Bó Pure Elegance",
-    description: "Lan hồ điệp trắng cao cấp",
-    price: "2.500.000đ",
-    imageUrl: products.pureElegance.src,
-    imageAlt: products.pureElegance.alt,
-    rating: 5,
-  },
-  {
-    id: "p5",
-    name: "Bó Trắng An Nhiên",
-    description: "Cúc trắng, lay ơn",
-    price: "890.000đ",
-    imageUrl: products.pureElegance.src,
-    imageAlt: products.pureElegance.alt,
-    rating: 4,
-  },
-  {
-    id: "p6",
-    name: "Bó Pastel Dịu Dàng",
-    description: "Hồng kem, baby breath",
-    price: "650.000đ",
-    imageUrl: products.blushWhisper.src,
-    imageAlt: products.blushWhisper.alt,
-    rating: 5,
+// Helper giải quyết ảnh cho hoa kể cả từ database hoặc mock
+export const getProductImage = (slugOrId: string): string => {
+  const key = slugOrId.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+  if (key in imgProducts) {
+    return imgProducts[key as keyof typeof imgProducts].src;
   }
-];
+  if (slugOrId.includes("lavender") || slugOrId.includes("oai-huong")) return imgProducts.lavenderDream.src;
+  if (slugOrId.includes("blush") || slugOrId.includes("tulip")) return imgProducts.blushWhisper.src;
+  if (slugOrId.includes("purple") || slugOrId.includes("cat-tuong")) return imgProducts.purpleSymphony.src;
+  if (slugOrId.includes("pure") || slugOrId.includes("lan-ho-diep")) return imgProducts.pureElegance.src;
+  return imgProducts.lavenderDream.src;
+};
+
+// Định dạng giá tiền Việt Nam Đồng
+export const formatVND = (num: number): string => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(num);
+};
 
 export function ProductList() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { products, loading } = useSelector((state: RootState) => state.catalog);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen bg-lavender-mist pt-24 pb-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -110,15 +82,37 @@ export function ProductList() {
         </div>
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-          {ALL_PRODUCTS.map((product) => (
-            <div key={product.id} className="relative group cursor-pointer">
-              <ProductCard {...product} />
-              {/* Optional: Add an invisible link overlay if we had a <Link> component here */}
-              <a href={`/product/${product.id}`} className="absolute inset-0 z-10" aria-label={`Xem chi tiết ${product.name}`}></a>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-crystal-border border-t-primary"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+            {products.map((product) => {
+              const primaryVariant = product.minifiedVariants?.[0];
+              const priceStr = primaryVariant ? formatVND(primaryVariant.price) : "Liên hệ";
+              const descShort = product.description.length > 50 
+                ? product.description.substring(0, 50) + "..." 
+                : product.description;
+
+              return (
+                <div key={product._id} className="relative group cursor-pointer">
+                  <ProductCard
+                    id={product._id}
+                    name={product.name}
+                    description={descShort}
+                    price={priceStr}
+                    imageUrl={getProductImage(product.slug || product._id)}
+                    imageAlt={product.name}
+                    rating={product.reviewStats?.ratingAverage ?? 5}
+                    badge={product.tags?.includes("ban-chay") ? { label: "Bán chạy", tone: "default" } : undefined}
+                  />
+                  <Link to={`/product/${product._id}`} className="absolute inset-0 z-10" aria-label={`Xem chi tiết ${product.name}`}></Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Load More */}
         <div className="mt-16 flex justify-center">

@@ -3,6 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { AppLogo } from "@/components/ui/AppLogo";
 
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
   { label: "Sản phẩm", href: "/products" },
@@ -26,6 +29,10 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navId = useId();
   const sheetId = `${navId}-sheet`;
+
+  // Lấy tổng số lượng sản phẩm từ giỏ hàng trong Redux
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -89,16 +96,18 @@ export function Header() {
             >
               <MaterialIcon name="favorite" className="text-[22px]" />
             </button>
-            <button
-              type="button"
+            <Link
+              to="/cart"
               aria-label="Giỏ hàng"
               className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
             >
               <MaterialIcon name="shopping_bag" className="text-[22px]" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-0.5 text-[10px] font-bold text-pure-ivory">
-                2
-              </span>
-            </button>
+              {totalQuantity > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-1 text-[9px] font-bold text-pure-ivory animate-fade-in">
+                  {totalQuantity}
+                </span>
+              )}
+            </Link>
             <button
               type="button"
               className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:hidden"
