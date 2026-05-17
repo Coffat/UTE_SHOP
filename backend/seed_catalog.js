@@ -93,7 +93,7 @@ const seedCatalog = async () => {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
     console.log('✅ Connected to MongoDB');
 
-    // 1. Clean existing records
+    // 1. Clean existing records & drop unused index
     console.log('🗑️ Cleaning existing collections...');
     await Category.deleteMany({});
     await Tag.deleteMany({});
@@ -102,6 +102,10 @@ const seedCatalog = async () => {
     await Review.deleteMany({});
     await Warehouse.deleteMany({});
     await StockLevel.deleteMany({});
+    try {
+      await StockLevel.collection.dropIndex('warehouse_1_material_1');
+      console.log('🧹 Dropped index warehouse_1_material_1');
+    } catch (_) { /* index may not exist */ }
     console.log('🧹 Cleaned successfully.');
 
     // 2. Seed Warehouse

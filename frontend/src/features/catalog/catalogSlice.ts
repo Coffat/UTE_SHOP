@@ -38,10 +38,17 @@ export interface BackendProduct {
   };
   soldCount?: number;
   isPublished?: boolean;
+  mainImageUrl?: string;
 }
 
 export interface CatalogState {
   products: BackendProduct[];
+  homeProducts: {
+    popular: BackendProduct[];
+    comfort: BackendProduct[];
+    bearCombo: BackendProduct[];
+    congrats: BackendProduct[];
+  };
   selectedProduct: BackendProduct | null;
   selectedVariants: BackendVariant[];
   loading: boolean;
@@ -50,6 +57,12 @@ export interface CatalogState {
 
 const initialState: CatalogState = {
   products: [],
+  homeProducts: {
+    popular: [],
+    comfort: [],
+    bearCombo: [],
+    congrats: [],
+  },
   selectedProduct: null,
   selectedVariants: [],
   loading: false,
@@ -227,6 +240,27 @@ export const fetchProductVariants = createAsyncThunk(
   }
 );
 
+export const fetchHomeProducts = createAsyncThunk(
+  "catalog/fetchHomeProducts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/v1/storefront/home");
+      if (response.data?.success && response.data?.data) {
+        return response.data.data as {
+          popular: BackendProduct[];
+          comfort: BackendProduct[];
+          bearCombo: BackendProduct[];
+          congrats: BackendProduct[];
+        };
+      }
+      return rejectWithValue("Dữ liệu không hợp lệ");
+    } catch (err) {
+      console.warn("Backend fetchHomeProducts failed.");
+      return rejectWithValue("Lỗi tải trang chủ");
+    }
+  }
+);
+
 const catalogSlice = createSlice({
   name: "catalog",
   initialState,
@@ -267,6 +301,18 @@ const catalogSlice = createSlice({
       // List Variants
       .addCase(fetchProductVariants.fulfilled, (state, action: PayloadAction<BackendVariant[]>) => {
         state.selectedVariants = action.payload;
+      })
+      // Home Products
+      .addCase(fetchHomeProducts.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchHomeProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.homeProducts = action.payload;
+      })
+      .addCase(fetchHomeProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

@@ -43,6 +43,9 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 
 // Catalog
+import storefrontRoutes from '../modules/catalog/routes/storefront.routes.js';
+
+router.use('/storefront', storefrontRoutes);
 router.use('/products', productRoutes);
 router.use('/products', reviewRoutes);     // nested: /products/:id/reviews
 router.use('/categories', categoryRoutes);
