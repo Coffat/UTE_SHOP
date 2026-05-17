@@ -9,6 +9,8 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { UserProfile } from "./pages/UserProfile";
+import { ProductList } from "./pages/ProductList";
+import { ProductDetail } from "./pages/ProductDetail";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { index: true, element: <Home /> },
+          { path: "products", element: <ProductList /> },
+          { path: "product/:id", element: <ProductDetail /> },
           { path: "user/profile", element: <UserProfile /> },
           { path: "admin/profile", element: <UserProfile /> },
           { path: "403", element: <Forbidden /> },
