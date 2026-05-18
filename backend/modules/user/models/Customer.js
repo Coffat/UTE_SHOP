@@ -19,6 +19,12 @@ const customerSchema = new mongoose.Schema({
     points: { type: Number, default: 0 },
     tier: { type: String, default: 'BRONZE' },
   },
+  favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+    }
+  ],
   // địa chỉ được lưu ở module logistics/Address
 });
 

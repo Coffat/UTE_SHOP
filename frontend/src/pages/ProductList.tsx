@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AppDispatch, RootState } from "@/store";
 import { fetchProducts, BackendProduct } from "@/features/catalog/catalogSlice";
@@ -265,24 +264,22 @@ export function ProductList() {
                 : product.description;
 
               return (
-                <div key={product._id} className="relative group cursor-pointer">
-                  <ProductCard
-                    id={product._id}
-                    name={product.name}
-                    description={descShort}
-                    price={priceStr}
-                    imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
-                    imageAlt={product.name}
-                    rating={product.reviewStats?.ratingAverage ?? 5}
-                    badge={
-                      hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :
-                      hasTag(product, "ban-chay") ? { label: "Bán chạy", tone: "default" } :
-                      hasTag(product, "moi-ve") ? { label: "Mới về", tone: "pink" } :
-                      undefined
-                    }
-                  />
-                  <Link to={`/product/${product._id}`} className="absolute inset-0 z-10" aria-label={`Xem chi tiết ${product.name}`}></Link>
-                </div>
+                <ProductCard
+                  key={product._id}
+                  id={product._id}
+                  name={product.name}
+                  description={descShort}
+                  price={priceStr}
+                  imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
+                  imageAlt={product.name}
+                  rating={product.reviewStats?.ratingAverage ?? 5}
+                  badge={
+                    hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :
+                    hasTag(product, "ban-chay") ? { label: "Bán chạy", tone: "default" } :
+                    hasTag(product, "moi-ve") ? { label: "Mới về", tone: "pink" } :
+                    undefined
+                  }
+                />
               );
             })}
           </div>

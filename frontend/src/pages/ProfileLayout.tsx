@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { AppLogo } from "@/components/ui/AppLogo";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RoseLineArt } from "@/icons";
@@ -19,7 +19,6 @@ const sideMenu = [
 export function ProfileLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
   const profile = useAppSelector((s) => s.profile.profile);
   const fetchError = useAppSelector((s) => s.profile.fetchError);
 

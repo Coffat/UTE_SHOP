@@ -6,6 +6,7 @@ import { AppLogo } from "@/components/ui/AppLogo";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { fetchProfile } from "@/features/profile/profileSlice";
+import { fetchWishlist } from "@/features/wishlist/wishlistSlice";
 
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
@@ -33,6 +34,7 @@ export function Header() {
 
   const dispatch = useDispatch<AppDispatch>();
   const { profile, fetchStatus } = useSelector((state: RootState) => state.profile);
+  const { items: wishlistItems, status: wishlistStatus } = useSelector((state: RootState) => state.wishlist);
 
   // Tự động tải thông tin người dùng một lần để kiểm tra trạng thái đăng nhập
   useEffect(() => {
@@ -40,6 +42,13 @@ export function Header() {
       dispatch(fetchProfile());
     }
   }, [dispatch, fetchStatus]);
+
+  // Tải danh sách yêu thích khi thông tin người dùng được tải thành công
+  useEffect(() => {
+    if (profile && wishlistStatus === "idle") {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch, profile, wishlistStatus]);
 
   // Lấy tổng số lượng sản phẩm từ giỏ hàng trong Redux
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -89,7 +98,7 @@ export function Header() {
               placeholder="Tìm kiếm sản phẩm..."
               type="search"
               aria-label="Tìm kiếm sản phẩm"
-            />
+             />
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-2">
@@ -115,9 +124,14 @@ export function Header() {
             <Link
               to={profile ? (profile.role === "admin" ? "/admin/profile/favorites" : "/user/profile/favorites") : "/login"}
               aria-label="Danh sách yêu thích"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
             >
               <MaterialIcon name="favorite" className="text-[22px]" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-1 text-[9px] font-bold text-pure-ivory animate-fade-in">
+                  {wishlistItems.length}
+                </span>
+              )}
             </Link>
             <Link
               to="/cart"

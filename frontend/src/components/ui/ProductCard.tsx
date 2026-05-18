@@ -1,6 +1,10 @@
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { AppDispatch, RootState } from "@/store";
 import { BgImage } from "@/components/ui/BgImage";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
+import { addToCart } from "@/features/cart/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/features/wishlist/wishlistSlice";
 
 export type ProductBadge = {
   label: string;
@@ -70,6 +74,64 @@ export function ProductCard({
   rating = 5,
   className = "",
 }: Product) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { profile } = useSelector((state: RootState) => state.profile);
+  const wishlistItems = useSelector((state: RootState) => state.wishlist?.items || []);
+  const isFavorited = wishlistItems.some((item) => item._id === id);
+
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!profile) {
+      alert("Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích của bạn.");
+      return;
+    }
+
+    if (isFavorited) {
+      dispatch(removeFromWishlist(id));
+    } else {
+      const numericPrice = parseInt(price.replace(/[^0-9]/g, "")) || 0;
+      dispatch(
+        addToWishlist({
+          _id: id,
+          name,
+          description,
+          mainImageUrl: imageUrl,
+          status: "ACTIVE",
+          minifiedVariants: [
+            {
+              _id: "default",
+              sizeName: "Tiêu chuẩn",
+              price: numericPrice,
+              stock: 99,
+            },
+          ],
+        } as any)
+      );
+    }
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const numericPrice = parseInt(price.replace(/[^0-9]/g, "")) || 0;
+    dispatch(
+      addToCart({
+        productId: id,
+        variantId: "default",
+        name,
+        variantName: "Tiêu chuẩn",
+        price: numericPrice,
+        imageUrl,
+        quantity: 1,
+        stock: 99,
+      })
+    );
+    alert(`Đã thêm "${name}" vào giỏ hàng thành công!`);
+  };
+
   return (
     <article
       className={`group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory shadow-[0_8px_28px_rgba(49,27,146,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(49,27,146,0.1)] sm:rounded-[1.35rem] ${className}`.trim()}
@@ -91,6 +153,24 @@ export function ProductCard({
           </div>
         ) : null}
         <PriceOnImageTag price={price} />
+
+        {/* Favorite Button (Floating glassmorphic circle with heart icon) */}
+        <button
+          type="button"
+          onClick={handleFavoriteToggle}
+          aria-label={isFavorited ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+          className="absolute left-2.5 bottom-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-pure-ivory/70 backdrop-blur-md shadow-[0_4px_12px_rgba(49,27,146,0.06)] transition-all duration-300 hover:bg-rose-50/80 active:scale-90 sm:left-3 sm:bottom-3 sm:h-9 sm:w-9 group/fav"
+        >
+          <MaterialIcon
+            name="favorite"
+            filled={isFavorited}
+            className={`text-[16px] sm:text-[18px] transition-all duration-300 ${
+              isFavorited
+                ? "text-rose-500 scale-110"
+                : "text-deep-plum/60 group-hover/fav:text-rose-400 group-hover/fav:scale-110"
+            }`}
+          />
+        </button>
       </Link>
 
       <div className="flex min-h-0 flex-1 flex-row items-stretch gap-2 border-t border-crystal-border/45 px-2.5 pb-2.5 pt-2 sm:gap-3 sm:px-3 sm:pb-3 sm:pt-2.5">
@@ -108,8 +188,9 @@ export function ProductCard({
         <div className="flex min-h-0 min-w-0 flex-1 items-center justify-end pr-0.5">
           <button
             type="button"
+            onClick={handleAddToCart}
             aria-label={`Thêm ${name} vào giỏ`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-pure-ivory shadow-sm transition hover:bg-deep-plum sm:h-10 sm:w-10"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-pure-ivory shadow-sm transition hover:bg-deep-plum sm:h-10 sm:w-10 active:scale-95"
           >
             <MaterialIcon name="shopping_bag" filled={false} className="text-[16px] sm:text-[17px]" />
           </button>
@@ -118,3 +199,4 @@ export function ProductCard({
     </article>
   );
 }
+
