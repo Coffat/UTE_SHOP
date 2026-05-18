@@ -15,6 +15,18 @@ import { ProfileLayout } from "./pages/ProfileLayout";
 import { ProfileOverview } from "./pages/ProfileOverview";
 import { Favorites } from "./pages/Favorites";
 
+// Admin Imports
+import { AdminLayout } from "./admin/layouts/AdminLayout";
+import { AdminAuthProvider } from "./admin/context/AdminAuthContext";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { OrdersPage } from "./admin/pages/OrdersPage";
+import { ProductsPage } from "./admin/pages/ProductsPage";
+import { CustomersPage } from "./admin/pages/CustomersPage";
+import { StaffPage } from "./admin/pages/StaffPage";
+import { ReportsPage } from "./admin/pages/ReportsPage";
+import { SettingsPage } from "./admin/pages/SettingsPage";
+import { ProfilePage as AdminProfilePage } from "./admin/pages/ProfilePage";
+
 export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
@@ -31,6 +43,27 @@ export const router = createBrowserRouter([
         path: "/forgot-password",
         element: <ForgotPassword />,
       },
+      // --- Admin Routes ---
+      {
+        path: "/admin",
+        element: (
+          <AdminAuthProvider>
+            <AdminLayout />
+          </AdminAuthProvider>
+        ),
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: "dashboard", element: <AdminDashboardPage /> },
+          { path: "orders", element: <OrdersPage /> },
+          { path: "products", element: <ProductsPage /> },
+          { path: "customers", element: <CustomersPage /> },
+          { path: "staff", element: <StaffPage /> },
+          { path: "reports", element: <ReportsPage /> },
+          { path: "settings", element: <SettingsPage /> },
+          { path: "profile", element: <AdminProfilePage /> },
+        ],
+      },
+      // --- Customer/Storefront Routes ---
       {
         path: "/",
         element: <Layout />,
@@ -41,15 +74,6 @@ export const router = createBrowserRouter([
           { path: "cart", element: <Cart /> },
           { 
             path: "user/profile", 
-            element: <ProfileLayout />,
-            children: [
-              { index: true, element: <Navigate to="overview" replace /> },
-              { path: "overview", element: <ProfileOverview /> },
-              { path: "favorites", element: <Favorites /> },
-            ]
-          },
-          { 
-            path: "admin/profile", 
             element: <ProfileLayout />,
             children: [
               { index: true, element: <Navigate to="overview" replace /> },

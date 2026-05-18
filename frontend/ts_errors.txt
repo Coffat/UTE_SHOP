@@ -1,0 +1,25 @@
+src/admin/components/AdminSidebar.tsx(1,1): error TS6133: 'useState' is declared but its value is never read.
+src/admin/components/AdminSidebar.tsx(152,35): error TS2503: Cannot find namespace 'JSX'.
+src/admin/context/AdminAuthContext.tsx(1,47): error TS6133: 'useEffect' is declared but its value is never read.
+src/admin/layouts/AdminLayout.tsx(1,25): error TS6133: 'ReactNode' is declared but its value is never read.
+src/admin/layouts/AdminLayout.tsx(5,1): error TS6133: 'useAdminAuth' is declared but its value is never read.
+src/admin/pages/AdminDashboardPage.tsx(64,57): error TS2322: Type '(v: number, name: string) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+  Type '(v: number, name: string) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType>'.
+    Types of parameters 'v' and 'value' are incompatible.
+      Type 'ValueType | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/admin/pages/AdminDashboardPage.tsx(97,57): error TS2322: Type '(v: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+  Type '(v: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType>'.
+    Types of parameters 'v' and 'value' are incompatible.
+      Type 'ValueType | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/admin/pages/OrdersPage.tsx(2,10): error TS2305: Module '"../data/mockData"' has no exported member 'ORDERS_DATA'.
+src/admin/pages/OrdersPage.tsx(2,10): error TS6133: 'ORDERS_DATA' is declared but its value is never read.
+src/admin/pages/OrdersPage.tsx(20,11): error TS6133: 'confirm' is declared but its value is never read.
+src/admin/pages/ReportsPage.tsx(3,62): error TS6133: 'Legend' is declared but its value is never read.
+src/admin/pages/ReportsPage.tsx(72,55): error TS2322: Type '(v: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+  Type '(v: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType>'.
+    Types of parameters 'v' and 'value' are incompatible.
+      Type 'ValueType | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/admin/pages/SettingsPage.tsx(101,48): error TS2503: Cannot find namespace 'JSX'.
