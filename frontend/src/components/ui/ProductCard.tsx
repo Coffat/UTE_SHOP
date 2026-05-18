@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { BgImage } from "@/components/ui/BgImage";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 
@@ -59,6 +60,7 @@ function PriceOnImageTag({ price }: { price: string }) {
 }
 
 export function ProductCard({
+  id,
   name,
   description,
   price,
@@ -72,7 +74,10 @@ export function ProductCard({
     <article
       className={`group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory shadow-[0_8px_28px_rgba(49,27,146,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(49,27,146,0.1)] sm:rounded-[1.35rem] ${className}`.trim()}
     >
-      <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden rounded-t-2xl bg-surface-container sm:rounded-t-[1.35rem]">
+      <Link
+        to={`/product/${id}`}
+        className="relative block aspect-[4/5] w-full shrink-0 overflow-hidden rounded-t-2xl bg-surface-container sm:rounded-t-[1.35rem]"
+      >
         <BgImage
           src={imageUrl}
           alt={imageAlt}
@@ -86,16 +91,19 @@ export function ProductCard({
           </div>
         ) : null}
         <PriceOnImageTag price={price} />
-      </div>
+      </Link>
 
       <div className="flex min-h-0 flex-1 flex-row items-stretch gap-2 border-t border-crystal-border/45 px-2.5 pb-2.5 pt-2 sm:gap-3 sm:px-3 sm:pb-3 sm:pt-2.5">
-        <div className="flex w-[min(100%,10.25rem)] max-w-[10.25rem] shrink-0 flex-col gap-1 sm:w-[min(100%,11.25rem)] sm:max-w-[11.25rem]">
-          <h3 className="font-home-heading line-clamp-2 text-sm font-bold leading-tight text-on-surface sm:text-[0.9375rem]">
+        <Link
+          to={`/product/${id}`}
+          className="flex w-[min(100%,10.25rem)] max-w-[10.25rem] shrink-0 flex-col gap-1 sm:w-[min(100%,11.25rem)] sm:max-w-[11.25rem] hover:opacity-85 transition-opacity"
+        >
+          <h3 className="font-home-heading line-clamp-2 text-sm font-bold leading-tight text-on-surface sm:text-[0.9375rem] group-hover:text-primary transition-colors">
             {name}
           </h3>
           <StarRow rating={rating} />
           <p className="font-home-heading line-clamp-2 text-[10px] leading-snug text-dusk-gray sm:text-[11px]">{description}</p>
-        </div>
+        </Link>
 
         <div className="flex min-h-0 min-w-0 flex-1 items-center justify-end pr-0.5">
           <button

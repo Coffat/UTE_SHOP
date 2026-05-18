@@ -58,6 +58,42 @@ export function ProductDetail() {
     }
   }, [selectedVariants]);
 
+  // Dynamic mapped related products
+  const mappedRelatedProducts = useMemo(() => {
+    return relatedProducts.map((p) => {
+      const minPrice = p.minifiedVariants && p.minifiedVariants.length > 0
+        ? p.minifiedVariants[0].price
+        : 1230000;
+      const formattedPrice = formatVND(minPrice);
+
+      const imgUrl = p.mainImageUrl || getProductImage(p.slug || p._id);
+
+      let tone: "default" | "pink" = "default";
+      let label = "";
+      if (p.tags && p.tags.length > 0) {
+        if (p.tags[0] === "ban-chay") label = "Bán Chạy";
+        else if (p.tags[0] === "yeu-thich") {
+          label = "Yêu Thích";
+          tone = "pink";
+        } else if (p.tags[0] === "khuyen-mai") {
+          label = "Giảm Giá";
+          tone = "pink";
+        } else label = "Mới";
+      }
+
+      return {
+        id: p._id,
+        name: p.name,
+        description: p.description,
+        price: formattedPrice,
+        imageUrl: imgUrl,
+        imageAlt: p.name,
+        badge: label ? { label, tone } : undefined,
+        rating: p.reviewStats?.ratingAverage ?? 5,
+      };
+    });
+  }, [relatedProducts]);
+
   if (loading || !selectedProduct) {
     return (
       <div className="flex h-screen items-center justify-center bg-lavender-mist">
@@ -107,42 +143,6 @@ export function ProductDetail() {
       navigate("/cart");
     }, 1200);
   };
-
-  // Dynamic mapped related products
-  const mappedRelatedProducts = useMemo(() => {
-    return relatedProducts.map((p) => {
-      const minPrice = p.minifiedVariants && p.minifiedVariants.length > 0
-        ? p.minifiedVariants[0].price
-        : 1230000;
-      const formattedPrice = minPrice.toLocaleString("vi-VN") + "đ";
-
-      const imgUrl = p.mainImageUrl || getProductImage(p.slug || p._id);
-
-      let tone: "default" | "pink" = "default";
-      let label = "";
-      if (p.tags && p.tags.length > 0) {
-        if (p.tags[0] === "ban-chay") label = "Bán Chạy";
-        else if (p.tags[0] === "yeu-thich") {
-          label = "Yêu Thích";
-          tone = "pink";
-        } else if (p.tags[0] === "khuyen-mai") {
-          label = "Giảm Giá";
-          tone = "pink";
-        } else label = "Mới";
-      }
-
-      return {
-        id: p.slug || p._id,
-        name: p.name,
-        description: p.description,
-        price: formattedPrice,
-        imageUrl: imgUrl,
-        imageAlt: p.name,
-        badge: label ? { label, tone } : undefined,
-        rating: p.reviewStats?.ratingAverage ?? 5,
-      };
-    });
-  }, [relatedProducts]);
 
   // Fallback to SIMILAR_PRODUCTS if related list is empty
   const SIMILAR_PRODUCTS = [
