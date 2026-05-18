@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode, Navigation, Thumbs, EffectFade } from "swiper/modules";
 
@@ -12,21 +11,26 @@ import "swiper/css/effect-fade";
 
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { ProductRowSection } from "@/components/sections/ProductRowSection";
-import { AppDispatch, RootState } from "@/store";
-import { fetchProductById, fetchProductVariants, clearSelectedProduct } from "@/features/catalog/catalogSlice";
+import {
+  fetchProductById,
+  fetchProductVariants,
+  fetchRelatedProducts,
+  clearSelectedProduct,
+} from "@/features/catalog/catalogSlice";
 import { addToCart } from "@/features/cart/cartSlice";
 import { getProductImage, formatVND } from "./ProductList";
 import { images } from "@/lib/images";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const { products: imgProducts } = images;
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
-  const { selectedProduct, selectedVariants, loading } = useSelector(
-    (state: RootState) => state.catalog
+  const { selectedProduct, selectedVariants, relatedProducts, loading } = useAppSelector(
+    (state) => state.catalog
   );
 
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
@@ -37,11 +41,12 @@ export function ProductDetail() {
   // Tải chi tiết sản phẩm và biến thể
   useEffect(() => {
     if (id) {
-      dispatch(fetchProductById(id));
-      dispatch(fetchProductVariants(id));
+      void dispatch(fetchProductById(id));
+      void dispatch(fetchProductVariants(id));
+      void dispatch(fetchRelatedProducts(id));
     }
     return () => {
-      dispatch(clearSelectedProduct());
+      void dispatch(clearSelectedProduct());
     };
   }, [id, dispatch]);
 
@@ -103,7 +108,43 @@ export function ProductDetail() {
     }, 1200);
   };
 
-  // Mock sản phẩm tương tự
+  // Dynamic mapped related products
+  const mappedRelatedProducts = useMemo(() => {
+    return relatedProducts.map((p) => {
+      const minPrice = p.minifiedVariants && p.minifiedVariants.length > 0
+        ? p.minifiedVariants[0].price
+        : 1230000;
+      const formattedPrice = minPrice.toLocaleString("vi-VN") + "đ";
+
+      const imgUrl = p.mainImageUrl || getProductImage(p.slug || p._id);
+
+      let tone: "default" | "pink" = "default";
+      let label = "";
+      if (p.tags && p.tags.length > 0) {
+        if (p.tags[0] === "ban-chay") label = "Bán Chạy";
+        else if (p.tags[0] === "yeu-thich") {
+          label = "Yêu Thích";
+          tone = "pink";
+        } else if (p.tags[0] === "khuyen-mai") {
+          label = "Giảm Giá";
+          tone = "pink";
+        } else label = "Mới";
+      }
+
+      return {
+        id: p.slug || p._id,
+        name: p.name,
+        description: p.description,
+        price: formattedPrice,
+        imageUrl: imgUrl,
+        imageAlt: p.name,
+        badge: label ? { label, tone } : undefined,
+        rating: p.reviewStats?.ratingAverage ?? 5,
+      };
+    });
+  }, [relatedProducts]);
+
+  // Fallback to SIMILAR_PRODUCTS if related list is empty
   const SIMILAR_PRODUCTS = [
     {
       id: "blush-whisper",
@@ -134,6 +175,8 @@ export function ProductDetail() {
       rating: 5,
     },
   ];
+
+  const productsToRender = mappedRelatedProducts.length > 0 ? mappedRelatedProducts : SIMILAR_PRODUCTS;
 
   return (
     <div className="min-h-screen bg-lavender-mist pt-24 pb-20">
@@ -356,7 +399,7 @@ export function ProductDetail() {
           <ProductRowSection
             title="Sản phẩm tương tự"
             subtitle="Có thể bạn sẽ yêu thích những thiết kế cùng bộ sưu tập."
-            products={SIMILAR_PRODUCTS}
+            products={productsToRender}
           />
         </div>
 

@@ -4,6 +4,7 @@ import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { AuthSocialOAuthSection } from "@/components/auth/AuthSocialOAuthSection";
 import { clearLoginError, login } from "@/features/auth/authSlice";
+import { fetchProfile } from "@/features/profile/profileSlice";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
@@ -37,6 +38,7 @@ export function Login() {
               e.preventDefault();
               const result = await dispatch(login({ email: email.trim(), password }));
               if (login.fulfilled.match(result)) {
+                await dispatch(fetchProfile());
                 const to = result.payload.redirectUrl ?? "/";
                 navigate(to, { replace: true });
               }

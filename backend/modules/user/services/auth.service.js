@@ -53,17 +53,33 @@ export const verifyRegistrationOtp = async (email, otp) => {
   return { message: 'Xác minh email thành công. Tài khoản đã được kích hoạt.' };
 };
 
+// ─── Helper function to throw error with status ───────────────────────────────
+const throwError = (msg, status = 400) => {
+  const err = new Error(msg);
+  err.status = status;
+  throw err;
+};
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 export const loginUser = async (email, password) => {
-  const user = await User.findOne({ email });
-  if (!user) throw new Error('Không tìm thấy người dùng');
-
-  if (user.status !== UserStatus.ACTIVE) {
-    throw new Error('Tài khoản chưa được kích hoạt hoặc đã bị khóa');
+  if (!email || !password) {
+    throwError('Email và mật khẩu là bắt buộc', 400);
   }
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
-  if (!isMatch) throw new Error('Sai mật khẩu');
+  const user = await User.findOne({ email });
+  if (!user) throwError('Không tìm thấy người dùng', 404);
+
+  if (user.status !== UserStatus.ACTIVE) {
+    throwError('Tài khoản chưa được kích hoạt hoặc đã bị khóa', 403);
+  }
+
+  const hash = user.passwordHash || user.password;
+  if (!hash) {
+    throwError('Tài khoản này có lỗi dữ liệu (thiếu mật khẩu). Vui lòng liên hệ hỗ trợ.', 500);
+  }
+
+  const isMatch = await bcrypt.compare(password, hash);
+  if (!isMatch) throwError('Sai mật khẩu', 401);
 
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);

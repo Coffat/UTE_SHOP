@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AppDispatch, RootState } from "@/store";
-import { fetchProducts } from "@/features/catalog/catalogSlice";
+import { fetchProducts, BackendProduct } from "@/features/catalog/catalogSlice";
 import { images } from "@/lib/images";
 
 const { products: imgProducts } = images;

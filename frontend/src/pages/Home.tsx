@@ -12,8 +12,14 @@ import { fetchHomeProducts, BackendProduct } from "@/features/catalog/catalogSli
 
 const { products } = images;
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+const formatPrice = (price: any) => {
+  let val = 0;
+  if (typeof price === 'number') val = price;
+  else if (typeof price === 'string') val = parseFloat(price);
+  else if (price && price.$numberDecimal) val = parseFloat(price.$numberDecimal);
+  
+  if (isNaN(val)) val = 0;
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 };
 
 const mapToUI = (p: BackendProduct, fallbackImage: string): Product => {

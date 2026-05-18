@@ -43,7 +43,7 @@ export const login = createAsyncThunk<
   { rejectValue: string }
 >("auth/login", async (credentials, { rejectWithValue }) => {
   try {
-    const { data } = await api.post<LoginResponse>("/api/auth/login", credentials);
+    const { data } = await api.post<LoginResponse>("/api/v1/auth/login", credentials);
     if (!data.success) {
       return rejectWithValue(data.message ?? "Đăng nhập thất bại");
     }
@@ -64,7 +64,7 @@ export const registerUser = createAsyncThunk<
   { rejectValue: string }
 >("auth/registerUser", async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await api.post<MessageResponse>("/api/auth/register", payload);
+    const { data } = await api.post<MessageResponse>("/api/v1/auth/register", payload);
     if (!data.success) {
       return rejectWithValue(data.message ?? "Đăng ký thất bại");
     }
@@ -80,7 +80,7 @@ export const verifyRegistrationOtp = createAsyncThunk<
   { rejectValue: string }
 >("auth/verifyRegistrationOtp", async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await api.post<MessageResponse>("/api/auth/verify-otp", payload);
+    const { data } = await api.post<MessageResponse>("/api/v1/auth/verify-otp", payload);
     if (!data.success) {
       return rejectWithValue(data.message ?? "Xác minh OTP thất bại");
     }
@@ -96,7 +96,7 @@ export const forgotPassword = createAsyncThunk<
   { rejectValue: string }
 >("auth/forgotPassword", async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await api.post<MessageResponse>("/api/auth/forgot-password", payload);
+    const { data } = await api.post<MessageResponse>("/api/v1/auth/forgot-password", payload);
     if (!data.success) {
       return rejectWithValue(data.message ?? "Gửi email thất bại");
     }
@@ -112,7 +112,7 @@ export const resetPassword = createAsyncThunk<
   { rejectValue: string }
 >("auth/resetPassword", async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await api.post<MessageResponse>("/api/auth/reset-password", payload);
+    const { data } = await api.post<MessageResponse>("/api/v1/auth/reset-password", payload);
     if (!data.success) {
       return rejectWithValue(data.message ?? "Đặt lại mật khẩu thất bại");
     }

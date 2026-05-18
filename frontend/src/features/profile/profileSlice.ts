@@ -125,6 +125,56 @@ export const updateProfile = createAsyncThunk<
   }
 });
 
+export type OrderItemDto = {
+  _id: string;
+  productVariant: string | {
+    _id: string;
+    sku: string;
+    sizeName?: string;
+    price: number;
+  };
+  quantity: number;
+  unitPrice: number;
+  snapshotName: string;
+  subtotal: number;
+};
+
+export type OrderDto = {
+  _id: string;
+  orderCode: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  items: OrderItemDto[];
+};
+
+type OrdersResponse = {
+  success: boolean;
+  data?: {
+    items: OrderDto[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+  message?: string;
+};
+
+export const fetchUserOrders = createAsyncThunk<
+  OrderDto[],
+  void,
+  { rejectValue: string }
+>("profile/fetchUserOrders", async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get<OrdersResponse>("/api/v1/orders");
+    if (!data.success || !data.data) {
+      return rejectWithValue(data.message ?? "Không tải được lịch sử đơn hàng");
+    }
+    return data.data.items;
+  } catch (err) {
+    return rejectWithValue(rejectFromAxios(err, "Không tải được lịch sử đơn hàng"));
+  }
+});
+
 type ProfileState = {
   profile: UserProfileDto | null;
   fetchStatus: ProfileFetchStatus;
@@ -132,6 +182,9 @@ type ProfileState = {
   saveStatus: ProfileSaveStatus;
   saveError: string | null;
   saveMessage: string | null;
+  orders: OrderDto[];
+  ordersStatus: "idle" | "loading" | "succeeded" | "failed";
+  ordersError: string | null;
 };
 
 const initialState: ProfileState = {
@@ -141,6 +194,9 @@ const initialState: ProfileState = {
   saveStatus: "idle",
   saveError: null,
   saveMessage: null,
+  orders: [],
+  ordersStatus: "idle",
+  ordersError: null,
 };
 
 const profileSlice = createSlice({
@@ -161,6 +217,9 @@ const profileSlice = createSlice({
       state.saveStatus = "idle";
       state.saveError = null;
       state.saveMessage = null;
+      state.orders = [];
+      state.ordersStatus = "idle";
+      state.ordersError = null;
     },
   },
   extraReducers(builder) {
@@ -193,9 +252,23 @@ const profileSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.saveStatus = "failed";
         state.saveError = action.payload ?? "Cập nhật thất bại";
+      })
+      .addCase(fetchUserOrders.pending, (state) => {
+        state.ordersStatus = "loading";
+        state.ordersError = null;
+      })
+      .addCase(fetchUserOrders.fulfilled, (state, action) => {
+        state.ordersStatus = "succeeded";
+        state.ordersError = null;
+        state.orders = action.payload;
+      })
+      .addCase(fetchUserOrders.rejected, (state, action) => {
+        state.ordersStatus = "failed";
+        state.ordersError = action.payload ?? "Không tải được lịch sử đơn hàng";
       });
   },
 });
 
 export const { clearProfileErrors, clearSaveMessage, resetProfile } = profileSlice.actions;
 export const profileReducer = profileSlice.reducer;
+

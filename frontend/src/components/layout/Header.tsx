@@ -112,13 +112,13 @@ export function Header() {
                 <span className="hidden sm:inline">Đăng nhập</span>
               </Link>
             )}
-            <button
-              type="button"
+            <Link
+              to={profile ? (profile.role === "admin" ? "/admin/profile/favorites" : "/user/profile/favorites") : "/login"}
               aria-label="Danh sách yêu thích"
               className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
             >
               <MaterialIcon name="favorite" className="text-[22px]" />
-            </button>
+            </Link>
             <Link
               to="/cart"
               aria-label="Giỏ hàng"

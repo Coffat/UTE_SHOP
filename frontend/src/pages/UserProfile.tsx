@@ -7,6 +7,7 @@ import {
   clearProfileErrors,
   clearSaveMessage,
   fetchProfile,
+  fetchUserOrders,
   UNAUTH,
   updateProfile,
 } from "@/features/profile/profileSlice";
@@ -29,19 +30,6 @@ const quickActions = [
   { label: "Cài đặt thông báo", icon: "notifications" },
 ] as const;
 
-const statCards = [
-  { title: "Đơn hàng", value: "24", link: "Xem chi tiết", icon: "shopping_bag", tone: "text-[#8b6bff]" },
-  { title: "Sản phẩm yêu thích", value: "18", link: "Xem danh sách", icon: "favorite", tone: "text-[#ef74b8]" },
-  { title: "Điểm tích lũy", value: "1.250", link: "Xem chi tiết", icon: "redeem", tone: "text-[#54b398]" },
-  { title: "Mã giảm giá", value: "3", link: "Xem mã của tôi", icon: "sell", tone: "text-[#9a7bef]" },
-] as const;
-
-const recentOrders = [
-  { name: "Lavender Dream", date: "12/05/2025", status: "Đã giao", price: "650.000đ" },
-  { name: "Sweet Pink Roses", date: "28/04/2025", status: "Đã giao", price: "750.000đ" },
-  { name: "Pure White Lily", date: "15/04/2025", status: "Đã hủy", price: "480.000đ" },
-] as const;
-
 function formatJoinDate(dateStr?: string) {
   if (!dateStr) {
     return "--/--/----";
@@ -62,6 +50,9 @@ export function UserProfile() {
   const saveError = useAppSelector((s) => s.profile.saveError);
   const saveMessage = useAppSelector((s) => s.profile.saveMessage);
 
+  const orders = useAppSelector((s) => s.profile.orders);
+  const ordersStatus = useAppSelector((s) => s.profile.ordersStatus);
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -73,6 +64,7 @@ export function UserProfile() {
 
   useEffect(() => {
     void dispatch(fetchProfile());
+    void dispatch(fetchUserOrders());
   }, [dispatch]);
 
   useEffect(() => {
@@ -99,6 +91,45 @@ export function UserProfile() {
     () => (profile?.role === "admin" ? "VIP Admin" : "VIP"),
     [profile?.role]
   );
+
+  const totalSpent = useMemo(() => {
+    return orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  }, [orders]);
+
+  const dynamicPoints = useMemo(() => {
+    return Math.round(totalSpent / 1000).toLocaleString("vi-VN");
+  }, [totalSpent]);
+
+  const dynamicStatCards = useMemo(() => [
+    { title: "Đơn hàng", value: orders.length.toString(), link: "Xem chi tiết", icon: "shopping_bag", tone: "text-[#8b6bff]" },
+    { title: "Sản phẩm yêu thích", value: "18", link: "Xem danh sách", icon: "favorite", tone: "text-[#ef74b8]" },
+    { title: "Điểm tích lũy", value: dynamicPoints, link: "Xem chi tiết", icon: "redeem", tone: "text-[#54b398]" },
+    { title: "Mã giảm giá", value: "3", link: "Xem mã của tôi", icon: "sell", tone: "text-[#9a7bef]" },
+  ], [orders.length, dynamicPoints]);
+
+  const recentOrdersList = useMemo(() => {
+    return orders.slice(0, 3).map((o) => {
+      const itemsSummary = o.items && o.items.length > 0
+        ? o.items.map((item: any) => item.snapshotName).join(", ")
+        : "Đơn hàng hoa tươi";
+      const orderDate = new Date(o.createdAt).toLocaleDateString("vi-VN");
+      const orderPrice = Number(o.totalAmount || 0).toLocaleString("vi-VN") + "đ";
+
+      // 4-state standard matching DB: PENDING, DELIVERING, COMPLETED, CANCELLED
+      let dbStatus = o.status || "PENDING";
+      if (dbStatus === "CONFIRMED" || dbStatus === "READY") {
+        dbStatus = "PENDING";
+      }
+
+      return {
+        id: o._id,
+        name: itemsSummary,
+        date: orderDate,
+        status: dbStatus,
+        price: orderPrice,
+      };
+    });
+  }, [orders]);
 
   return (
     <section className="mx-auto w-full max-w-[1440px] px-margin-mobile pt-28 pb-16 md:max-w-[1600px] md:px-margin-desktop md:pt-32 lg:pt-36 2xl:max-w-[1760px] 3xl:max-w-[1920px]">
@@ -220,7 +251,7 @@ export function UserProfile() {
                       <MaterialIcon name="card_giftcard" className="text-[16px]" />
                       Điểm tích lũy
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-deep-plum">1.250 điểm</p>
+                    <p className="mt-1 text-sm font-semibold text-deep-plum">{dynamicPoints} điểm</p>
                   </div>
                 </div>
               </div>
@@ -346,7 +377,7 @@ export function UserProfile() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {statCards.map((card) => (
+            {dynamicStatCards.map((card) => (
               <article
                 key={card.title}
                 className="glass-panel rounded-[20px] p-4 shadow-[0_10px_30px_rgba(168,85,247,0.04)]"
@@ -375,31 +406,60 @@ export function UserProfile() {
                   Xem tất cả
                 </button>
               </div>
-              <ul className="space-y-3">
-                {recentOrders.map((order) => (
-                  <li
-                    key={order.name}
-                    className="flex items-center gap-3 rounded-2xl border border-white/60 bg-pure-ivory/65 px-4 py-3"
+
+              {ordersStatus === "loading" ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  <p className="mt-2 text-sm text-dusk-gray">Đang tải đơn hàng...</p>
+                </div>
+              ) : recentOrdersList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="flex size-14 items-center justify-center rounded-full bg-pure-ivory border border-white/60 text-dusk-gray/50 shadow-inner">
+                    <MaterialIcon name="local_mall" className="text-[28px]" />
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-midnight-purple">Bạn chưa có đơn hàng nào</p>
+                  <p className="text-xs text-dusk-gray mt-1 max-w-[200px]">Hãy chọn những bó hoa tươi thắm nhất gửi tặng người thương nhé!</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/products")}
+                    className="mt-4 rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition"
                   >
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-soft-amethyst/60 text-primary">
-                      <MaterialIcon name="inventory_2" className="text-[20px]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-midnight-purple">{order.name}</p>
-                      <p className="text-xs text-dusk-gray">{order.date}</p>
-                    </div>
-                    <span
-                      className={`text-xs font-semibold ${
-                        order.status === "Đã giao" ? "text-[#2a9d66]" : "text-dusk-gray"
-                      }`}
+                    Mua sắm ngay
+                  </button>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {recentOrdersList.map((order) => (
+                    <li
+                      key={order.id}
+                      className="flex items-center gap-3 rounded-2xl border border-white/60 bg-pure-ivory/65 px-4 py-3"
                     >
-                      {order.status}
-                    </span>
-                    <p className="text-sm font-semibold text-deep-plum">{order.price}</p>
-                    <MaterialIcon name="chevron_right" className="text-[18px] text-dusk-gray" />
-                  </li>
-                ))}
-              </ul>
+                      <div className="flex size-10 items-center justify-center rounded-xl bg-soft-amethyst/60 text-primary">
+                        <MaterialIcon name="inventory_2" className="text-[20px]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-midnight-purple">{order.name}</p>
+                        <p className="text-xs text-dusk-gray">{order.date}</p>
+                      </div>
+                      <span
+                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                          order.status === "COMPLETED"
+                            ? "text-[#2a9d66] bg-[#2a9d66]/10"
+                            : order.status === "DELIVERING"
+                            ? "text-[#8b6bff] bg-[#8b6bff]/10"
+                            : order.status === "CANCELLED"
+                            ? "text-[#ef4444] bg-[#ef4444]/10"
+                            : "text-[#d97706] bg-[#d97706]/10"
+                        }`}
+                      >
+                        {order.status}
+                      </span>
+                      <p className="text-sm font-semibold text-deep-plum">{order.price}</p>
+                      <MaterialIcon name="chevron_right" className="text-[18px] text-dusk-gray" />
+                    </li>
+                  ))}
+                </ul>
+              )}
               <button type="button" className="mt-4 text-sm font-semibold text-primary">
                 Xem tất cả đơn hàng
               </button>
