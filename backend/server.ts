@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
 import v1Router from './routes/index.js';
+import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
 
 // Load environment variables BEFORE anything else

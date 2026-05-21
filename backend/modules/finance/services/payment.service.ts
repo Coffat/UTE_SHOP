@@ -1,7 +1,7 @@
 import { ClientSession } from 'mongoose';
 import Payment, { IPayment, MOPayment, CODPayment, CashPayment } from '../models/Payment.js';
 import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
-import OrderStatus from '../../../shared/enums/OrderStatus.js';
+import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
 import { PaymentStrategyFactory } from './strategies/PaymentStrategyFactory.js';
 import mongoose from 'mongoose';
 
@@ -57,33 +57,19 @@ const handleWebhookWithoutTransaction = async (payment: any, paymentMethod: stri
   await payment.save();
 
   if (status === PaymentStatus.SUCCESS) {
-    await mongoose.model('Order').findByIdAndUpdate(
-      payment.order,
-      {
-        status: OrderStatus.CONFIRMED,
-        $push: {
-          statusHistory: {
-            status: OrderStatus.CONFIRMED,
-            note: `Payment completed via ${paymentMethod}. Transaction ID: ${transactionId}`,
-            timestamp: new Date(),
-          },
-        },
-      }
-    );
+    await eventBus.emitAsync(AppEvent.PAYMENT_SUCCESS, {
+      orderId: payment.order.toString(),
+      paymentId: payment._id.toString(),
+      paymentMethod,
+      transactionId,
+    });
   } else if (status === PaymentStatus.FAILED) {
-    await mongoose.model('Order').findByIdAndUpdate(
-      payment.order,
-      {
-        status: OrderStatus.CANCELLED,
-        $push: {
-          statusHistory: {
-            status: OrderStatus.CANCELLED,
-            note: `Payment failed via ${paymentMethod}.`,
-            timestamp: new Date(),
-          },
-        },
-      }
-    );
+    await eventBus.emitAsync(AppEvent.PAYMENT_FAILED, {
+      orderId: payment.order.toString(),
+      paymentId: payment._id.toString(),
+      paymentMethod,
+      reason: `Payment failed via ${paymentMethod}.`,
+    });
   }
   return payment;
 };
@@ -116,37 +102,23 @@ export const handleWebhook = async (paymentMethod: string, payload: any) => {
       payment.transactionId = transactionId || null;
       await payment.save({ session });
 
-      // 2. Update associated Order status directly to prevent circular dependency imports
+      // 2. Emit event inside the transaction session
       if (status === PaymentStatus.SUCCESS) {
-        await mongoose.model('Order').findByIdAndUpdate(
-          payment.order,
-          {
-            status: OrderStatus.CONFIRMED,
-            $push: {
-              statusHistory: {
-                status: OrderStatus.CONFIRMED,
-                note: `Payment completed via ${paymentMethod}. Transaction ID: ${transactionId}`,
-                timestamp: new Date(),
-              },
-            },
-          },
-          { session }
-        );
+        await eventBus.emitAsync(AppEvent.PAYMENT_SUCCESS, {
+          orderId: payment.order.toString(),
+          paymentId: payment._id.toString(),
+          paymentMethod,
+          transactionId,
+          session,
+        });
       } else if (status === PaymentStatus.FAILED) {
-        await mongoose.model('Order').findByIdAndUpdate(
-          payment.order,
-          {
-            status: OrderStatus.CANCELLED,
-            $push: {
-              statusHistory: {
-                status: OrderStatus.CANCELLED,
-                note: `Payment failed via ${paymentMethod}.`,
-                timestamp: new Date(),
-              },
-            },
-          },
-          { session }
-        );
+        await eventBus.emitAsync(AppEvent.PAYMENT_FAILED, {
+          orderId: payment.order.toString(),
+          paymentId: payment._id.toString(),
+          paymentMethod,
+          reason: `Payment failed via ${paymentMethod}.`,
+          session,
+        });
       }
 
       await session.commitTransaction();

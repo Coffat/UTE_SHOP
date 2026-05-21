@@ -340,21 +340,33 @@ export const cancelOrderWithoutTransaction = async (
   return order;
 };
 
+export const confirmOrderPayment = async (
+  orderId: string,
+  paymentMethod: string,
+  transactionId?: string,
+  session?: ClientSession
+): Promise<IOrder> => {
+  const order = await Order.findById(orderId).session(session || null);
+  if (!order) throw new Error('Không tìm thấy đơn hàng');
+
+  order.status = OrderStatus.CONFIRMED;
+  order.statusHistory.push({
+    status: OrderStatus.CONFIRMED,
+    note: `Payment completed via ${paymentMethod}.${transactionId ? ` Transaction ID: ${transactionId}` : ''}`,
+    changedBy: null as any
+  });
+
+  await order.save(session ? { session } : {});
+  return order;
+};
+
 export const cancelOrder = async (
   orderId: string,
   reason: string,
-  cancelledById: string
+  cancelledById: string,
+  session?: ClientSession
 ): Promise<IOrder> => {
-  let session: ClientSession | undefined;
-  try {
-    session = await mongoose.startSession();
-    session.startTransaction();
-  } catch (sessionErr: any) {
-    console.warn('⚠️ Standard MongoDB without replica set, bypassing session creation in cancelOrder:', sessionErr.message);
-    return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
-  }
-
-  try {
+  if (session) {
     const order = await Order.findById(orderId).populate('items.productVariant').session(session);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
@@ -371,12 +383,41 @@ export const cancelOrder = async (
       await increaseStock((item.productVariant as any)._id, item.quantity, cancelledById, reason, session);
     }
 
-    await session.commitTransaction();
+    return order;
+  }
+
+  let newSession: ClientSession | undefined;
+  try {
+    newSession = await mongoose.startSession();
+    newSession.startTransaction();
+  } catch (sessionErr: any) {
+    console.warn('⚠️ Standard MongoDB without replica set, bypassing session creation in cancelOrder:', sessionErr.message);
+    return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
+  }
+
+  try {
+    const order = await Order.findById(orderId).populate('items.productVariant').session(newSession);
+    if (!order) throw new Error('Không tìm thấy đơn hàng');
+
+    if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
+      throw new Error('Không thể hủy đơn hàng ở trạng thái này');
+    }
+
+    order.status = OrderStatus.CANCELLED;
+    order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById as any });
+    await order.save({ session: newSession });
+
+    // Hoàn trả kho
+    for (const item of order.items) {
+      await increaseStock((item.productVariant as any)._id, item.quantity, cancelledById, reason, newSession);
+    }
+
+    await newSession.commitTransaction();
     return order;
   } catch (err: any) {
-    if (session) {
+    if (newSession) {
       try {
-        await session.abortTransaction();
+        await newSession.abortTransaction();
       } catch (abortErr) {
         // ignore
       }
@@ -384,12 +425,12 @@ export const cancelOrder = async (
     const isTransactionError = err.message?.includes('replica set') || err.message?.includes('Transaction numbers');
     if (isTransactionError) {
       console.warn('⚠️ Replica set transaction error caught in cancelOrder. Falling back...');
-      if (session) session.endSession();
+      if (newSession) newSession.endSession();
       return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
     }
     throw err;
   } finally {
-    if (session) session.endSession();
+    if (newSession) newSession.endSession();
   }
 };
 
