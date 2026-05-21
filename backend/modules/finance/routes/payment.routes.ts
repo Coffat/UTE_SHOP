@@ -21,7 +21,7 @@ router.get(
   })
 );
 
-// PATCH /api/v1/payments/:id/confirm – xác nhận thanh toán
+// PATCH /api/v1/payments/:id/confirm – xác nhận thanh toán (admin/staff)
 router.patch(
   '/:id/confirm',
   authenticate, authorize('ADMIN', 'SALES', 'STORE_STAFF'),
@@ -32,6 +32,28 @@ router.patch(
       res, 200, 'Xác nhận thanh toán thành công',
       await paymentService.confirmPayment(id, req.body.transactionId)
     );
+  })
+);
+
+// POST /api/v1/payments/:id/process – xử lý thanh toán (MOMO tạo link redirect, COD xử lý tại chỗ)
+router.post(
+  '/:id/process',
+  authenticate,
+  param('id').isMongoId().withMessage('Payment ID không hợp lệ'),
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const result = await paymentService.processPayment(id, req.body);
+    sendSuccess(res, 200, 'Xử lý thanh toán thành công', result);
+  })
+);
+
+// POST /api/v1/payments/momo-ipn – IPN Webhook callback từ MoMo (public)
+router.post(
+  '/momo-ipn',
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.handleWebhook('MOMO', req.body);
+    sendSuccess(res, 200, 'IPN received and processed successfully', result);
   })
 );
 
