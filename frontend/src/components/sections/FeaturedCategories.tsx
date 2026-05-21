@@ -6,12 +6,12 @@ import { images } from "@/lib/images";
 const { categories } = images.home;
 
 const ITEMS = [
-  { label: "Sinh nhật", href: "#", image: categories.birthday },
-  { label: "Khai trương", href: "#", image: categories.opening },
-  { label: "Tình yêu", href: "#", image: categories.love },
-  { label: "Chúc mừng", href: "#", image: categories.congrats },
-  { label: "An ủi", href: "#", image: categories.sympathy },
-  { label: "Đặt theo yêu cầu", href: "#", image: categories.custom },
+  { label: "Sinh nhật", href: "/category/hoa-ky-niem", image: categories.birthday },
+  { label: "Khai trương", href: "/category/hoa-chuc-mung", image: categories.opening },
+  { label: "Tình yêu", href: "/category/hoa-ky-niem", image: categories.love },
+  { label: "Chúc mừng", href: "/category/hoa-chuc-mung", image: categories.congrats },
+  { label: "An ủi", href: "/category/hoa-ky-niem", image: categories.sympathy },
+  { label: "Đặt theo yêu cầu", href: "/category/tiec-va-su-kien", image: categories.custom },
 ] as const;
 
 export function FeaturedCategories() {

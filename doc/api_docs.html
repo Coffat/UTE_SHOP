@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UTESHOP API Documentation 🚀</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Premium Custom Styling (Tailwind-like variables but vanilla CSS control) -->
+  <style>
+    :root {
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      /* Dark Theme HSL Palette */
+      --bg-base: 220 20% 8%;
+      --bg-surface: 220 20% 12%;
+      --bg-surface-elevated: 220 20% 16%;
+      --border-color: 220 15% 20%;
+      
+      --text-primary: 0 0% 98%;
+      --text-secondary: 220 10% 70%;
+      --text-muted: 220 10% 50%;
+      
+      --color-primary: 260 85% 65%;
+      --color-primary-glow: rgba(139, 92, 246, 0.15);
+      --color-success: 142 70% 50%;
+      --color-info: 217 90% 60%;
+      --color-warning: 38 90% 55%;
+      --color-danger: 350 80% 60%;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--border-color)) transparent;
+    }
+    
+    /* Scrollbars custom */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--border-color));
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--text-muted));
+    }
+
+    body {
+      background-color: hsl(var(--bg-base));
+      color: hsl(var(--text-primary));
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout structure */
+    .sidebar {
+      width: 320px;
+      background-color: hsl(var(--bg-surface));
+      border-right: 1px solid hsl(var(--border-color));
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      flex-shrink: 0;
+    }
+    
+    .main-content {
+      flex-grow: 1;
+      height: 100%;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      background-color: hsl(var(--bg-base));
+      position: relative;
+    }
+
+    /* Sidebar Header */
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid hsl(var(--border-color));
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .logo-badge {
+      background: linear-gradient(135deg, hsl(var(--color-primary)) 0%, #6366f1 100%);
+      color: white;
+      font-weight: 700;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 12px var(--color-primary-glow);
+    }
+    
+    .logo-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #fff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .logo-text p {
+      font-size: 11px;
+      color: hsl(var(--text-muted));
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Sidebar Search */
+    .search-box {
+      position: relative;
+    }
+    
+    .search-input {
+      width: 100%;
+      background-color: hsl(var(--bg-surface-elevated));
+      border: 1px solid hsl(var(--border-color));
+      color: hsl(var(--text-primary));
+      padding: 10px 16px 10px 36px;
+      border-radius: 8px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: hsl(var(--color-primary));
+      box-shadow: 0 0 0 2px var(--color-primary-glow);
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: hsl(var(--text-muted));
+      pointer-events: none;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+    }
+    
+    .menu-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: hsl(var(--text-muted));
+      padding: 12px 12px 6px;
+      font-weight: 600;
+    }
+    
+    .menu-list {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+    
+    .menu-item a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      color: hsl(var(--text-secondary));
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      margin-bottom: 2px;
+    }
+    
+    .menu-item a:hover {
+      background-color: hsl(var(--bg-surface-elevated));
+      color: hsl(var(--text-primary));
+    }
+    
+    .menu-item.active a {
+      background-color: var(--color-primary-glow);
+      color: hsl(var(--color-primary));
+      font-weight: 600;
+    }
+
+    .method-tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    
+    .method-tag.get { background-color: rgba(16, 185, 129, 0.1); color: hsl(var(--color-success)); }
+    .method-tag.post { background-color: rgba(59, 130, 246, 0.1); color: hsl(var(--color-info)); }
+    .method-tag.put { background-color: rgba(245, 158, 11, 0.1); color: hsl(var(--color-warning)); }
+    .method-tag.patch { background-color: rgba(168, 85, 247, 0.1); color: #c084fc; }
+    .method-tag.delete { background-color: rgba(239, 68, 68, 0.1); color: hsl(var(--color-danger)); }
+
+    /* Main Content Styling */
+    .header-banner {
+      padding: 48px;
+      background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                  linear-gradient(to bottom, hsl(var(--bg-surface)) 0%, transparent 100%);
+      border-bottom: 1px solid hsl(var(--border-color));
+    }
+    
+    .header-banner h2 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    
+    .header-banner p {
+      color: hsl(var(--text-secondary));
+      max-width: 700px;
+      font-size: 16px;
+    }
+    
+    .base-url-card {
+      margin-top: 24px;
+      background-color: hsl(var(--bg-surface));
+      border: 1px solid hsl(var(--border-color));
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .base-url-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: hsl(var(--text-muted));
+      letter-spacing: 1px;
+    }
+    
+    .base-url-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: hsl(var(--color-primary));
+      font-weight: 600;
+    }
+
+    .docs-section {
+      padding: 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .section-heading {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid hsl(var(--border-color));
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .endpoint-card {
+      background-color: hsl(var(--bg-surface));
+      border: 1px solid hsl(var(--border-color));
+      border-radius: 12px;
+      margin-bottom: 32px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transition: border-color 0.2s ease;
+    }
+    
+    .endpoint-card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+    
+    /* Endpoint Header */
+    .endpoint-header {
+      padding: 20px 24px;
+      background-color: hsl(var(--bg-surface-elevated));
+      border-bottom: 1px solid hsl(var(--border-color));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .endpoint-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: hsl(var(--text-primary));
+    }
+    
+    .endpoint-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .meta-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background-color: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .meta-badge.auth-required {
+      background-color: rgba(245, 158, 11, 0.1);
+      color: hsl(var(--color-warning));
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+    
+    .meta-badge.role {
+      background-color: rgba(139, 92, 246, 0.1);
+      color: hsl(var(--color-primary));
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .meta-badge.public {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: hsl(var(--color-success));
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    /* Endpoint Body Layout */
+    .endpoint-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 250px;
+    }
+    
+    @media (max-width: 960px) {
+      .endpoint-body {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Left Details Panel */
+    .endpoint-details {
+      padding: 24px;
+      border-right: 1px solid hsl(var(--border-color));
+    }
+    
+    @media (max-width: 960px) {
+      .endpoint-details {
+        border-right: none;
+        border-bottom: 1px solid hsl(var(--border-color));
+      }
+    }
+    
+    .endpoint-description {
+      color: hsl(var(--text-secondary));
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .details-sub-heading {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: hsl(var(--text-muted));
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    
+    /* Parameter tables */
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 13.5px;
+    }
+    
+    .param-table th, .param-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .param-table th {
+      color: hsl(var(--text-muted));
+      font-weight: 600;
+      font-size: 12px;
+      padding-top: 0;
+    }
+    
+    .param-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: hsl(var(--color-primary));
+    }
+    
+    .param-type {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: hsl(var(--text-muted));
+    }
+    
+    .param-req {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 4px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    
+    .param-req.yes { background-color: rgba(239, 68, 68, 0.1); color: hsl(var(--color-danger)); }
+    .param-req.no { background-color: rgba(255,255,255,0.05); color: hsl(var(--text-muted)); }
+
+    /* Right Code Preview Panel */
+    .endpoint-code-preview {
+      background-color: rgb(11, 13, 17);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .code-tabs {
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .code-tab-btn {
+      background: none;
+      border: none;
+      color: hsl(var(--text-muted));
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    
+    .code-tab-btn:hover {
+      color: hsl(var(--text-primary));
+    }
+    
+    .code-tab-btn.active {
+      color: hsl(var(--color-primary));
+      background-color: rgba(139, 92, 246, 0.1);
+    }
+    
+    .code-container {
+      position: relative;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .code-block {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: #e2e8f0;
+      background-color: transparent;
+      border: none;
+      resize: none;
+      width: 100%;
+      flex-grow: 1;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    
+    .copy-btn {
+      position: absolute;
+      right: 4px;
+      top: -4px;
+      background-color: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      color: hsl(var(--text-secondary));
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    
+    .copy-btn:hover {
+      background-color: rgba(255,255,255,0.1);
+      color: hsl(var(--text-primary));
+    }
+    
+    .copy-btn:active {
+      transform: scale(0.95);
+    }
+    
+    /* Footer elements */
+    .docs-footer {
+      padding: 48px;
+      text-align: center;
+      border-top: 1px solid hsl(var(--border-color));
+      color: hsl(var(--text-muted));
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <div class="logo-badge">UT</div>
+        <div class="logo-text">
+          <h1>UTEShop API</h1>
+          <p>RESTful Core Services</p>
+        </div>
+      </div>
+      <div class="search-box">
+        <input type="text" id="route-search" class="search-input" placeholder="Tìm kiếm tài nguyên hoặc endpoint...">
+        <span class="search-icon">🔍</span>
+      </div>
+    </div>
+    
+    <div class="sidebar-menu">
+      <div class="menu-section-title">Authentication</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#auth-register"><span>Đăng ký</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#auth-otp"><span>Xác minh OTP</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#auth-login"><span>Đăng nhập</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#auth-forgot"><span>Quên mật khẩu</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#auth-reset"><span>Đặt lại mật khẩu</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#auth-logout"><span>Đăng xuất</span><span class="method-tag post">POST</span></a></li>
+      </ul>
+      
+      <div class="menu-section-title">Catalog (Sản phẩm)</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#catalog-list"><span>Danh sách sản phẩm</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#catalog-detail"><span>Chi tiết sản phẩm</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#catalog-related"><span>Sản phẩm liên quan</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#catalog-variants"><span>Danh sách biến thể</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#catalog-create"><span>Tạo sản phẩm</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#catalog-update"><span>Sửa sản phẩm</span><span class="method-tag put">PUT</span></a></li>
+      </ul>
+      
+      <div class="menu-section-title">Categories (Danh mục)</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#cat-list"><span>Danh sách danh mục</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#cat-detail"><span>Chi tiết danh mục</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#cat-create"><span>Tạo danh mục</span><span class="method-tag post">POST</span></a></li>
+      </ul>
+      
+      <div class="menu-section-title">User & Profile</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#user-get-profile"><span>Lấy Profile cá nhân</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#user-put-profile"><span>Sửa Profile cá nhân</span><span class="method-tag put">PUT</span></a></li>
+        <li class="menu-item"><a href="#user-get-favorites"><span>Lấy Yêu thích</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#user-add-favorite"><span>Thêm Yêu thích</span><span class="method-tag post">POST</span></a></li>
+      </ul>
+      
+      <div class="menu-section-title">Inventory (Kho hàng)</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#stock-get"><span>Mức tồn kho</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#stock-import"><span>Nhập hàng vào kho</span><span class="method-tag post">POST</span></a></li>
+      </ul>
+      
+      <div class="menu-section-title">Order (Đơn hàng)</div>
+      <ul class="menu-list">
+        <li class="menu-item"><a href="#order-list"><span>Danh sách đơn</span><span class="method-tag get">GET</span></a></li>
+        <li class="menu-item"><a href="#order-place"><span>Đặt hàng</span><span class="method-tag post">POST</span></a></li>
+        <li class="menu-item"><a href="#order-status"><span>Đổi trạng thái</span><span class="method-tag patch">PATCH</span></a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main API Documentation Content -->
+  <main class="main-content">
+    <div class="header-banner">
+      <h2>Tài liệu API UTESHOP 🌸</h2>
+      <p>Chào mừng đến với cổng tích hợp RESTful API chính thức của UTESHOP. Hệ thống được thiết kế theo mô hình Strangler Fig Pattern, hỗ trợ xác thực bằng HttpOnly Cookies + JWT và phân quyền theo cấp độ cụ thể.</p>
+      
+      <div class="base-url-card">
+        <span class="base-url-label">Môi trường thử nghiệm</span>
+        <span class="base-url-value">http://localhost:3000</span>
+      </div>
+    </div>
+    
+    <div class="docs-section">
+      
+      <!-- AUTHENTICATION SECTION -->
+      <h3 class="section-heading" id="section-auth">🔑 Module: Xác thực & Đăng nhập</h3>
+      
+      <!-- endpoint: Register -->
+      <div class="endpoint-card" id="auth-register">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/register</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge public">PUBLIC</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Đăng ký tài khoản người dùng mới. Hệ thống sẽ tạo tài khoản ở trạng thái chưa kích hoạt và gửi OTP xác minh qua Email.</p>
+            
+            <span class="details-sub-heading">Body Parameters (JSON)</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu dữ liệu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">fullName</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Họ tên đầy đủ của người dùng</td>
+                </tr>
+                <tr>
+                  <td class="param-name">email</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Email duy nhất của tài khoản</td>
+                </tr>
+                <tr>
+                  <td class="param-name">password</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Mật khẩu bảo mật (tối thiểu 6 ký tự)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">phone</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Số điện thoại liên hệ di động</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 201</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.post('/api/v1/auth/register', {
+  fullName: 'New User',
+  email: 'newuser@example.com',
+  password: 'password123',
+  phone: '0999888777'
+});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    &quot;fullName&quot;: &quot;New User&quot;,
+    &quot;email&quot;: &quot;newuser@example.com&quot;,
+    &quot;password&quot;: &quot;password123&quot;,
+    &quot;phone&quot;: &quot;0999888777&quot;
+  }'" data-response="{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Đăng ký thành công. Vui lòng check OTP trong email.&quot;
+}">api.post('/api/v1/auth/register', {
+  fullName: 'New User',
+  email: 'newuser@example.com',
+  password: 'password123',
+  phone: '0999888777'
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- endpoint: Verify OTP -->
+      <div class="endpoint-card" id="auth-otp">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/verify-otp</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge public">PUBLIC</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Kích hoạt tài khoản người dùng bằng mã OTP đã nhận từ hòm thư điện tử.</p>
+            
+            <span class="details-sub-heading">Body Parameters (JSON)</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu dữ liệu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">email</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Email cần xác minh kích hoạt</td>
+                </tr>
+                <tr>
+                  <td class="param-name">otp</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Mã OTP gồm 6 chữ số vừa nhận</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.post('/api/v1/auth/verify-otp', {
+  email: 'newuser@example.com',
+  otp: '123456'
+});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/verify-otp \
+  -H 'Content-Type: application/json' \
+  -d '{
+    &quot;email&quot;: &quot;newuser@example.com&quot;,
+    &quot;otp&quot;: &quot;123456&quot;
+  }'" data-response="{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Kích hoạt tài khoản thành công!&quot;
+}">api.post('/api/v1/auth/verify-otp', {
+  email: 'newuser@example.com',
+  otp: '123456'
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- endpoint: Login -->
+      <div class="endpoint-card" id="auth-login">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/login</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge public">PUBLIC</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Đăng nhập tài khoản. Nếu đúng, server phản hồi Token đã gắn sẵn trong cấu hình HttpOnly Cookie `accessToken` bảo mật cao chống XSS.</p>
+            
+            <span class="details-sub-heading">Body Parameters (JSON)</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu dữ liệu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">email</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Email đăng nhập tài khoản</td>
+                </tr>
+                <tr>
+                  <td class="param-name">password</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Mật khẩu của tài khoản</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.post('/api/v1/auth/login', {
+  email: 'vuthang@example.com',
+  password: 'password123'
+});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    &quot;email&quot;: &quot;vuthang@example.com&quot;,
+    &quot;password&quot;: &quot;password123&quot;
+  }'" data-response="{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Đăng nhập thành công&quot;,
+  &quot;redirectUrl&quot;: &quot;/user/profile&quot;
+}">api.post('/api/v1/auth/login', {
+  email: 'vuthang@example.com',
+  password: 'password123'
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- endpoint: Logout -->
+      <div class="endpoint-card" id="auth-logout">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/logout</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge auth-required">AUTH REQUIRED</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Hủy phiên hoạt động, xóa toàn bộ HttpOnly Cookies trên trình duyệt người dùng.</p>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.post('/api/v1/auth/logout');" data-curl="curl -X POST http://localhost:3000/api/v1/auth/logout \
+  -H 'Cookie: accessToken=...' \
+  -H 'Content-Type: application/json'" data-response="{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Đã đăng xuất thành công.&quot;
+}">api.post('/api/v1/auth/logout');</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATALOG PRODUCTS SECTION -->
+      <h3 class="section-heading" id="section-catalog">🌸 Module: Quản lý Sản phẩm & Danh mục</h3>
+      
+      <!-- endpoint: List Products -->
+      <div class="endpoint-card" id="catalog-list">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-path">/api/v1/products</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge public">PUBLIC</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Lấy danh sách các sản phẩm đang được bày bán. Cho phép lọc đa dạng theo danh mục, mức giá và phân trang.</p>
+            
+            <span class="details-sub-heading">Query Parameters</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">page</td>
+                  <td class="param-type">number</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Trang dữ liệu hiển thị (mặc định: 1)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">limit</td>
+                  <td class="param-type">number</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Số sản phẩm mỗi trang (mặc định: 12)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">categoryId</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Lọc sản phẩm theo MongoDB ID của Danh mục</td>
+                </tr>
+                <tr>
+                  <td class="param-name">search</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Từ khóa tìm kiếm theo tên sản phẩm</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.get('/api/v1/products', {
+  params: { page: 1, limit: 10, search: 'Lavender' }
+});" data-curl="curl -X GET 'http://localhost:3000/api/v1/products?page=1&limit=10&search=Lavender'" data-response="{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;_id&quot;: &quot;lavender-dream&quot;,
+        &quot;name&quot;: &quot;Bó Lavender Mộng Mơ&quot;,
+        &quot;slug&quot;: &quot;lavender-dream&quot;,
+        &quot;description&quot;: &quot;Bó hoa oải hương tươi tắn...&quot;,
+        &quot;reviewStats&quot;: { &quot;ratingAverage&quot;: 4.8, &quot;ratingCount&quot;: 124 }
+      }
+    ],
+    &quot;pagination&quot;: {
+      &quot;page&quot;: 1,
+      &quot;limit&quot;: 10,
+      &quot;total&quot;: 1,
+      &quot;totalPages&quot;: 1
+    }
+  }
+}">api.get('/api/v1/products', {
+  params: { page: 1, limit: 10, search: 'Lavender' }
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- endpoint: Get Product Detail -->
+      <div class="endpoint-card" id="catalog-detail">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-path">/api/v1/products/:id</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge public">PUBLIC</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Lấy chi tiết một sản phẩm theo ID hoặc Slug.</p>
+            
+            <span class="details-sub-heading">Path Parameters</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">id</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req yes">YES</span></td>
+                  <td>Mã ID MongoDB hoặc slug sản phẩm (vd: lavender-dream)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.get('/api/v1/products/lavender-dream');" data-curl="curl -X GET http://localhost:3000/api/v1/products/lavender-dream" data-response="{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;_id&quot;: &quot;lavender-dream&quot;,
+    &quot;name&quot;: &quot;Bó Lavender Mộng Mơ&quot;,
+    &quot;slug&quot;: &quot;lavender-dream&quot;,
+    &quot;description&quot;: &quot;Hoa tươi độc bản mang lại không gian dễ chịu...&quot;,
+    &quot;soldCount&quot;: 452
+  }
+}">api.get('/api/v1/products/lavender-dream');</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- USER PROFILE & FAVORITES -->
+      <h3 class="section-heading" id="section-users">👤 Module: Người dùng & Yêu thích</h3>
+      
+      <!-- endpoint: Get Profile -->
+      <div class="endpoint-card" id="user-get-profile">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-path">/api/v1/users/profile</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge auth-required">AUTH REQUIRED</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Lấy hồ sơ cá nhân của người dùng đã xác thực thông qua cookie phiên làm việc.</p>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.get('/api/v1/users/profile');" data-curl="curl -X GET http://localhost:3000/api/v1/users/profile \
+  -H 'Cookie: accessToken=...'" data-response="{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;_id&quot;: &quot;user-id-123&quot;,
+    &quot;email&quot;: &quot;vuthang@example.com&quot;,
+    &quot;fullName&quot;: &quot;Vũ Thắng&quot;,
+    &quot;phone&quot;: &quot;0999888777&quot;,
+    &quot;role&quot;: &quot;CUSTOMER&quot;
+  }
+}">api.get('/api/v1/users/profile');</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- endpoint: Put Profile -->
+      <div class="endpoint-card" id="user-put-profile">
+        <div class="endpoint-header">
+          <div class="endpoint-title-group">
+            <span class="method-tag put">PUT</span>
+            <span class="endpoint-path">/api/v1/users/profile</span>
+          </div>
+          <div class="endpoint-meta">
+            <span class="meta-badge auth-required">AUTH REQUIRED</span>
+            <span class="meta-badge role">CUSTOMER, ADMIN</span>
+          </div>
+        </div>
+        
+        <div class="endpoint-body">
+          <div class="endpoint-details">
+            <p class="endpoint-description">Cập nhật thông tin hồ sơ của tài khoản đang đăng nhập.</p>
+            
+            <span class="details-sub-heading">Body Parameters (JSON)</span>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Tham số</th>
+                  <th>Kiểu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">fullName</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Họ tên cập nhật mới</td>
+                </tr>
+                <tr>
+                  <td class="param-name">phone</td>
+                  <td class="param-type">string</td>
+                  <td><span class="param-req no">NO</span></td>
+                  <td>Số điện thoại mới</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="endpoint-code-preview">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
+              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
+            </div>
+            
+            <div class="code-container">
+              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+              <pre class="code-block" data-axios="api.put('/api/v1/users/profile', {
+  fullName: 'Vũ Thắng Updated',
+  phone: '0999888999'
+});" data-curl="curl -X PUT http://localhost:3000/api/v1/users/profile \
+  -H 'Cookie: accessToken=...' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    &quot;fullName&quot;: &quot;Vũ Thắng Updated&quot;,
+    &quot;phone&quot;: &quot;0999888999&quot;
+  }'" data-response="{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Cập nhật thông tin thành công.&quot;,
+  &quot;data&quot;: {
+    &quot;fullName&quot;: &quot;Vũ Thắng Updated&quot;,
+    &quot;phone&quot;: &quot;0999888999&quot;
+  }
+}">api.put('/api/v1/users/profile', {
+  fullName: 'Vũ Thắng Updated',
+  phone: '0999888999'
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    
+    <footer class="docs-footer">
+      <p>&copy; 2026 UTESHOP Premium E-Commerce System. All rights reserved.</p>
+      <p style="margin-top: 8px; font-size: 11px; opacity: 0.6;">Được tối ưu hóa bằng HTML5, CSS3, & Outfit Typography</p>
+    </footer>
+  </main>
+
+  <!-- Interactive JavaScript logic to simulate Stripe Docs code switches & live searches -->
+  <script>
+    function switchCode(button, mode) {
+      const container = button.closest('.endpoint-code-preview');
+      const pre = container.querySelector('pre');
+      const buttons = container.querySelectorAll('.code-tab-btn');
+      
+      buttons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      if (mode === 'axios') {
+        pre.textContent = pre.getAttribute('data-axios');
+      } else if (mode === 'curl') {
+        pre.textContent = pre.getAttribute('data-curl');
+      } else if (mode === 'response') {
+        pre.textContent = JSON.stringify(JSON.parse(pre.getAttribute('data-response')), null, 2);
+      }
+    }
+    
+    function copyCode(button) {
+      const container = button.closest('.code-container');
+      const pre = container.querySelector('pre');
+      navigator.clipboard.writeText(pre.textContent).then(() => {
+        const textSpan = button.querySelector('span');
+        textSpan.textContent = '✅ Copied!';
+        button.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+        button.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        
+        setTimeout(() => {
+          textSpan.textContent = '📋 Copy';
+          button.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+          button.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+        }, 2000);
+      });
+    }
+
+    // Live search functionality
+    const searchInput = document.getElementById('route-search');
+    searchInput.addEventListener('input', function(e) {
+      const val = e.target.value.toLowerCase().trim();
+      const menuItems = document.querySelectorAll('.menu-item');
+      const endpointCards = document.querySelectorAll('.endpoint-card');
+      
+      menuItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(val)) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      endpointCards.forEach(card => {
+        const path = card.querySelector('.endpoint-path').textContent.toLowerCase();
+        const desc = card.querySelector('.endpoint-description').textContent.toLowerCase();
+        if (path.includes(val) || desc.includes(val)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

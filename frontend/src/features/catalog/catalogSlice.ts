@@ -36,6 +36,7 @@ export interface BackendProduct {
     ratingAverage: number;
     ratingCount: number;
   };
+  views?: number;
   soldCount?: number;
   isPublished?: boolean;
   mainImageUrl?: string;
@@ -60,6 +61,16 @@ export interface CatalogState {
   };
   selectedProduct: BackendProduct | null;
   selectedVariants: BackendVariant[];
+  topProducts: {
+    bestSellers: BackendProduct[];
+    mostViewed: BackendProduct[];
+  } | null;
+  selectedCategory: {
+    _id: string;
+    name: string;
+    slug: string;
+    description?: string;
+  } | null;
   loading: boolean;
   error: string | null;
 }
@@ -76,6 +87,8 @@ const initialState: CatalogState = {
   },
   selectedProduct: null,
   selectedVariants: [],
+  topProducts: null,
+  selectedCategory: null,
   loading: false,
   error: null,
 };
@@ -288,6 +301,59 @@ export const fetchHomeProducts = createAsyncThunk(
   }
 );
 
+export const fetchTopProducts = createAsyncThunk(
+  "catalog/fetchTopProducts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/v1/storefront/top-products");
+      if (response.data?.success && response.data?.data) {
+        return response.data.data as {
+          bestSellers: BackendProduct[];
+          mostViewed: BackendProduct[];
+        };
+      }
+      return rejectWithValue("Dữ liệu không hợp lệ");
+    } catch (err) {
+      console.warn("Backend fetchTopProducts failed.");
+      return rejectWithValue("Lỗi tải danh sách sản phẩm nổi bật");
+    }
+  }
+);
+
+export const fetchCategoryBySlug = createAsyncThunk(
+  "catalog/fetchCategoryBySlug",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/categories/${slug}`);
+      if (response.data?.success && response.data?.data) {
+        return response.data.data as {
+          _id: string;
+          name: string;
+          slug: string;
+          description?: string;
+        };
+      }
+      return rejectWithValue("Không tìm thấy danh mục");
+    } catch (err) {
+      console.warn(`Backend fetchCategoryBySlug failed for ${slug}.`);
+      return rejectWithValue("Lỗi tải thông tin danh mục");
+    }
+  }
+);
+
+export const incrementProductViews = createAsyncThunk(
+  "catalog/incrementProductViews",
+  async (id: string) => {
+    try {
+      const response = await api.post(`/api/v1/products/${id}/view`);
+      return response.data?.data?.views;
+    } catch (err) {
+      console.warn(`Backend incrementProductViews failed for product ${id}`);
+      return null;
+    }
+  }
+);
+
 const catalogSlice = createSlice({
   name: "catalog",
   initialState,
@@ -295,6 +361,9 @@ const catalogSlice = createSlice({
     clearSelectedProduct(state) {
       state.selectedProduct = null;
       state.selectedVariants = [];
+    },
+    clearSelectedCategory(state) {
+      state.selectedCategory = null;
     }
   },
   extraReducers: (builder) => {
@@ -345,9 +414,17 @@ const catalogSlice = createSlice({
       .addCase(fetchHomeProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Top Products
+      .addCase(fetchTopProducts.fulfilled, (state, action) => {
+        state.topProducts = action.payload;
+      })
+      // Category details
+      .addCase(fetchCategoryBySlug.fulfilled, (state, action) => {
+        state.selectedCategory = action.payload;
       });
   },
 });
 
-export const { clearSelectedProduct } = catalogSlice.actions;
+export const { clearSelectedProduct, clearSelectedCategory } = catalogSlice.actions;
 export const catalogReducer = catalogSlice.reducer;

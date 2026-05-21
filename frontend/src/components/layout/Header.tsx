@@ -11,9 +11,9 @@ import { fetchWishlist } from "@/features/wishlist/wishlistSlice";
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
   { label: "Sản phẩm", href: "/products" },
-  { label: "Loại hoa lẻ", href: "#" },
-  { label: "Bó hoa theo ngân sách", href: "#" },
-  { label: "Tiệc & Sự kiện", href: "#" },
+  { label: "Hoa kỷ niệm", href: "/category/hoa-ky-niem" },
+  { label: "Hoa chúc mừng", href: "/category/hoa-chuc-mung" },
+  { label: "Tiệc & Sự kiện", href: "/category/tiec-va-su-kien" },
   { label: "Blog", href: "#" },
   { label: "Hỗ trợ", href: "#" },
 ] as const;

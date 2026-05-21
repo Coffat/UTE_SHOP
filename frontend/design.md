@@ -11,7 +11,7 @@ Giao diện của UTESHOP được định vị như một "Digital Floral Bouti
 **Đặc điểm cốt lõi:**
 
 * Nền Lavender Dream (\#fbf8ff) thay thế cho màu trắng tinh khiết, giảm mỏi mắt và tăng tính thẩm mỹ.  
-* Kiểu chữ UTESHOP: Serif (Playfair Display) cho cảm xúc, Sans (Plus Jakarta Sans) cho tiện dụng.  
+* Kiểu chữ UTESHOP: Serif (Cormorant Garamond) cho cảm xúc, Sans (Quicksand) cho tiện dụng.  
 * Hiệu ứng Kính (Glassmorphism): Độ mờ 70%, độ nhòe 20px-40px, viền trắng mỏng 1px.  
 * Sắc tím Pastel (\#c084fc) làm điểm nhấn thương hiệu — nhẹ nhàng nhưng rực rỡ.  
 * Hệ thống bóng đổ dạng vòng (Ring-based shadow) kết hợp với khuếch tán mềm (Soft diffusion).  
@@ -43,23 +43,23 @@ Giao diện của UTESHOP được định vị như một "Digital Floral Bouti
 * **Dusk Gray** (\#7e6e8c): Chữ phụ, ghi chú và metadata.  
 * **Crystal Border** (rgba(243, 232, 255, 0.5)): Đường viền kính mờ ảo.
 
-## **3\. Typography Rules**
+## **3. Typography Rules**
 
 ### **Font Family**
 
-* **Headline (Tiêu đề)**: Playfair Display — Mang tính biểu tượng, nghệ thuật và trang trọng.  
-* **Body / UI (Nội dung)**: Plus Jakarta Sans — Hiện đại, dễ đọc, hình dáng bo tròn thân thiện.  
-* **Label / Price**: Inter — Chuẩn xác cho các con số và nhãn kỹ thuật.
+* **Headline (Tiêu đề)**: Cormorant Garamond — Mang tính biểu tượng, thơ mộng, nghệ thuật và gần gũi.  
+* **Body / UI (Nội dung)**: Quicksand — Thân thiện, nét chữ bo tròn gọn gàng, ấm áp.  
+* **Label / Price**: Inter — Chuẩn xác cho các con số và nhãn kỹ thuật, độ hiển thị cao.
 
 ### **Hierarchy (Hệ thống phân cấp)**
 
 | Role | Font | Size | Weight | Line Height | Notes |
 | :---- | :---- | :---- | :---- | :---- | :---- |
-| Hero Display | Playfair Display | 64px | 600 | 1.10 | Tiêu đề chính quyền lực |
-| Section Title | Playfair Display | 48px | 600 | 1.20 | Tiêu đề các mục lớn |
-| Sub-heading | Playfair Display | 24px | 600 | 1.30 | Tên các sản phẩm/danh mục |
-| Body Standard | Plus Jakarta Sans | 17px | 400 | 1.60 | Nội dung mô tả (rộng rãi) |
-| UI Label | Plus Jakarta Sans | 14px | 500 | 1.00 | Nhãn nút, menu điều hướng |
+| Hero Display | Cormorant Garamond | 64px | 500 hoặc 600 | 1.10 | Tiêu đề chính quyền lực |
+| Section Title | Cormorant Garamond | 48px | 500 hoặc 600 | 1.20 | Tiêu đề các mục lớn |
+| Sub-heading | Cormorant Garamond | 24px | 600 hoặc 700 | 1.30 | Tên các sản phẩm/danh mục |
+| Body Standard | Quicksand | 17px | 400 | 1.60 | Nội dung mô tả (rộng rãi) |
+| UI Label | Quicksand | 14px | 600 hoặc 700 | 1.00 | Nhãn nút, menu điều hướng |
 | Price Display | Inter | 20px | 600 | 1.20 | Giá tiền nổi bật |
 
 ## **4\. Component Stylings**
@@ -150,4 +150,4 @@ Giao diện của UTESHOP được định vị như một "Digital Floral Bouti
 
 ### **Example Prompt**
 
-"Tạo một thẻ sản phẩm theo phong cách Neo-glassmorphism trên nền Lavender Mist (\#fbf8ff). Thẻ có độ nhòe backdrop 20px, bo góc 24px, viền trắng mờ. Tiêu đề hoa dùng font Playfair Display màu Deep Plum (\#311b92), giá tiền dùng font Inter."
+"Tạo một thẻ sản phẩm theo phong cách Neo-glassmorphism trên nền Lavender Mist (\#fbf8ff). Thẻ có độ nhòe backdrop 20px, bo góc 24px, viền trắng mờ. Tiêu đề hoa dùng font Cormorant Garamond màu Deep Plum (\#311b92), giá tiền dùng font Inter."

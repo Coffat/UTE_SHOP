@@ -1,0 +1,10 @@
+enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  READY = 'READY',
+  DELIVERING = 'DELIVERING',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export default OrderStatus;

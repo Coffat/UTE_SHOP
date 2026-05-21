@@ -76,13 +76,13 @@
   --spacing-gutter: 24px;
   --spacing-section: 120px;
 
-  --font-ui-label: "Plus Jakarta Sans", sans-serif;
-  --font-hero-display-mobile: "Playfair Display", serif;
-  --font-sub-heading: "Playfair Display", serif;
-  --font-body-standard: "Plus Jakarta Sans", sans-serif;
-  --font-hero-display: "Playfair Display", serif;
-  --font-section-title: "Playfair Display", serif;
-  --font-home-heading: "Plus Jakarta Sans", sans-serif;
+  --font-ui-label: "Quicksand", sans-serif;
+  --font-hero-display-mobile: "Cormorant Garamond", serif;
+  --font-sub-heading: "Cormorant Garamond", serif;
+  --font-body-standard: "Quicksand", sans-serif;
+  --font-hero-display: "Cormorant Garamond", serif;
+  --font-section-title: "Cormorant Garamond", serif;
+  --font-home-heading: "Quicksand", sans-serif;
   --font-price-display: "Inter", sans-serif;
   --font-slogan: "Dancing Script", cursive;
 

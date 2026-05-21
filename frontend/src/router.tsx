@@ -10,6 +10,7 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ProductList } from "./pages/ProductList";
 import { ProductDetail } from "./pages/ProductDetail";
+import { CategoryProductList } from "./pages/CategoryProductList";
 import { Cart } from "./pages/Cart";
 import { ProfileLayout } from "./pages/ProfileLayout";
 import { ProfileOverview } from "./pages/ProfileOverview";
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Home /> },
           { path: "products", element: <ProductList /> },
           { path: "product/:id", element: <ProductDetail /> },
+          { path: "category/:slug", element: <CategoryProductList /> },
           { path: "cart", element: <Cart /> },
           { 
             path: "user/profile", 

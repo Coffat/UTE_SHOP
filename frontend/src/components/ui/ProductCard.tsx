@@ -21,6 +21,7 @@ export type Product = {
   badge?: ProductBadge;
   /** Số sao hiển thị 1–5, mặc định 5 */
   rating?: number;
+  soldCount?: number;
   className?: string;
 };
 
@@ -72,6 +73,7 @@ export function ProductCard({
   imageAlt,
   badge,
   rating = 5,
+  soldCount,
   className = "",
 }: Product) {
   const dispatch = useDispatch<AppDispatch>();
@@ -181,7 +183,14 @@ export function ProductCard({
           <h3 className="font-home-heading line-clamp-2 text-sm font-bold leading-tight text-on-surface sm:text-[0.9375rem] group-hover:text-primary transition-colors">
             {name}
           </h3>
-          <StarRow rating={rating} />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <StarRow rating={rating} />
+            {soldCount !== undefined && soldCount > 0 && (
+              <span className="text-[10px] text-dusk-gray font-semibold">
+                • Đã bán {soldCount}
+              </span>
+            )}
+          </div>
           <p className="font-home-heading line-clamp-2 text-[10px] leading-snug text-dusk-gray sm:text-[11px]">{description}</p>
         </Link>
 

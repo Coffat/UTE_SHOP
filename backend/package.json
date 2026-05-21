@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -34,5 +35,16 @@
     "nodemailer": "^8.0.7",
     "redis": "^5.12.1"
   },
-  "homepage": "https://github.com/Coffat/BaiTap2#readme"
+  "homepage": "https://github.com/Coffat/BaiTap2#readme",
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.9.1",
+    "@types/nodemailer": "^8.0.0",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
 }

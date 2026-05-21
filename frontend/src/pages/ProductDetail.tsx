@@ -16,6 +16,7 @@ import {
   fetchProductVariants,
   fetchRelatedProducts,
   clearSelectedProduct,
+  incrementProductViews,
 } from "@/features/catalog/catalogSlice";
 import { addToCart } from "@/features/cart/cartSlice";
 import { getProductImage, formatVND } from "./ProductList";
@@ -44,6 +45,7 @@ export function ProductDetail() {
       void dispatch(fetchProductById(id));
       void dispatch(fetchProductVariants(id));
       void dispatch(fetchRelatedProducts(id));
+      void dispatch(incrementProductViews(id));
     }
     return () => {
       void dispatch(clearSelectedProduct());
