@@ -1,34 +1,34 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RootState, AppDispatch } from "@/store";
 import { clearCart } from "@/features/cart/cartSlice";
 import { formatVND } from "./ProductList";
+import { api } from "@/lib/api";
 
 export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
   const { items, subtotal } = useSelector((state: RootState) => state.cart);
+  const navigate = useNavigate();
 
   // Form states
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [giftNote, setGiftNote] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "QR">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO">("COD");
 
   // Flow states
   const [loading, setLoading] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [orderCode, setOrderCode] = useState("");
-  const [showQRModal, setShowQRModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Cấu hình định mức
   const SHIPPING_THRESHOLD = 1000000;
   const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : 30000;
   const finalPrice = subtotal + shippingCost;
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !phone || !address) {
       alert("Vui lòng điền đầy đủ thông tin giao hàng.");
@@ -36,90 +36,70 @@ export function Checkout() {
     }
 
     setLoading(true);
-    const code = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
-    setOrderCode(code);
+    setError(null);
 
-    setTimeout(() => {
-      setLoading(false);
-      if (paymentMethod === "QR") {
-        setShowQRModal(true);
-      } else {
-        setOrderSuccess(true);
-        dispatch(clearCart());
+    try {
+      // 1. Sync cart to backend
+      const syncedItems = items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+      }));
+      
+      const syncResponse = await api.post("/api/v1/orders/cart/sync", {
+        items: syncedItems,
+      });
+      
+      const { cartId } = syncResponse.data.data;
+
+      // 2. Place order
+      const orderResponse = await api.post("/api/v1/orders", {
+        cartId,
+        recipientInfo: {
+          fullName,
+          phone,
+          deliveryNote: address,
+        },
+        paymentMethod: paymentMethod === "MOMO" ? "MOMO" : "COD",
+        note: giftNote,
+      });
+
+      const orderData = orderResponse.data.data;
+      const orderId = orderData._id;
+
+      // 3. Fetch associated payment record
+      const paymentResponse = await api.get(`/api/v1/payments/order/${orderId}`);
+      const payments = paymentResponse.data.data;
+      if (!payments || payments.length === 0) {
+        throw new Error("Không tìm thấy thông tin giao dịch thanh toán.");
       }
-    }, 1500);
+      const paymentId = payments[0]._id;
+
+      // 4. Process payment strategy
+      const processResponse = await api.post(`/api/v1/payments/${paymentId}/process`);
+      const processResult = processResponse.data.data;
+
+      if (paymentMethod === "MOMO") {
+        if (processResult.redirectUrl) {
+          navigate(processResult.redirectUrl);
+        } else {
+          throw new Error("Không thể tạo liên kết thanh toán MoMo.");
+        }
+      } else {
+        dispatch(clearCart());
+        navigate(`/order-success/${orderId}`);
+      }
+    } catch (err: any) {
+      console.error("Checkout submit error:", err);
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleConfirmQRTransfer = () => {
-    setShowQRModal(false);
-    setOrderSuccess(true);
-    dispatch(clearCart());
-  };
-
-  // Nếu đặt hàng thành công, hiển thị trang hoàn tất rực rỡ
-  if (orderSuccess) {
-    return (
-      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
-        <div className="mx-auto max-w-xl px-4 text-center">
-          <div className="glass-panel p-10 rounded-[32px] shadow-[0_15px_50px_rgba(49,27,146,0.08)] relative overflow-hidden">
-            <div className="absolute inset-0 bg-dreamy-purple/5 blur-[60px] rounded-full scale-75 -z-10"></div>
-            
-            {/* Green glowing tick */}
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-[#059669] shadow-[0_0_20px_rgba(5,150,105,0.2)] animate-pulse">
-              <MaterialIcon name="check" className="text-[44px]" />
-            </div>
-
-            <h1 className="font-hero-display text-3xl font-bold text-deep-plum mb-3">Đặt Hàng Thành Công!</h1>
-            <p className="text-sm font-semibold text-primary mb-6">Mã đơn hàng: {orderCode}</p>
-
-            <div className="glass-panel p-5 rounded-2xl bg-white/40 text-left text-sm text-midnight-purple leading-relaxed space-y-2 mb-8">
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Người nhận:</span>
-                <span className="font-semibold text-deep-plum">{fullName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Số điện thoại:</span>
-                <span className="font-semibold text-deep-plum">{phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Địa chỉ giao:</span>
-                <span className="font-semibold text-deep-plum text-right max-w-[280px] truncate">{address}</span>
-              </div>
-              {giftNote && (
-                <div className="border-t border-crystal-border/60 pt-2 mt-2">
-                  <span className="text-dusk-gray font-medium block mb-1">Lời chúc thiệp kèm theo:</span>
-                  <span className="italic text-deep-plum/90 font-medium">"{giftNote}"</span>
-                </div>
-              )}
-            </div>
-
-            <p className="text-dusk-gray text-xs mb-8">
-              Cảm ơn quý khách đã tin tưởng UTE_SHOP. Bó hoa của quý khách đang được thợ hoa chuẩn bị tỉ mỉ để giao đến nhanh nhất!
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/products"
-                className="inline-flex items-center justify-center gap-2 btn-hero-cta-gradient px-8 py-3 rounded-full font-bold tracking-wide transition hover:-translate-y-0.5 shadow-md"
-              >
-                <MaterialIcon name="shopping_basket" />
-                Tiếp Tục Mua Sắm
-              </Link>
-              <Link
-                to="/"
-                className="inline-flex items-center justify-center gap-1.5 bg-white/70 hover:bg-white border border-crystal-border px-8 py-3 rounded-full font-bold text-midnight-purple transition"
-              >
-                Trang Chủ
-              </Link>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Nếu giỏ hàng trống và chưa hoàn tất đặt hàng
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
@@ -254,10 +234,10 @@ export function Checkout() {
                     </div>
                   </label>
 
-                  {/* QR Pay */}
+                  {/* MoMo Pay */}
                   <label
                     className={`rounded-2xl border p-4 flex items-center gap-3 cursor-pointer transition ${
-                      paymentMethod === "QR"
+                      paymentMethod === "MOMO"
                         ? "bg-soft-amethyst/30 border-primary"
                         : "bg-pure-ivory/50 border-crystal-border"
                     }`}
@@ -265,21 +245,28 @@ export function Checkout() {
                     <input
                       type="radio"
                       name="payMethod"
-                      checked={paymentMethod === "QR"}
-                      onChange={() => setPaymentMethod("QR")}
+                      checked={paymentMethod === "MOMO"}
+                      onChange={() => setPaymentMethod("MOMO")}
                       className="accent-primary"
                     />
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
-                      <MaterialIcon name="qr_code" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-rose-500">
+                      <MaterialIcon name="payment" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-deep-plum">Chuyển khoản (VietQR)</p>
-                      <p className="text-xs text-dusk-gray mt-0.5">Quét mã nhận diện tự động lập tức</p>
+                      <p className="text-sm font-bold text-deep-plum">Ví Điện Tử MoMo</p>
+                      <p className="text-xs text-dusk-gray mt-0.5">Thanh toán qua Ví MoMo cực nhanh</p>
                     </div>
                   </label>
 
                 </div>
               </div>
+
+              {error && (
+                <div className="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-600 flex items-center gap-2.5">
+                  <MaterialIcon name="error" className="text-rose-500 text-[20px]" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
 
               {/* Submit button */}
               <button
@@ -360,83 +347,7 @@ export function Checkout() {
 
       </div>
 
-      {/* Dynamic simulated bank QR pay Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-deep-plum/40 backdrop-blur-md p-4">
-          <div className="glass-panel w-full max-w-md p-6 rounded-[2rem] shadow-[0_20px_60px_rgba(49,27,146,0.15)] border-white/90 text-center animate-fade-in relative">
-            
-            <h3 className="font-hero-display text-2xl font-bold text-deep-plum mb-1">Quét Mã Chuyển Khoản</h3>
-            <p className="text-xs text-dusk-gray mb-6">Mã nhận diện tự động VietQR (MB Bank)</p>
 
-            {/* Standard simulated VietQR image box */}
-            <div className="glass-panel p-4 bg-white rounded-2xl inline-block mb-6 shadow-inner border border-crystal-border/40">
-              <div className="relative">
-                {/* Simulated QR Code box */}
-                <div className="w-56 h-56 bg-slate-100 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-primary/25 relative overflow-hidden">
-                  <MaterialIcon name="qr_code_2" className="text-[120px] text-deep-plum/90 opacity-95" />
-                  
-                  {/* Glowing scan line animation */}
-                  <div className="absolute left-0 right-0 h-0.5 bg-primary/60 shadow-[0_0_10px_rgba(139,107,255,0.8)] animate-bounce" style={{ animationDuration: '3.5s' }}></div>
-
-                  {/* Mini center MB Logo icon */}
-                  <div className="absolute inset-0 m-auto w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-black border-2 border-white shadow-md">
-                    MB
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Account Details Box */}
-            <div className="bg-pure-ivory/80 rounded-2xl p-4 text-left text-xs text-midnight-purple leading-relaxed mb-6 space-y-2.5 border border-crystal-border/40">
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Ngân hàng:</span>
-                <span className="font-bold text-deep-plum">MB Bank (Quân Đội)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Số tài khoản:</span>
-                <span className="font-bold text-deep-plum tracking-wider">19024042404</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Chủ tài khoản:</span>
-                <span className="font-bold text-deep-plum">UTE SHOP FLOWER BOUTIQUE</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Số tiền:</span>
-                <span className="font-bold text-primary text-sm">{formatVND(finalPrice)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dusk-gray font-medium">Nội dung chuyển khoản:</span>
-                <span className="font-bold text-[#059669] select-all bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                  {orderCode}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-dusk-gray mb-6 leading-relaxed">
-              * Vui lòng chuyển chính xác số tiền và nội dung chuyển khoản ở trên để đơn hàng được duyệt tự động ngay lập tức.
-            </p>
-
-            {/* Confirmation actions */}
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={handleConfirmQRTransfer}
-                className="w-full btn-hero-cta-gradient py-3 rounded-full font-bold tracking-wide transition hover:brightness-105"
-              >
-                Tôi Đã Chuyển Khoản
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowQRModal(false)}
-                className="w-full text-xs font-semibold text-dusk-gray hover:text-deep-plum py-2"
-              >
-                Hủy & Quay lại sửa thông tin
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

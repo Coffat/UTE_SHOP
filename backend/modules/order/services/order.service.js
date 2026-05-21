@@ -6,7 +6,7 @@ import ProductVariant from '../../catalog/models/ProductVariant.js';
 // ─── Cross-module imports (gọi SERVICE, không import MODEL) ───────────────────
 import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
 import { validateAndCalculateVoucher, markVoucherUsed } from '../../marketing/services/voucher.service.js';
-import { createPaymentRecord } from '../../finance/services/payment.service.js';
+import { createPaymentRecord } from '../../finance/services/payment.service.ts';
 // ─────────────────────────────────────────────────────────────────────────────
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
@@ -25,6 +25,18 @@ export const getOrCreateCart = async (customerId, sessionId) => {
   return cart;
 };
 
+export const syncCart = async (customerId, items = []) => {
+  let cart = await Cart.findOne({ customer: customerId, status: 'ACTIVE' });
+  if (!cart) {
+    cart = new Cart({ customer: customerId, status: 'ACTIVE', items: [] });
+  }
+  cart.items = items.map((item) => ({
+    productVariant: item.variantId,
+    quantity: item.quantity,
+  }));
+  return cart.save();
+};
+
 export const addToCart = async (cartId, variantId, quantity) => {
   const cart = await Cart.findById(cartId);
   const existingItem = cart.items.find((i) => i.productVariant.toString() === variantId);
@@ -40,7 +52,88 @@ export const removeFromCart = async (cartId, variantId) => {
   return Cart.findByIdAndUpdate(cartId, { $pull: { items: { productVariant: variantId } } }, { new: true });
 };
 
-// ─── Place Order (ACID Transaction) ──────────────────────────────────────────
+// ─── Place Order (ACID Transaction with Standalone Fallback) ──────────────────
+
+/**
+ * Fallback checkout flow for MongoDB installations without replica sets.
+ */
+export const placeOrderWithoutTransaction = async ({
+  customerId,
+  cartId,
+  recipientInfo,
+  deliveryAddressId,
+  orderType = OrderType.ONLINE,
+  voucherCode,
+  paymentMethod,
+  note,
+}) => {
+  // ── STEP 0: Lấy cart & tính subtotal ─────────────────────────────────────
+  const cart = await Cart.findById(cartId).populate('items.productVariant');
+  if (!cart || cart.items.length === 0) throw new Error('Giỏ hàng trống');
+
+  let subtotal = 0;
+  const orderItems = cart.items.map((item) => {
+    const price = Number(item.productVariant.price);
+    const itemSubtotal = price * item.quantity;
+    subtotal += itemSubtotal;
+    return {
+      productVariant: item.productVariant._id,
+      quantity: item.quantity,
+      unitPrice: price,
+      snapshotName: item.productVariant.sku,
+      subtotal: itemSubtotal,
+    };
+  });
+
+  // ── STEP 1: Áp voucher (marketing.service) ────────────────────────────────
+  let discountAmount = 0;
+  let voucherId = null;
+  if (voucherCode) {
+    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal);
+    discountAmount = disc;
+    voucherId = voucher._id;
+  }
+
+  const shippingFee = orderType === OrderType.ONLINE ? 30000 : 0;
+  const totalAmount = subtotal + shippingFee - discountAmount;
+
+  // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
+  const [order] = await Order.create([
+    {
+      orderCode: generateOrderCode(),
+      customer: customerId || null,
+      status: OrderStatus.PENDING,
+      orderType,
+      items: orderItems,
+      recipient: recipientInfo,
+      deliveryAddress: deliveryAddressId || null,
+      subtotal,
+      shippingFee,
+      discountAmount,
+      totalAmount,
+      voucher: voucherId,
+      note: note || '',
+      statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed (no-transaction fallback)' }],
+    },
+  ]);
+
+  // ── STEP 3: Trừ kho (inventory.service) ──────────────────────────────────
+  for (const item of cart.items) {
+    await decreaseStock(item.productVariant._id, item.quantity, customerId || 'GUEST');
+  }
+
+  // ── STEP 4: Tạo Payment record (finance.service) ──────────────────────────
+  await createPaymentRecord({ orderId: order._id, amount: totalAmount, paymentMethod });
+
+  // ── STEP 5: Mark voucher used ─────────────────────────────────────────────
+  if (voucherId) await markVoucherUsed(voucherId);
+
+  // ── STEP 6: Convert cart ──────────────────────────────────────────────────
+  await Cart.findByIdAndUpdate(cartId, { status: 'CONVERTED' });
+
+  return order;
+};
+
 /**
  * Luồng đặt hàng với MongoDB Transaction (4 bước ACID):
  *  1. Tạo Order
@@ -62,8 +155,23 @@ export const placeOrder = async ({
   paymentMethod, // 'MOMO' | 'COD' | 'CASH'
   note,
 }) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let session;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+  } catch (sessionErr) {
+    console.warn('⚠️ Standard MongoDB without replica set, bypassing session creation in placeOrder:', sessionErr.message);
+    return placeOrderWithoutTransaction({
+      customerId,
+      cartId,
+      recipientInfo,
+      deliveryAddressId,
+      orderType,
+      voucherCode,
+      paymentMethod,
+      note,
+    });
+  }
 
   try {
     // ── STEP 0: Lấy cart & tính subtotal ─────────────────────────────────────
@@ -136,10 +244,31 @@ export const placeOrder = async ({
     await session.commitTransaction();
     return order;
   } catch (err) {
-    await session.abortTransaction();
-    throw err; // bubble lên controller → asyncHandler → 500
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortErr) {
+        // ignore
+      }
+    }
+    const isTransactionError = err.message?.includes('replica set') || err.message?.includes('Transaction numbers');
+    if (isTransactionError) {
+      console.warn('⚠️ Replica set transaction error caught in placeOrder. Falling back to non-transaction checkout...');
+      if (session) session.endSession();
+      return placeOrderWithoutTransaction({
+        customerId,
+        cartId,
+        recipientInfo,
+        deliveryAddressId,
+        orderType,
+        voucherCode,
+        paymentMethod,
+        note,
+      });
+    }
+    throw err;
   } finally {
-    session.endSession();
+    if (session) session.endSession();
   }
 };
 
@@ -154,7 +283,10 @@ export const updateOrderStatus = async (orderId, newStatus, note, changedById) =
   return order.save();
 };
 
-export const cancelOrder = async (orderId, reason, cancelledById) => {
+/**
+ * Fallback cancel flow for MongoDB installations without replica sets.
+ */
+export const cancelOrderWithoutTransaction = async (orderId, reason, cancelledById) => {
   const order = await Order.findById(orderId).populate('items.productVariant');
   if (!order) throw new Error('Không tìm thấy đơn hàng');
 
@@ -162,9 +294,36 @@ export const cancelOrder = async (orderId, reason, cancelledById) => {
     throw new Error('Không thể hủy đơn hàng ở trạng thái này');
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  order.status = OrderStatus.CANCELLED;
+  order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById });
+  await order.save();
+
+  // Hoàn trả kho
+  for (const item of order.items) {
+    await increaseStock(item.productVariant._id, item.quantity, cancelledById, reason);
+  }
+
+  return order;
+};
+
+export const cancelOrder = async (orderId, reason, cancelledById) => {
+  let session;
   try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+  } catch (sessionErr) {
+    console.warn('⚠️ Standard MongoDB without replica set, bypassing session creation in cancelOrder:', sessionErr.message);
+    return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
+  }
+
+  try {
+    const order = await Order.findById(orderId).populate('items.productVariant').session(session);
+    if (!order) throw new Error('Không tìm thấy đơn hàng');
+
+    if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
+      throw new Error('Không thể hủy đơn hàng ở trạng thái này');
+    }
+
     order.status = OrderStatus.CANCELLED;
     order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById });
     await order.save({ session });
@@ -177,10 +336,22 @@ export const cancelOrder = async (orderId, reason, cancelledById) => {
     await session.commitTransaction();
     return order;
   } catch (err) {
-    await session.abortTransaction();
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortErr) {
+        // ignore
+      }
+    }
+    const isTransactionError = err.message?.includes('replica set') || err.message?.includes('Transaction numbers');
+    if (isTransactionError) {
+      console.warn('⚠️ Replica set transaction error caught in cancelOrder. Falling back...');
+      if (session) session.endSession();
+      return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
+    }
     throw err;
   } finally {
-    session.endSession();
+    if (session) session.endSession();
   }
 };
 

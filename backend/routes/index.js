@@ -26,7 +26,7 @@ import voucherRoutes from '../modules/marketing/routes/voucher.routes.js';
 import orderRoutes from '../modules/order/routes/order.routes.js';
 
 // ─── Module: Finance ──────────────────────────────────────────────────────────
-import paymentRoutes from '../modules/finance/routes/payment.routes.js';
+import paymentRoutes from '../modules/finance/routes/payment.routes.ts';
 
 // ─── Module: Logistics ────────────────────────────────────────────────────────
 import addressRoutes from '../modules/logistics/routes/address.routes.js';

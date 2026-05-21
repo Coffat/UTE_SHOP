@@ -14,6 +14,9 @@ import { Cart } from "./pages/Cart";
 import { ProfileLayout } from "./pages/ProfileLayout";
 import { ProfileOverview } from "./pages/ProfileOverview";
 import { Favorites } from "./pages/Favorites";
+import { Checkout } from "./pages/Checkout";
+import { MockMomoGateway } from "./pages/MockMomoGateway";
+import { OrderSuccess } from "./pages/OrderSuccess";
 
 // Admin Imports
 import { AdminLayout } from "./admin/layouts/AdminLayout";
@@ -42,6 +45,10 @@ export const router = createBrowserRouter([
       {
         path: "/forgot-password",
         element: <ForgotPassword />,
+      },
+      {
+        path: "/mock-momo",
+        element: <MockMomoGateway />,
       },
       // --- Admin Routes ---
       {
@@ -72,6 +79,8 @@ export const router = createBrowserRouter([
           { path: "products", element: <ProductList /> },
           { path: "product/:id", element: <ProductDetail /> },
           { path: "cart", element: <Cart /> },
+          { path: "checkout", element: <Checkout /> },
+          { path: "order-success/:orderId", element: <OrderSuccess /> },
           { 
             path: "user/profile", 
             element: <ProfileLayout />,

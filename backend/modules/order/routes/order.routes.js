@@ -15,6 +15,13 @@ router.get('/', authenticate, orderController.listOrders);
 // GET /api/v1/orders/:id – Chi tiết đơn
 router.get('/:id', authenticate, orderController.getOrder);
 
+// POST /api/v1/orders/cart/sync – Đồng bộ giỏ hàng
+router.post(
+  '/cart/sync',
+  authenticate, authorize('CUSTOMER'),
+  orderController.syncCart
+);
+
 // POST /api/v1/orders – Đặt hàng – chỉ CUSTOMER
 router.post(
   '/',

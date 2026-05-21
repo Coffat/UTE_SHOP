@@ -23,6 +23,13 @@ export const placeOrder = asyncHandler(async (req, res) => {
   sendSuccess(res, 201, 'Đặt hàng thành công', order);
 });
 
+// POST /api/v1/orders/cart/sync – Đồng bộ giỏ hàng
+export const syncCart = asyncHandler(async (req, res) => {
+  const { items } = req.body;
+  const cart = await orderService.syncCart(req.user.id, items);
+  sendSuccess(res, 200, 'Đồng bộ giỏ hàng thành công', { cartId: cart._id });
+});
+
 // PATCH /api/v1/orders/:id/status
 export const changeStatus = asyncHandler(async (req, res) => {
   const { status, note } = req.body;
