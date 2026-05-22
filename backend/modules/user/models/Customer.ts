@@ -16,6 +16,7 @@ const customerSchema = new Schema<ICustomer>({
     type: String,
     required: [true, 'Họ tên là bắt buộc'],
     trim: true,
+    index: true,
   },
   isEmailVerified: {
     type: Boolean,

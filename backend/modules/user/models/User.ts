@@ -9,6 +9,9 @@ export interface IUser extends Document {
   role: string;
   otpCode: string | null;
   otpExpires: Date | null;
+  isActive: boolean;
+  deletedAt: Date | null;
+  deletedBy: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,12 +41,23 @@ const userSchema = new Schema<IUser>(
     },
     otpCode: { type: String, default: null },
     otpExpires: { type: Date, default: null },
+    isActive: { type: Boolean, default: true },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {
     timestamps: true,
     discriminatorKey: 'role',
   }
 );
+
+// Indexes for query optimization
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ email: 1 });
+userSchema.index({ phone: 1 });
 
 const User = mongoose.model<IUser>('User', userSchema);
 export default User;

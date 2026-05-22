@@ -85,5 +85,10 @@ const orderSchema = new Schema<IOrder>(
   { timestamps: true }
 );
 
+// Indexes for admin reporting and search optimization
+orderSchema.index({ customer: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
+
 const Order = mongoose.model<IOrder>('Order', orderSchema);
 export default Order;

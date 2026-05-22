@@ -9,8 +9,10 @@ import express from 'express';
 // ─── Module: User & Auth ──────────────────────────────────────────────────────
 import authRoutes from '../modules/user/routes/auth.routes.js';
 import userRoutes from '../modules/user/routes/user.routes.js';
+import adminRoutes from '../modules/user/routes/admin.routes.js';
 
 // ─── Module: Catalog ──────────────────────────────────────────────────────────
+
 import productRoutes from '../modules/catalog/routes/product.routes.js';
 import categoryRoutes from '../modules/catalog/routes/category.routes.js';
 import reviewRoutes from '../modules/catalog/routes/review.routes.js';
@@ -45,6 +47,7 @@ const router = express.Router();
 // Auth & Users
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/admin', adminRoutes);
 
 // Catalog
 router.use('/storefront', storefrontRoutes);
