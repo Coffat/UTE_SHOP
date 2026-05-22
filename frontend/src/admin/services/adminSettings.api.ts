@@ -23,6 +23,7 @@ export interface StoreSettings {
   freeShippingThreshold: number;
   webhookUrl: string;
   webhookEnabled: boolean;
+  logoUrl: string;
 }
 
 export interface RotateApiKeyResult {

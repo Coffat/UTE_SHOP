@@ -42,6 +42,7 @@ export const updateSettings = async (
     'freeShippingThreshold',
     'webhookUrl',
     'webhookEnabled',
+    'logoUrl',
   ];
 
   for (const key of allowedKeys) {

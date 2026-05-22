@@ -24,5 +24,6 @@ export const validateUpdateSettings = [
   body('freeShippingThreshold').optional().isInt({ min: 0 }),
   body('webhookUrl').optional().isString().trim().isLength({ max: 500 }),
   body('webhookEnabled').optional().isBoolean(),
+  body('logoUrl').optional().isString().trim().isLength({ max: 500 }),
   validateRequest,
 ];

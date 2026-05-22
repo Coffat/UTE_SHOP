@@ -28,6 +28,13 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     allowedRoles: ["ADMIN"],
   },
   {
+    key: "categories",
+    label: "Danh mục",
+    icon: "",
+    path: "/admin/categories",
+    allowedRoles: ["ADMIN"],
+  },
+  {
     key: "customers",
     label: "Khách hàng",
     icon: "",
@@ -136,6 +143,18 @@ function IconProducts() {
     </svg>
   );
 }
+function IconCategories() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  );
+}
 function IconCustomers() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -204,6 +223,7 @@ const ICONS: Record<string, React.FC> = {
   dashboard: IconDashboard,
   orders:    IconOrders,
   products:  IconProducts,
+  categories: IconCategories,
   customers: IconCustomers,
   staff:     IconStaff,
   reports:   IconReports,

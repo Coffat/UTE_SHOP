@@ -13,6 +13,7 @@ import adminRoutes from '../modules/user/routes/admin.routes.js';
 import dashboardRoutes from '../modules/admin/routes/dashboard.routes.js';
 import reportsRoutes from '../modules/admin/routes/reports.routes.js';
 import settingsRoutes from '../modules/admin/routes/settings.routes.js';
+import uploadRoutes from '../modules/admin/routes/upload.routes.js';
 
 // ─── Module: Catalog ──────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ router.use('/admin', adminRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/reports', reportsRoutes);
 router.use('/admin/settings', settingsRoutes);
+router.use('/admin/upload', uploadRoutes);
 
 // Catalog
 router.use('/storefront', storefrontRoutes);

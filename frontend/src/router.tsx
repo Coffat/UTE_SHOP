@@ -31,6 +31,7 @@ import { RoleGuard } from "./admin/components/RoleGuard";
 import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
 import { OrdersPage } from "./admin/pages/OrdersPage";
 import { ProductsPage } from "./admin/pages/ProductsPage";
+import { CategoriesPage } from "./admin/pages/CategoriesPage";
 import { CustomersPage } from "./admin/pages/CustomersPage";
 import { StaffPage } from "./admin/pages/StaffPage";
 import { ReportsPage } from "./admin/pages/ReportsPage";
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
           { path: "dashboard", element: <AdminDashboardPage /> },
           { path: "orders", element: <OrdersPage /> },
           { path: "products", element: <ProductsPage /> },
+          { path: "categories", element: <CategoriesPage /> },
           { path: "customers", element: <CustomersPage /> },
           { path: "staff", element: <StaffPage /> },
           { path: "reports", element: <ReportsPage /> },

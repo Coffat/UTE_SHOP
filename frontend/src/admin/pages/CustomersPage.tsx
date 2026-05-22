@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
+import { useConfirm, CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
 import {
   fetchCustomers as fetchCustomersApi,
@@ -1044,9 +1044,15 @@ export function CustomersPage() {
         </div>
       </div>
 
-      {/* DRAWER SLIDEOVER FOR CREATING CUSTOMER */}
-      <Slideover isOpen={slideoverOpen} title="Thêm khách hàng mới" onClose={() => setSlideoverOpen(false)}>
-        <form className="admin-form" onSubmit={handleCreateCustomer}>
+      <CrudModal
+        isOpen={slideoverOpen}
+        mode="create"
+        title="Thêm khách hàng mới"
+        onClose={() => setSlideoverOpen(false)}
+        onSubmit={handleCreateCustomer}
+        submitLabel="Lưu khách hàng"
+        size="lg"
+      >
           <FormField label="Họ và tên" required>
             <FormInput
               placeholder="Nhập họ và tên..."
@@ -1092,21 +1098,7 @@ export function CustomersPage() {
               <option value="Không hoạt động">Không hoạt động</option>
             </FormSelect>
           </FormField>
-          
-          <div className="admin-form-actions">
-            <button
-              type="button"
-              className="admin-btn admin-btn-ghost"
-              onClick={() => setSlideoverOpen(false)}
-            >
-              Hủy
-            </button>
-            <button type="submit" className="admin-btn admin-btn-primary">
-              Lưu khách hàng
-            </button>
-          </div>
-        </form>
-      </Slideover>
+      </CrudModal>
     </div>
   );
 }

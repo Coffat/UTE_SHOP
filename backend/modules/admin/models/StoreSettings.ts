@@ -25,6 +25,7 @@ export interface IStoreSettings extends Document {
   freeShippingThreshold: number;
   webhookUrl: string;
   webhookEnabled: boolean;
+  logoUrl: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +55,7 @@ const storeSettingsSchema = new Schema<IStoreSettings>(
     freeShippingThreshold: { type: Number, default: 0 },
     webhookUrl: { type: String, default: '' },
     webhookEnabled: { type: Boolean, default: false },
+    logoUrl: { type: String, default: '' },
   },
   { timestamps: true }
 );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
+import { useConfirm, CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
 import {
   fetchAdminProducts,
@@ -147,6 +148,7 @@ function getProductStatusLabel(stock: number, status: string) {
 }
 
 export function ProductsPage() {
+  const navigate = useNavigate();
   const { isAdmin } = useAdminAuth();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -829,17 +831,13 @@ export function ProductsPage() {
                 textAlign: "center",
               }}
             >
-              <a
-                href="#all-categories"
-                style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCategoryFilter("all");
-                  setCurrentPage(1);
-                }}
+              <button
+                type="button"
+                style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}
+                onClick={() => navigate("/admin/categories")}
               >
                 Xem tất cả danh mục &gt;
-              </a>
+              </button>
             </div>
           </div>
 
@@ -918,14 +916,18 @@ export function ProductsPage() {
         </div>
       </div>
 
-      {/* Product Form Slideover */}
+      {/* Product Form Modal */}
       {isAdmin && (
-      <Slideover
+      <CrudModal
         isOpen={slideoverOpen}
+        mode={editProduct ? "edit" : "create"}
         title={editProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
         onClose={() => setSlideoverOpen(false)}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        submitLabel={editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
+        size="lg"
       >
-        <form className="admin-form" onSubmit={handleSubmit}>
           <FormField label="Tên sản phẩm" required>
             <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
           </FormField>
@@ -959,16 +961,7 @@ export function ProductsPage() {
               <option value="inactive">Ẩn</option>
             </FormSelect>
           </FormField>
-          <div className="admin-form-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
-            <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setSlideoverOpen(false)}>
-              Hủy
-            </button>
-            <button type="submit" className="admin-btn admin-btn-primary" style={{ background: "#6366f1", border: "none" }} disabled={submitting}>
-              {submitting ? "Đang lưu..." : editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
-            </button>
-          </div>
-        </form>
-      </Slideover>
+      </CrudModal>
       )}
     </div>
   );

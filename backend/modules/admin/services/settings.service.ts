@@ -28,6 +28,7 @@ export interface StoreSettingsDto {
   freeShippingThreshold: number;
   webhookUrl: string;
   webhookEnabled: boolean;
+  logoUrl: string;
 }
 
 export interface RotateApiKeyResult {
@@ -65,6 +66,7 @@ const mapToDto = (doc: IStoreSettings): StoreSettingsDto => ({
   freeShippingThreshold: doc.freeShippingThreshold,
   webhookUrl: doc.webhookUrl,
   webhookEnabled: doc.webhookEnabled,
+  logoUrl: doc.logoUrl,
 });
 
 export const getAdminSettings = async (): Promise<StoreSettingsDto> => {

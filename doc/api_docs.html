@@ -3,14 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UTESHOP API Documentation 🚀</title>
-  
-  <!-- Modern Fonts -->
+  <title>UTESHOP API Documentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Premium Custom Styling (Tailwind-like variables but vanilla CSS control) -->
   <style>
     :root {
       --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -545,714 +541,1046 @@
       color: hsl(var(--text-muted));
       font-size: 13px;
     }
-  </style>
+  
+    .overview-panel {
+      background-color: hsl(var(--bg-surface));
+      border: 1px solid hsl(var(--border-color));
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .overview-panel h4 { font-size: 16px; margin-bottom: 12px; color: hsl(var(--text-primary)); }
+    .overview-panel ul { margin-left: 20px; color: hsl(var(--text-secondary)); font-size: 14px; }
+    .overview-panel li { margin-bottom: 6px; }
+    .overview-panel code { font-family: var(--font-mono); font-size: 12px; color: hsl(var(--color-primary)); }
+    .endpoint-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 32px;
+      font-size: 13px;
+      background-color: hsl(var(--bg-surface));
+      border: 1px solid hsl(var(--border-color));
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .endpoint-summary-table th, .endpoint-summary-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .endpoint-summary-table th {
+      background-color: hsl(var(--bg-surface-elevated));
+      color: hsl(var(--text-muted));
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .endpoint-summary-table tr:last-child td { border-bottom: none; }
+    .endpoint-summary-table .path-cell { font-family: var(--font-mono); font-size: 12px; }
+    .compact-card .endpoint-body { grid-template-columns: 1fr; min-height: auto; }
+    .compact-card .endpoint-details { border-right: none; }
+</style>
 </head>
 <body>
-
-  <!-- Sidebar Navigation -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo-container">
         <div class="logo-badge">UT</div>
-        <div class="logo-text">
-          <h1>UTEShop API</h1>
-          <p>RESTful Core Services</p>
-        </div>
+        <div class="logo-text"><h1>UTEShop API</h1><p>RESTful Core Services</p></div>
       </div>
       <div class="search-box">
-        <input type="text" id="route-search" class="search-input" placeholder="Tìm kiếm tài nguyên hoặc endpoint...">
+        <input type="text" id="route-search" class="search-input" placeholder="Tìm kiếm endpoint...">
         <span class="search-icon">🔍</span>
       </div>
     </div>
-    
     <div class="sidebar-menu">
-      <div class="menu-section-title">Authentication</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#auth-register"><span>Đăng ký</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#auth-otp"><span>Xác minh OTP</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#auth-login"><span>Đăng nhập</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#auth-forgot"><span>Quên mật khẩu</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#auth-reset"><span>Đặt lại mật khẩu</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#auth-logout"><span>Đăng xuất</span><span class="method-tag post">POST</span></a></li>
-      </ul>
-      
-      <div class="menu-section-title">Catalog (Sản phẩm)</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#catalog-list"><span>Danh sách sản phẩm</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#catalog-detail"><span>Chi tiết sản phẩm</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#catalog-related"><span>Sản phẩm liên quan</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#catalog-variants"><span>Danh sách biến thể</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#catalog-create"><span>Tạo sản phẩm</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#catalog-update"><span>Sửa sản phẩm</span><span class="method-tag put">PUT</span></a></li>
-      </ul>
-      
-      <div class="menu-section-title">Categories (Danh mục)</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#cat-list"><span>Danh sách danh mục</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#cat-detail"><span>Chi tiết danh mục</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#cat-create"><span>Tạo danh mục</span><span class="method-tag post">POST</span></a></li>
-      </ul>
-      
-      <div class="menu-section-title">User & Profile</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#user-get-profile"><span>Lấy Profile cá nhân</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#user-put-profile"><span>Sửa Profile cá nhân</span><span class="method-tag put">PUT</span></a></li>
-        <li class="menu-item"><a href="#user-get-favorites"><span>Lấy Yêu thích</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#user-add-favorite"><span>Thêm Yêu thích</span><span class="method-tag post">POST</span></a></li>
-      </ul>
-      
-      <div class="menu-section-title">Inventory (Kho hàng)</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#stock-get"><span>Mức tồn kho</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#stock-import"><span>Nhập hàng vào kho</span><span class="method-tag post">POST</span></a></li>
-      </ul>
-      
-      <div class="menu-section-title">Order (Đơn hàng)</div>
-      <ul class="menu-list">
-        <li class="menu-item"><a href="#order-list"><span>Danh sách đơn</span><span class="method-tag get">GET</span></a></li>
-        <li class="menu-item"><a href="#order-place"><span>Đặt hàng</span><span class="method-tag post">POST</span></a></li>
-        <li class="menu-item"><a href="#order-status"><span>Đổi trạng thái</span><span class="method-tag patch">PATCH</span></a></li>
-      </ul>
-    </div>
+<div class="menu-section-title">Getting Started</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#section-overview"><span>Tổng quan</span><span class="method-tag get">GET</span></a></li>
+</ul>
+<div class="menu-section-title">Authentication</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#auth-register"><span>Đăng ký</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-otp"><span>Xác minh OTP</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-login"><span>Đăng nhập</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-forgot"><span>Quên mật khẩu</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-reset"><span>Đặt lại mật khẩu</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-refresh"><span>Refresh token</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#auth-logout"><span>Đăng xuất</span><span class="method-tag post">POST</span></a></li>
+</ul>
+<div class="menu-section-title">Storefront</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#storefront-home"><span>Trang chủ</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#storefront-top"><span>Top sản phẩm</span><span class="method-tag get">GET</span></a></li>
+</ul>
+<div class="menu-section-title">Products (Public)</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#catalog-list"><span>Danh sách</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#catalog-detail"><span>Chi tiết</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#catalog-related"><span>Liên quan</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#catalog-variants"><span>Biến thể</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#catalog-view"><span>Tăng lượt xem</span><span class="method-tag post">POST</span></a></li>
+</ul>
+<div class="menu-section-title">Reviews</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#review-list"><span>Danh sách đánh giá</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#review-create"><span>Tạo đánh giá</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#review-approve"><span>Duyệt đánh giá</span><span class="method-tag patch">PATCH</span></a></li>
+</ul>
+<div class="menu-section-title">Categories</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#cat-list"><span>Danh sách (public)</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#cat-detail"><span>Chi tiết</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#admin-categories-table"><span>Admin CRUD</span></a></li>
+</ul>
+<div class="menu-section-title">Users</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#user-get-profile"><span>Profile</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#user-put-profile"><span>Sửa profile</span><span class="method-tag put">PUT</span></a></li>
+<li class="menu-item"><a href="#user-change-password"><span>Đổi mật khẩu</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#user-get-favorites"><span>Yêu thích</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#user-add-favorite"><span>Yêu thích (POST/DELETE)</span><span class="method-tag post">POST</span></a></li>
+</ul>
+<div class="menu-section-title">Orders</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#order-list"><span>Danh sách</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#order-detail"><span>Chi tiết</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#order-cart-sync"><span>Đồng bộ giỏ</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#order-place"><span>Đặt hàng</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#order-status"><span>Đổi trạng thái</span><span class="method-tag patch">PATCH</span></a></li>
+<li class="menu-item"><a href="#order-cancel"><span>Hủy đơn</span><span class="method-tag post">POST</span></a></li>
+</ul>
+<div class="menu-section-title">Addresses</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#addresses-table"><span>Địa chỉ giao hàng</span></a></li>
+</ul>
+<div class="menu-section-title">Payments</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#payments-table"><span>Thanh toán</span></a></li>
+</ul>
+<div class="menu-section-title">Notifications</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#notif-table"><span>Thông báo</span></a></li>
+</ul>
+<div class="menu-section-title">Inventory</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#stock-table"><span>Kho hàng</span></a></li>
+</ul>
+<div class="menu-section-title">Marketing</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#vouchers-table"><span>Voucher</span></a></li>
+</ul>
+<div class="menu-section-title">Admin Portal</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#admin-staff-table"><span>Nhân viên</span></a></li>
+<li class="menu-item"><a href="#admin-customers-table"><span>Khách hàng</span></a></li>
+<li class="menu-item"><a href="#admin-shifts-table"><span>Ca làm</span></a></li>
+<li class="menu-item"><a href="#admin-dashboard"><span>Dashboard</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#admin-reports"><span>Báo cáo</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#admin-settings"><span>Cài đặt</span><span class="method-tag get">GET</span></a></li>
+<li class="menu-item"><a href="#admin-upload"><span>Upload ảnh</span><span class="method-tag post">POST</span></a></li>
+</ul>
+<div class="menu-section-title">Products (Admin)</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#admin-products-table"><span>Quản lý SP</span></a></li>
+</ul>
+<div class="menu-section-title">Blogs</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#blogs-table"><span>Blog</span></a></li>
+</ul>
+<div class="menu-section-title">Support</div>
+<ul class="menu-list">
+<li class="menu-item"><a href="#support-ticket"><span>Gửi ticket</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#support-my-tickets"><span>Ticket của tôi</span><span class="method-tag get">GET</span></a></li>
+</ul></div>
   </aside>
-
-  <!-- Main API Documentation Content -->
   <main class="main-content">
     <div class="header-banner">
-      <h2>Tài liệu API UTESHOP 🌸</h2>
-      <p>Chào mừng đến với cổng tích hợp RESTful API chính thức của UTESHOP. Hệ thống được thiết kế theo mô hình Strangler Fig Pattern, hỗ trợ xác thực bằng HttpOnly Cookies + JWT và phân quyền theo cấp độ cụ thể.</p>
-      
+      <h2>Tài liệu API UTESHOP</h2>
+      <p>RESTful API chính thức — Strangler Fig modules, JWT qua HttpOnly cookies, phân quyền theo role.</p>
       <div class="base-url-card">
-        <span class="base-url-label">Môi trường thử nghiệm</span>
-        <span class="base-url-value">http://localhost:3000</span>
+        <span class="base-url-label">Base URL</span>
+        <span class="base-url-value">http://localhost:3000/api/v1</span>
       </div>
     </div>
-    
     <div class="docs-section">
       
-      <!-- AUTHENTICATION SECTION -->
-      <h3 class="section-heading" id="section-auth">🔑 Module: Xác thực & Đăng nhập</h3>
-      
-      <!-- endpoint: Register -->
+<div class="overview-panel" id="section-overview">
+<h4>Tổng quan API</h4>
+<ul>
+<li><strong>Base URL:</strong> <code>http://localhost:3000</code> — prefix API: <code>/api/v1</code></li>
+<li><strong>Health check:</strong> <code>GET /</code> → <code>{ "status": "ok", "message": "UTESHOP API is running 🚀" }</code></li>
+<li><strong>Static files:</strong> <code>GET /uploads/{filename}</code> — ảnh đã upload</li>
+<li><strong>Response envelope:</strong> <code>{ success, message, data?, errors? }</code></li>
+<li><strong>Xác thực:</strong> HttpOnly cookies <code>accessToken</code> (15 phút) + <code>refreshToken</code> (7 ngày). Client gọi <code>withCredentials: true</code> / <code>credentials: 'include'</code>.</li>
+<li><strong>Refresh:</strong> <code>POST /api/v1/auth/refresh</code> khi access token hết hạn.</li>
+<li><strong>Rate limits:</strong> API chung 200 req/phút; login 5/15 phút; forgot-password 3/15 phút.</li>
+<li><strong>Roles:</strong> CUSTOMER, ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</li>
+<li><strong>Mã lỗi thường gặp:</strong> 401 (chưa đăng nhập), 403 (không đủ quyền), 404 (không tìm thấy), 422 (validation), 429 (rate limit)</li>
+</ul>
+</div>
+      <h3 class="section-heading" id="section-auth">Authentication</h3>
       <div class="endpoint-card" id="auth-register">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag post">POST</span>
-            <span class="endpoint-path">/api/v1/auth/register</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge public">PUBLIC</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Đăng ký tài khoản người dùng mới. Hệ thống sẽ tạo tài khoản ở trạng thái chưa kích hoạt và gửi OTP xác minh qua Email.</p>
-            
-            <span class="details-sub-heading">Body Parameters (JSON)</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu dữ liệu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">fullName</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Họ tên đầy đủ của người dùng</td>
-                </tr>
-                <tr>
-                  <td class="param-name">email</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Email duy nhất của tài khoản</td>
-                </tr>
-                <tr>
-                  <td class="param-name">password</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Mật khẩu bảo mật (tối thiểu 6 ký tự)</td>
-                </tr>
-                <tr>
-                  <td class="param-name">phone</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Số điện thoại liên hệ di động</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 201</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.post('/api/v1/auth/register', {
-  fullName: 'New User',
-  email: 'newuser@example.com',
-  password: 'password123',
-  phone: '0999888777'
-});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/register \
-  -H 'Content-Type: application/json' \
-  -d '{
-    &quot;fullName&quot;: &quot;New User&quot;,
-    &quot;email&quot;: &quot;newuser@example.com&quot;,
-    &quot;password&quot;: &quot;password123&quot;,
-    &quot;phone&quot;: &quot;0999888777&quot;
-  }'" data-response="{
-  &quot;success&quot;: true,
-  &quot;message&quot;: &quot;Đăng ký thành công. Vui lòng check OTP trong email.&quot;
-}">api.post('/api/v1/auth/register', {
-  fullName: 'New User',
-  email: 'newuser@example.com',
-  password: 'password123',
-  phone: '0999888777'
-});</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- endpoint: Verify OTP -->
-      <div class="endpoint-card" id="auth-otp">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag post">POST</span>
-            <span class="endpoint-path">/api/v1/auth/verify-otp</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge public">PUBLIC</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Kích hoạt tài khoản người dùng bằng mã OTP đã nhận từ hòm thư điện tử.</p>
-            
-            <span class="details-sub-heading">Body Parameters (JSON)</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu dữ liệu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">email</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Email cần xác minh kích hoạt</td>
-                </tr>
-                <tr>
-                  <td class="param-name">otp</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Mã OTP gồm 6 chữ số vừa nhận</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.post('/api/v1/auth/verify-otp', {
-  email: 'newuser@example.com',
-  otp: '123456'
-});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/verify-otp \
-  -H 'Content-Type: application/json' \
-  -d '{
-    &quot;email&quot;: &quot;newuser@example.com&quot;,
-    &quot;otp&quot;: &quot;123456&quot;
-  }'" data-response="{
-  &quot;success&quot;: true,
-  &quot;message&quot;: &quot;Kích hoạt tài khoản thành công!&quot;
-}">api.post('/api/v1/auth/verify-otp', {
-  email: 'newuser@example.com',
-  otp: '123456'
-});</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- endpoint: Login -->
-      <div class="endpoint-card" id="auth-login">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag post">POST</span>
-            <span class="endpoint-path">/api/v1/auth/login</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge public">PUBLIC</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Đăng nhập tài khoản. Nếu đúng, server phản hồi Token đã gắn sẵn trong cấu hình HttpOnly Cookie `accessToken` bảo mật cao chống XSS.</p>
-            
-            <span class="details-sub-heading">Body Parameters (JSON)</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu dữ liệu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">email</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Email đăng nhập tài khoản</td>
-                </tr>
-                <tr>
-                  <td class="param-name">password</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Mật khẩu của tài khoản</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.post('/api/v1/auth/login', {
-  email: 'vuthang@example.com',
-  password: 'password123'
-});" data-curl="curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{
-    &quot;email&quot;: &quot;vuthang@example.com&quot;,
-    &quot;password&quot;: &quot;password123&quot;
-  }'" data-response="{
-  &quot;success&quot;: true,
-  &quot;message&quot;: &quot;Đăng nhập thành công&quot;,
-  &quot;redirectUrl&quot;: &quot;/user/profile&quot;
-}">api.post('/api/v1/auth/login', {
-  email: 'vuthang@example.com',
-  password: 'password123'
-});</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- endpoint: Logout -->
-      <div class="endpoint-card" id="auth-logout">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag post">POST</span>
-            <span class="endpoint-path">/api/v1/auth/logout</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge auth-required">AUTH REQUIRED</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Hủy phiên hoạt động, xóa toàn bộ HttpOnly Cookies trên trình duyệt người dùng.</p>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.post('/api/v1/auth/logout');" data-curl="curl -X POST http://localhost:3000/api/v1/auth/logout \
-  -H 'Cookie: accessToken=...' \
-  -H 'Content-Type: application/json'" data-response="{
-  &quot;success&quot;: true,
-  &quot;message&quot;: &quot;Đã đăng xuất thành công.&quot;
-}">api.post('/api/v1/auth/logout');</pre>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/register</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đăng ký tài khoản mới, gửi OTP qua email.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">fullName</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Họ tên</td></tr><tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr><tr><td class="param-name">password</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Tối thiểu 6 ký tự</td></tr><tr><td class="param-name">phone</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Số điện thoại (optional)</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/register', { fullName, email, password, phone });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/register -H 'Content-Type: application/json' -d '{&quot;fullName&quot;:&quot;...&quot;,&quot;email&quot;:&quot;...&quot;,&quot;password&quot;:&quot;...&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đăng ký thành công. Vui lòng check OTP trong email.&quot;}">api.post('/api/v1/auth/register', { fullName, email, password, phone });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-otp">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/verify-otp</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Kích hoạt tài khoản bằng OTP 6 chữ số.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr><tr><td class="param-name">otp</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>6 chữ số</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/verify-otp', { email, otp });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/verify-otp -H 'Content-Type: application/json' -d '{&quot;email&quot;:&quot;...&quot;,&quot;otp&quot;:&quot;123456&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Kích hoạt tài khoản thành công!&quot;}">api.post('/api/v1/auth/verify-otp', { email, otp });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-login">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/login</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đăng nhập. Server set HttpOnly cookies accessToken (15 phút) và refreshToken (7 ngày). Rate limit: 5 req/15 phút.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr><tr><td class="param-name">password</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Mật khẩu</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/login', { email, password }, { withCredentials: true });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/login -H 'Content-Type: application/json' -c cookies.txt -d '{&quot;email&quot;:&quot;...&quot;,&quot;password&quot;:&quot;...&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đăng nhập thành công&quot;,&quot;data&quot;:{&quot;redirectUrl&quot;:&quot;/user/profile&quot;}}">api.post('/api/v1/auth/login', { email, password }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-forgot">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/forgot-password</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Gửi OTP đặt lại mật khẩu. Rate limit: 3 req/15 phút.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/forgot-password', { email });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/forgot-password -H 'Content-Type: application/json' -d '{&quot;email&quot;:&quot;...&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;OTP đã được gửi.&quot;}">api.post('/api/v1/auth/forgot-password', { email });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-reset">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/reset-password</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đặt lại mật khẩu sau khi nhận OTP.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr><tr><td class="param-name">otp</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>6 chữ số</td></tr><tr><td class="param-name">newPassword</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Tối thiểu 6 ký tự</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/reset-password', { email, otp, newPassword });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/reset-password -H 'Content-Type: application/json' -d '{&quot;email&quot;:&quot;...&quot;,&quot;otp&quot;:&quot;123456&quot;,&quot;newPassword&quot;:&quot;...&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đặt lại mật khẩu thành công.&quot;}">api.post('/api/v1/auth/reset-password', { email, otp, newPassword });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-refresh">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/refresh</span></div>
+<div class="endpoint-meta"></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Làm mới access token từ cookie refreshToken.</p>
 
-      <!-- CATALOG PRODUCTS SECTION -->
-      <h3 class="section-heading" id="section-catalog">🌸 Module: Quản lý Sản phẩm & Danh mục</h3>
-      
-      <!-- endpoint: List Products -->
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/refresh', {}, { withCredentials: true });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/refresh -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Token refreshed&quot;}">api.post('/api/v1/auth/refresh', {}, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="auth-logout">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/auth/logout</span></div>
+<div class="endpoint-meta"></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đăng xuất, xóa cookies. Dùng refreshToken cookie nếu có để revoke phiên.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/auth/logout', {}, { withCredentials: true });" data-curl="curl -X POST http://localhost:3000/api/v1/auth/logout -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đăng xuất thành công&quot;}">api.post('/api/v1/auth/logout', {}, { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-storefront">Storefront</h3>
+      <div class="endpoint-card" id="storefront-home">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/storefront/home</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Dữ liệu trang chủ (sản phẩm nổi bật, banner, v.v.).</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/storefront/home');" data-curl="curl http://localhost:3000/api/v1/storefront/home" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/storefront/home');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="storefront-top">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/storefront/top-products</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Top sản phẩm bán chạy / nổi bật.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/storefront/top-products');" data-curl="curl http://localhost:3000/api/v1/storefront/top-products" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/storefront/top-products');</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-catalog">Products (Public)</h3>
       <div class="endpoint-card" id="catalog-list">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag get">GET</span>
-            <span class="endpoint-path">/api/v1/products</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge public">PUBLIC</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Lấy danh sách các sản phẩm đang được bày bán. Cho phép lọc đa dạng theo danh mục, mức giá và phân trang.</p>
-            
-            <span class="details-sub-heading">Query Parameters</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">page</td>
-                  <td class="param-type">number</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Trang dữ liệu hiển thị (mặc định: 1)</td>
-                </tr>
-                <tr>
-                  <td class="param-name">limit</td>
-                  <td class="param-type">number</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Số sản phẩm mỗi trang (mặc định: 12)</td>
-                </tr>
-                <tr>
-                  <td class="param-name">categoryId</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Lọc sản phẩm theo MongoDB ID của Danh mục</td>
-                </tr>
-                <tr>
-                  <td class="param-name">search</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Từ khóa tìm kiếm theo tên sản phẩm</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.get('/api/v1/products', {
-  params: { page: 1, limit: 10, search: 'Lavender' }
-});" data-curl="curl -X GET 'http://localhost:3000/api/v1/products?page=1&limit=10&search=Lavender'" data-response="{
-  &quot;success&quot;: true,
-  &quot;data&quot;: {
-    &quot;items&quot;: [
-      {
-        &quot;_id&quot;: &quot;lavender-dream&quot;,
-        &quot;name&quot;: &quot;Bó Lavender Mộng Mơ&quot;,
-        &quot;slug&quot;: &quot;lavender-dream&quot;,
-        &quot;description&quot;: &quot;Bó hoa oải hương tươi tắn...&quot;,
-        &quot;reviewStats&quot;: { &quot;ratingAverage&quot;: 4.8, &quot;ratingCount&quot;: 124 }
-      }
-    ],
-    &quot;pagination&quot;: {
-      &quot;page&quot;: 1,
-      &quot;limit&quot;: 10,
-      &quot;total&quot;: 1,
-      &quot;totalPages&quot;: 1
-    }
-  }
-}">api.get('/api/v1/products', {
-  params: { page: 1, limit: 10, search: 'Lavender' }
-});</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- endpoint: Get Product Detail -->
-      <div class="endpoint-card" id="catalog-detail">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag get">GET</span>
-            <span class="endpoint-path">/api/v1/products/:id</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge public">PUBLIC</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Lấy chi tiết một sản phẩm theo ID hoặc Slug.</p>
-            
-            <span class="details-sub-heading">Path Parameters</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">id</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req yes">YES</span></td>
-                  <td>Mã ID MongoDB hoặc slug sản phẩm (vd: lavender-dream)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.get('/api/v1/products/lavender-dream');" data-curl="curl -X GET http://localhost:3000/api/v1/products/lavender-dream" data-response="{
-  &quot;success&quot;: true,
-  &quot;data&quot;: {
-    &quot;_id&quot;: &quot;lavender-dream&quot;,
-    &quot;name&quot;: &quot;Bó Lavender Mộng Mơ&quot;,
-    &quot;slug&quot;: &quot;lavender-dream&quot;,
-    &quot;description&quot;: &quot;Hoa tươi độc bản mang lại không gian dễ chịu...&quot;,
-    &quot;soldCount&quot;: 452
-  }
-}">api.get('/api/v1/products/lavender-dream');</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- USER PROFILE & FAVORITES -->
-      <h3 class="section-heading" id="section-users">👤 Module: Người dùng & Yêu thích</h3>
-      
-      <!-- endpoint: Get Profile -->
-      <div class="endpoint-card" id="user-get-profile">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag get">GET</span>
-            <span class="endpoint-path">/api/v1/users/profile</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge auth-required">AUTH REQUIRED</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Lấy hồ sơ cá nhân của người dùng đã xác thực thông qua cookie phiên làm việc.</p>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.get('/api/v1/users/profile');" data-curl="curl -X GET http://localhost:3000/api/v1/users/profile \
-  -H 'Cookie: accessToken=...'" data-response="{
-  &quot;success&quot;: true,
-  &quot;data&quot;: {
-    &quot;_id&quot;: &quot;user-id-123&quot;,
-    &quot;email&quot;: &quot;vuthang@example.com&quot;,
-    &quot;fullName&quot;: &quot;Vũ Thắng&quot;,
-    &quot;phone&quot;: &quot;0999888777&quot;,
-    &quot;role&quot;: &quot;CUSTOMER&quot;
-  }
-}">api.get('/api/v1/users/profile');</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- endpoint: Put Profile -->
-      <div class="endpoint-card" id="user-put-profile">
-        <div class="endpoint-header">
-          <div class="endpoint-title-group">
-            <span class="method-tag put">PUT</span>
-            <span class="endpoint-path">/api/v1/users/profile</span>
-          </div>
-          <div class="endpoint-meta">
-            <span class="meta-badge auth-required">AUTH REQUIRED</span>
-            <span class="meta-badge role">CUSTOMER, ADMIN</span>
-          </div>
-        </div>
-        
-        <div class="endpoint-body">
-          <div class="endpoint-details">
-            <p class="endpoint-description">Cập nhật thông tin hồ sơ của tài khoản đang đăng nhập.</p>
-            
-            <span class="details-sub-heading">Body Parameters (JSON)</span>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Tham số</th>
-                  <th>Kiểu</th>
-                  <th>Yêu cầu</th>
-                  <th>Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="param-name">fullName</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Họ tên cập nhật mới</td>
-                </tr>
-                <tr>
-                  <td class="param-name">phone</td>
-                  <td class="param-type">string</td>
-                  <td><span class="param-req no">NO</span></td>
-                  <td>Số điện thoại mới</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="endpoint-code-preview">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" onclick="switchCode(this, 'axios')">Axios</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'curl')">cURL</button>
-              <button class="code-tab-btn" onclick="switchCode(this, 'response')">Phản hồi 200</button>
-            </div>
-            
-            <div class="code-container">
-              <button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
-              <pre class="code-block" data-axios="api.put('/api/v1/users/profile', {
-  fullName: 'Vũ Thắng Updated',
-  phone: '0999888999'
-});" data-curl="curl -X PUT http://localhost:3000/api/v1/users/profile \
-  -H 'Cookie: accessToken=...' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    &quot;fullName&quot;: &quot;Vũ Thắng Updated&quot;,
-    &quot;phone&quot;: &quot;0999888999&quot;
-  }'" data-response="{
-  &quot;success&quot;: true,
-  &quot;message&quot;: &quot;Cập nhật thông tin thành công.&quot;,
-  &quot;data&quot;: {
-    &quot;fullName&quot;: &quot;Vũ Thắng Updated&quot;,
-    &quot;phone&quot;: &quot;0999888999&quot;
-  }
-}">api.put('/api/v1/users/profile', {
-  fullName: 'Vũ Thắng Updated',
-  phone: '0999888999'
-});</pre>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/products</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Danh sách sản phẩm công khai, có phân trang và lọc.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">page</td><td class="param-type">number</td><td><span class="param-req no">NO</span></td><td>Mặc định 1</td></tr><tr><td class="param-name">limit</td><td class="param-type">number</td><td><span class="param-req no">NO</span></td><td>Mặc định 12</td></tr><tr><td class="param-name">categoryId</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>MongoDB ObjectId</td></tr><tr><td class="param-name">search</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Tìm theo tên</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/products', { params: { page: 1, limit: 12 } });" data-curl="curl 'http://localhost:3000/api/v1/products?page=1&amp;limit=12'" data-response="{&quot;success&quot;:true,&quot;data&quot;:{&quot;items&quot;:[],&quot;pagination&quot;:{&quot;page&quot;:1,&quot;limit&quot;:12,&quot;total&quot;:0,&quot;totalPages&quot;:0}}}">api.get('/api/v1/products', { params: { page: 1, limit: 12 } });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="catalog-detail">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/products/:id</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Chi tiết sản phẩm theo MongoDB ID hoặc slug.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ID hoặc slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/products/lavender-dream');" data-curl="curl http://localhost:3000/api/v1/products/lavender-dream" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/products/lavender-dream');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="catalog-related">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/products/:id/related</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Sản phẩm liên quan cùng danh mục.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ID hoặc slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/products/:id/related');" data-curl="curl http://localhost:3000/api/v1/products/ID/related" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/products/:id/related');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="catalog-variants">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/products/:id/variants</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Danh sách biến thể (size, giá, SKU).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ID hoặc slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/products/:id/variants');" data-curl="curl http://localhost:3000/api/v1/products/ID/variants" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/products/:id/variants');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="catalog-view">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/products/:id/view</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Tăng lượt xem sản phẩm (không cần đăng nhập).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ID hoặc slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/products/:id/view');" data-curl="curl -X POST http://localhost:3000/api/v1/products/ID/view" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;OK&quot;}">api.post('/api/v1/products/:id/view');</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-reviews">Reviews</h3>
+      <div class="endpoint-card" id="review-list">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/products/:id/reviews</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đánh giá của sản phẩm (phân trang).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Product ID/slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/products/:id/reviews');" data-curl="curl http://localhost:3000/api/v1/products/ID/reviews" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/products/:id/reviews');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="review-create">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/products/:id/reviews</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Khách hàng tạo đánh giá.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">rating</td><td class="param-type">number</td><td><span class="param-req yes">YES</span></td><td>1-5</td></tr><tr><td class="param-name">comment</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Tối đa 1000 ký tự</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/products/:id/reviews', { rating: 5, comment: '...' }, { withCredentials: true });" data-curl="curl -X POST .../reviews -b cookies.txt -H 'Content-Type: application/json' -d '{&quot;rating&quot;:5}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đánh giá thành công&quot;,&quot;data&quot;:{}}">api.post('/api/v1/products/:id/reviews', { rating: 5, comment: '...' }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="review-approve">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag patch">PATCH</span><span class="endpoint-path">/api/v1/products/:id/reviews/:reviewId/approve</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN, SALES</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Duyệt đánh giá chờ kiểm duyệt.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">reviewId</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Review MongoDB ID</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.patch('/api/v1/products/:id/reviews/:reviewId/approve', {}, { withCredentials: true });" data-curl="curl -X PATCH .../approve -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đã duyệt đánh giá&quot;,&quot;data&quot;:{}}">api.patch('/api/v1/products/:id/reviews/:reviewId/approve', {}, { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-categories">Categories</h3>
+      <div class="endpoint-card" id="cat-list">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/categories</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Danh sách danh mục đang hoạt động (storefront).</p>
 
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/categories');" data-curl="curl http://localhost:3000/api/v1/categories" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/categories');</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="cat-detail">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/categories/:idOrSlug</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Chi tiết danh mục theo ID hoặc slug.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">idOrSlug</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ID hoặc slug</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/categories/hoa-tuoi');" data-curl="curl http://localhost:3000/api/v1/categories/hoa-tuoi" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/categories/hoa-tuoi');</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-categories-admin">Categories (Admin)</h3>
+      <table class="endpoint-summary-table" id="admin-categories-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/categories/admin/list</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách admin (page, limit, search, isActive)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/categories/admin</td><td>ADMIN</td><td>Tạo: name, slug?, description?, imageUrl?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>Cập nhật danh mục</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/categories/admin/:id/toggle</td><td>ADMIN</td><td>Body: { isActive: boolean }</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>Xóa danh mục</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/categories/</td><td>ADMIN</td><td>Legacy create</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/categories/:id</td><td>ADMIN</td><td>Legacy update</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-users">Users</h3>
+      <div class="endpoint-card" id="user-get-profile">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/users/profile</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Hồ sơ người dùng đang đăng nhập.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/users/profile', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/users/profile -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{&quot;email&quot;:&quot;...&quot;,&quot;fullName&quot;:&quot;...&quot;,&quot;role&quot;:&quot;CUSTOMER&quot;}}">api.get('/api/v1/users/profile', { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="user-put-profile">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag put">PUT</span><span class="endpoint-path">/api/v1/users/profile</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER, ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Cập nhật họ tên, số điện thoại.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">fullName</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Họ tên</td></tr><tr><td class="param-name">phone</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>SĐT</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.put('/api/v1/users/profile', { fullName, phone }, { withCredentials: true });" data-curl="curl -X PUT .../profile -b cookies.txt -H 'Content-Type: application/json' -d '{}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Cập nhật thông tin thành công.&quot;,&quot;data&quot;:{}}">api.put('/api/v1/users/profile', { fullName, phone }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="user-change-password">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/users/change-password</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER, ADMIN, ...</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đổi mật khẩu (mới tối thiểu 8 ký tự).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">currentPassword</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Mật khẩu hiện tại</td></tr><tr><td class="param-name">newPassword</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Tối thiểu 8 ký tự</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/users/change-password', { currentPassword, newPassword }, { withCredentials: true });" data-curl="curl -X POST .../change-password -b cookies.txt -d '{}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đổi mật khẩu thành công.&quot;}">api.post('/api/v1/users/change-password', { currentPassword, newPassword }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="user-get-favorites">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/users/favorites</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Danh sách sản phẩm yêu thích.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/users/favorites', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/users/favorites -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/users/favorites', { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="user-add-favorite">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/users/favorites/:productId</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Thêm sản phẩm vào yêu thích. DELETE cùng path để xóa.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">productId</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>MongoDB Product ID</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/users/favorites/PRODUCT_ID', {}, { withCredentials: true });" data-curl="curl -X POST .../favorites/ID -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đã thêm vào yêu thích&quot;}">api.post('/api/v1/users/favorites/PRODUCT_ID', {}, { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-orders">Orders</h3>
+      <div class="endpoint-card" id="order-list">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/orders</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Admin: tất cả đơn. Customer: đơn của mình. Hỗ trợ lọc status, paymentStatus, dateFrom/dateTo, search.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">page</td><td class="param-type">number</td><td><span class="param-req no">NO</span></td><td>Trang</td></tr><tr><td class="param-name">limit</td><td class="param-type">number</td><td><span class="param-req no">NO</span></td><td>1-100</td></tr><tr><td class="param-name">status</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>OrderStatus enum</td></tr><tr><td class="param-name">statusGroup</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>pending|shipping|completed|cancelled</td></tr><tr><td class="param-name">paymentStatus</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>PaymentStatus</td></tr><tr><td class="param-name">search</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Tìm kiếm</td></tr><tr><td class="param-name">includeSummary</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>true|false</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/orders', { params: { page: 1 }, withCredentials: true });" data-curl="curl 'http://localhost:3000/api/v1/orders?page=1' -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{&quot;items&quot;:[],&quot;pagination&quot;:{}}}">api.get('/api/v1/orders', { params: { page: 1 }, withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="order-detail">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/orders/:id</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Chi tiết một đơn hàng.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">id</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Order MongoDB ID</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/orders/:id', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/orders/ID -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/orders/:id', { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="order-cart-sync">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/orders/cart/sync</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đồng bộ giỏ hàng server-side.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/orders/cart/sync', { items: [] }, { withCredentials: true });" data-curl="curl -X POST .../cart/sync -b cookies.txt -d '{}'" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.post('/api/v1/orders/cart/sync', { items: [] }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="order-place">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/orders</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Đặt hàng từ giỏ.</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">cartId</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Cart ID</td></tr><tr><td class="param-name">recipientInfo</td><td class="param-type">object</td><td><span class="param-req yes">YES</span></td><td>fullName, phone (vi-VN)</td></tr><tr><td class="param-name">paymentMethod</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>MOMO | COD | CASH</td></tr><tr><td class="param-name">voucherCode</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Mã voucher</td></tr><tr><td class="param-name">orderType</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>OrderType enum</td></tr><tr><td class="param-name">note</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Ghi chú</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/orders', { cartId, recipientInfo, paymentMethod: 'COD' }, { withCredentials: true });" data-curl="curl -X POST http://localhost:3000/api/v1/orders -b cookies.txt -d '{}'" data-response="{&quot;success&quot;:true,&quot;data&quot;:{&quot;orderId&quot;:&quot;...&quot;}}">api.post('/api/v1/orders', { cartId, recipientInfo, paymentMethod: 'COD' }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="order-status">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag patch">PATCH</span><span class="endpoint-path">/api/v1/orders/:id/status</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN, SALES, STORE_STAFF</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Cập nhật trạng thái đơn (OrderStatus enum).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">status</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>OrderStatus</td></tr><tr><td class="param-name">note</td><td class="param-type">string</td><td><span class="param-req no">NO</span></td><td>Ghi chú</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.patch('/api/v1/orders/:id/status', { status: 'CONFIRMED' }, { withCredentials: true });" data-curl="curl -X PATCH .../status -b cookies.txt -d '{&quot;status&quot;:&quot;CONFIRMED&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Cập nhật trạng thái thành công&quot;}">api.patch('/api/v1/orders/:id/status', { status: 'CONFIRMED' }, { withCredentials: true });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="order-cancel">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/orders/:id/cancel</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">CUSTOMER, ADMIN</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Hủy đơn (bắt buộc reason).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">reason</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Lý do hủy</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/orders/:id/cancel', { reason: '...' }, { withCredentials: true });" data-curl="curl -X POST .../cancel -b cookies.txt -d '{&quot;reason&quot;:&quot;...&quot;}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Đã hủy đơn&quot;}">api.post('/api/v1/orders/:id/cancel', { reason: '...' }, { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-addresses">Addresses</h3>
+      <table class="endpoint-summary-table" id="addresses-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/addresses</td><td>CUSTOMER</td><td>Danh sách địa chỉ</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/addresses</td><td>CUSTOMER</td><td>Tạo: street, city, district?, ward?, label?, isDefault?</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/addresses/:id</td><td>CUSTOMER</td><td>Xóa địa chỉ</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/addresses/:id/default</td><td>CUSTOMER</td><td>Đặt làm mặc định</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-payments">Payments</h3>
+      <table class="endpoint-summary-table" id="payments-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/payments/order/:orderId</td><td>AUTH</td><td>Thanh toán theo đơn</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/payments/:id/confirm</td><td>ADMIN, SALES, STORE_STAFF</td><td>Xác nhận thanh toán (transactionId?)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/payments/:id/process</td><td>AUTH</td><td>Xử lý MOMO/COD</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/payments/momo-ipn</td><td>PUBLIC</td><td>Webhook MoMo IPN</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-notifications">Notifications</h3>
+      <table class="endpoint-summary-table" id="notif-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/notifications</td><td>AUTH</td><td>Thông báo của user</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/notifications/:id/read</td><td>AUTH</td><td>Đánh dấu đã đọc</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-stock">Inventory</h3>
+      <table class="endpoint-summary-table" id="stock-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/stock?warehouseId=</td><td>ADMIN, WAREHOUSE_STAFF</td><td>Mức tồn kho</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/stock/import</td><td>ADMIN, WAREHOUSE_STAFF</td><td>Nhập kho: warehouseId, quantity, variantId|materialId, reason?</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-vouchers">Marketing (Vouchers)</h3>
+      <table class="endpoint-summary-table" id="vouchers-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/vouchers</td><td>ADMIN</td><td>Danh sách voucher</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/vouchers</td><td>ADMIN</td><td>Tạo: code, discountType, discountValue, validUntil, ...</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/vouchers/:id/toggle</td><td>ADMIN</td><td>Body: { isActive: boolean }</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-admin">Admin Portal</h3>
+      <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Staff</h4>
+      <table class="endpoint-summary-table" id="admin-staff-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Danh sách nhân viên (query: page, limit, search, role)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Tạo nhân viên</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Cập nhật nhân viên</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Xóa nhân viên</td></tr>
+</tbody></table>
+      <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Customers</h4>
+      <table class="endpoint-summary-table" id="admin-customers-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/customers</td><td>ADMIN</td><td>Danh sách khách hàng</td></tr><tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/customers/:id</td><td>ADMIN</td><td>Chi tiết khách</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/customers</td><td>ADMIN</td><td>Tạo khách hàng</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/admin/customers/:id/status</td><td>ADMIN</td><td>Cập nhật trạng thái (active/inactive)</td></tr>
+</tbody></table>
+      <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Shifts</h4>
+      <table class="endpoint-summary-table" id="admin-shifts-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Danh sách ca làm</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Tạo ca</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Cập nhật ca</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Hủy ca</td></tr>
+</tbody></table>
+      <div class="endpoint-card compact-card" id="admin-dashboard">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/admin/dashboard</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Số liệu tổng quan dashboard.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/admin/dashboard', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/admin/dashboard -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/admin/dashboard', { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <div class="endpoint-card compact-card" id="admin-reports">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/admin/reports</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Báo cáo doanh thu / đơn hàng.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/admin/reports', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/admin/reports -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/admin/reports', { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <div class="endpoint-card compact-card" id="admin-settings">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/admin/settings</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">GET cài đặt cửa hàng. PUT cập nhật (storeName, supportEmail, phone, address, vnpayActive, codActive, momoActive, vat, currency, notifyEmail, webhookUrl, logoUrl, defaultShippingFee, freeShippingThreshold, ...). POST <code>/api/v1/admin/settings/rotate-api-key</code> — xoay API key (ADMIN).</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/admin/settings', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/admin/settings -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:{}}">api.get('/api/v1/admin/settings', { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <div class="endpoint-card" id="admin-upload">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/admin/upload/image</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Upload ảnh multipart/form-data, field name: image. Trả URL /uploads/...</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">image</td><td class="param-type">file</td><td><span class="param-req yes">YES</span></td><td>image/jpeg|png|webp, max 5MB</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="const fd = new FormData(); fd.append('image', file);
+api.post('/api/v1/admin/upload/image', fd, { withCredentials: true });" data-curl="curl -X POST .../admin/upload/image -b cookies.txt -F 'image=@photo.jpg'" data-response="{&quot;success&quot;:true,&quot;data&quot;:{&quot;url&quot;:&quot;/uploads/...&quot;}}">const fd = new FormData(); fd.append('image', file);
+api.post('/api/v1/admin/upload/image', fd, { withCredentials: true });</pre>
+</div></div>
+</div></div>
+      <h3 class="section-heading" id="section-products-admin">Products (Admin)</h3>
+      <table class="endpoint-summary-table" id="admin-products-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/summary</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Thống kê sản phẩm</td></tr><tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/list</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách admin (status, stockFilter, categoryId, search)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/admin</td><td>ADMIN</td><td>Tạo SP: name, categoryId, sku, price, stock, status?, mainImageUrl?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/admin/:id</td><td>ADMIN</td><td>Cập nhật SP admin</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/</td><td>ADMIN</td><td>Legacy tạo SP</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/:id</td><td>ADMIN</td><td>Legacy cập nhật</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/publish</td><td>ADMIN</td><td>Xuất bản</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/discontinue</td><td>ADMIN</td><td>Ngừng kinh doanh</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/:id/variants</td><td>ADMIN</td><td>Tạo biến thể: sku, price, sizeName</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-blogs">Blogs</h3>
+      <table class="endpoint-summary-table" id="blogs-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/blogs</td><td>PUBLIC</td><td>Danh sách bài viết</td></tr><tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/blogs/:slug</td><td>PUBLIC</td><td>Chi tiết theo slug</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/blogs</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Tạo bài: title, slug, content, excerpt, coverImage, category, tags?, isPublished?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/blogs/:id</td><td>ADMIN, blog staff</td><td>Cập nhật</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/blogs/:id</td><td>ADMIN, blog staff</td><td>Xóa bài</td></tr>
+</tbody></table>
+      <h3 class="section-heading" id="section-support">Support</h3>
+      <div class="endpoint-card" id="support-ticket">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag post">POST</span><span class="endpoint-path">/api/v1/support/tickets</span></div>
+<div class="endpoint-meta"><span class="meta-badge public">PUBLIC</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Gửi yêu cầu hỗ trợ (auth optional — gắn userId nếu đã đăng nhập).</p>
+<span class="details-sub-heading">Parameters</span>
+<table class="param-table"><thead><tr><th>Tham số</th><th>Kiểu</th><th>Yêu cầu</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td class="param-name">fullName</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Họ tên</td></tr><tr><td class="param-name">email</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Email</td></tr><tr><td class="param-name">phone</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>SĐT</td></tr><tr><td class="param-name">subject</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Tiêu đề</td></tr><tr><td class="param-name">category</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>ORDER|PAYMENT|PRODUCT|OTHER</td></tr><tr><td class="param-name">message</td><td class="param-type">string</td><td><span class="param-req yes">YES</span></td><td>Nội dung</td></tr>
+</tbody></table>
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.post('/api/v1/support/tickets', { fullName, email, phone, subject, category: 'ORDER', message });" data-curl="curl -X POST .../support/tickets -H 'Content-Type: application/json' -d '{}'" data-response="{&quot;success&quot;:true,&quot;message&quot;:&quot;Ticket created&quot;}">api.post('/api/v1/support/tickets', { fullName, email, phone, subject, category: 'ORDER', message });</pre>
+</div></div>
+</div></div><div class="endpoint-card" id="support-my-tickets">
+<div class="endpoint-header">
+<div class="endpoint-title-group"><span class="method-tag get">GET</span><span class="endpoint-path">/api/v1/support/my-tickets</span></div>
+<div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span></div></div>
+<div class="endpoint-body">
+<div class="endpoint-details">
+<p class="endpoint-description">Danh sách ticket của user đang đăng nhập.</p>
+
+</div>
+<div class="endpoint-code-preview">
+<div class="code-tabs">
+<button class="code-tab-btn active" onclick="switchCode(this,'axios')">Axios</button>
+<button class="code-tab-btn" onclick="switchCode(this,'curl')">cURL</button>
+<button class="code-tab-btn" onclick="switchCode(this,'response')">Response</button>
+</div>
+<div class="code-container">
+<button class="copy-btn" onclick="copyCode(this)"><span>📋 Copy</span></button>
+<pre class="code-block" data-axios="api.get('/api/v1/support/my-tickets', { withCredentials: true });" data-curl="curl http://localhost:3000/api/v1/support/my-tickets -b cookies.txt" data-response="{&quot;success&quot;:true,&quot;data&quot;:[]}">api.get('/api/v1/support/my-tickets', { withCredentials: true });</pre>
+</div></div>
+</div></div>
     </div>
-    
     <footer class="docs-footer">
-      <p>&copy; 2026 UTESHOP Premium E-Commerce System. All rights reserved.</p>
-      <p style="margin-top: 8px; font-size: 11px; opacity: 0.6;">Được tối ưu hóa bằng HTML5, CSS3, & Outfit Typography</p>
+      <p>&copy; 2026 UTESHOP Premium E-Commerce System. Đồng bộ với backend /api/v1.</p>
     </footer>
   </main>
-
-  <!-- Interactive JavaScript logic to simulate Stripe Docs code switches & live searches -->
   <script>
     function switchCode(button, mode) {
       const container = button.closest('.endpoint-code-preview');
       const pre = container.querySelector('pre');
-      const buttons = container.querySelectorAll('.code-tab-btn');
-      
-      buttons.forEach(btn => btn.classList.remove('active'));
+      container.querySelectorAll('.code-tab-btn').forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
-      
-      if (mode === 'axios') {
-        pre.textContent = pre.getAttribute('data-axios');
-      } else if (mode === 'curl') {
-        pre.textContent = pre.getAttribute('data-curl');
-      } else if (mode === 'response') {
-        pre.textContent = JSON.stringify(JSON.parse(pre.getAttribute('data-response')), null, 2);
-      }
+      if (mode === 'axios') pre.textContent = pre.getAttribute('data-axios');
+      else if (mode === 'curl') pre.textContent = pre.getAttribute('data-curl');
+      else if (mode === 'response') pre.textContent = JSON.stringify(JSON.parse(pre.getAttribute('data-response')), null, 2);
     }
-    
     function copyCode(button) {
-      const container = button.closest('.code-container');
-      const pre = container.querySelector('pre');
+      const pre = button.closest('.code-container').querySelector('pre');
       navigator.clipboard.writeText(pre.textContent).then(() => {
         const textSpan = button.querySelector('span');
-        textSpan.textContent = '✅ Copied!';
-        button.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-        button.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        
-        setTimeout(() => {
-          textSpan.textContent = '📋 Copy';
-          button.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-          button.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        }, 2000);
+        textSpan.textContent = 'Copied!';
+        setTimeout(() => { textSpan.textContent = '📋 Copy'; }, 2000);
       });
     }
-
-    // Live search functionality
-    const searchInput = document.getElementById('route-search');
-    searchInput.addEventListener('input', function(e) {
+    document.getElementById('route-search').addEventListener('input', function(e) {
       const val = e.target.value.toLowerCase().trim();
-      const menuItems = document.querySelectorAll('.menu-item');
-      const endpointCards = document.querySelectorAll('.endpoint-card');
-      
-      menuItems.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(val)) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(val) ? 'block' : 'none';
       });
-      
-      endpointCards.forEach(card => {
-        const path = card.querySelector('.endpoint-path').textContent.toLowerCase();
-        const desc = card.querySelector('.endpoint-description').textContent.toLowerCase();
-        if (path.includes(val) || desc.includes(val)) {
-          card.style.display = 'block';
-        } else {
-          card.style.display = 'none';
-        }
+      document.querySelectorAll('.endpoint-card').forEach(card => {
+        const path = card.querySelector('.endpoint-path')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.endpoint-description')?.textContent.toLowerCase() || '';
+        card.style.display = (path.includes(val) || desc.includes(val)) ? 'block' : 'none';
+      });
+      document.querySelectorAll('.endpoint-summary-table').forEach(table => {
+        const text = table.textContent.toLowerCase();
+        table.style.display = text.includes(val) ? 'table' : 'none';
+      });
+      document.querySelectorAll('.overview-panel').forEach(panel => {
+        panel.style.display = panel.textContent.toLowerCase().includes(val) ? 'block' : 'none';
       });
     });
   </script>

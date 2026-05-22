@@ -56,6 +56,42 @@ export const validateUpdateCategory = [
   handleValidationErrors,
 ];
 
+export const validateCategoryId = [
+  param('id').custom(isObjectId).withMessage('Category ID không hợp lệ'),
+  handleValidationErrors,
+];
+
+export const validateToggleCategory = [
+  body('isActive').isBoolean().withMessage('isActive phải là boolean'),
+  handleValidationErrors,
+];
+
+export const validateAdminCategoryList = [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('search').optional().trim().isLength({ max: 100 }),
+  query('isActive').optional().isIn(['true', 'false']),
+  handleValidationErrors,
+];
+
+export const validateAdminCreateCategory = [
+  body('name').notEmpty().withMessage('Tên danh mục là bắt buộc').trim().isLength({ max: 100 }),
+  body('slug').optional().trim().matches(/^[a-z0-9-]+$/).withMessage('Slug chỉ chứa chữ thường, số và dấu -'),
+  body('description').optional().trim().isLength({ max: 500 }),
+  body('imageUrl').optional().trim().isLength({ max: 500 }),
+  handleValidationErrors,
+];
+
+export const validateAdminUpdateCategory = [
+  param('id').custom(isObjectId),
+  body('name').optional().trim().isLength({ max: 100 }),
+  body('slug').optional().trim().matches(/^[a-z0-9-]+$/).withMessage('Slug chỉ chứa chữ thường, số và dấu -'),
+  body('description').optional().trim().isLength({ max: 500 }),
+  body('imageUrl').optional().trim().isLength({ max: 500 }),
+  body('isActive').optional().isBoolean(),
+  handleValidationErrors,
+];
+
 // ─── Review ───────────────────────────────────────────────────────────────────
 
 export const validateCreateReview = [

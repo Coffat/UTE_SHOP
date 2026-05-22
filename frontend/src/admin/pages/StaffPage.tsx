@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
+import { useConfirm, CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
 import {
   fetchStaffList,
@@ -1315,13 +1315,15 @@ export function StaffPage() {
         </div>
       </div>
 
-      {/* Add / Edit Slideover Panel */}
-      <Slideover
+      <CrudModal
         isOpen={slideoverOpen}
+        mode={editStaff ? "edit" : "create"}
         title={editStaff ? "Chỉnh sửa thông tin" : "Thêm nhân viên mới"}
         onClose={() => setSlideoverOpen(false)}
+        onSubmit={handleSubmit}
+        submitLabel={editStaff ? "Lưu thay đổi" : "Thêm nhân viên"}
+        size="lg"
       >
-        <form className="admin-form" onSubmit={handleSubmit} style={{ padding: "20px" }}>
           <FormField label="Họ và tên" required>
             <FormInput
               placeholder="Nhập tên nhân viên..."
@@ -1371,44 +1373,7 @@ export function StaffPage() {
               onChange={(e) => setFormPerformance(Number(e.target.value))}
             />
           </FormField>
-
-          <div
-            className="admin-form-actions"
-            style={{ display: "flex", gap: "10px", marginTop: "24px", justifyContent: "flex-end" }}
-          >
-            <button
-              type="button"
-              className="admin-btn admin-btn-ghost"
-              onClick={() => setSlideoverOpen(false)}
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid var(--adm-border)",
-                color: "var(--adm-text-dim)",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                cursor: "pointer",
-              }}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="admin-btn admin-btn-primary"
-              style={{
-                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 20px",
-                color: "#fff",
-                fontWeight: "600",
-                cursor: "pointer",
-              }}
-            >
-              {editStaff ? "Lưu thay đổi" : "Thêm nhân viên"}
-            </button>
-          </div>
-        </form>
-      </Slideover>
+      </CrudModal>
     </div>
   );
 }

@@ -104,6 +104,103 @@ export function Slideover({ isOpen, title, onClose, children, width = "480px" }:
   );
 }
 
+// ── CRUD Modal (center form dialog) ───────────────────────────────────────────
+interface CrudModalProps {
+  isOpen: boolean;
+  mode: "create" | "edit";
+  title?: string;
+  onClose: () => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  submitting?: boolean;
+  submitLabel?: string;
+  cancelLabel?: string;
+  children: ReactNode;
+  size?: "md" | "lg";
+}
+
+export function CrudModal({
+  isOpen,
+  mode,
+  title,
+  onClose,
+  onSubmit,
+  submitting = false,
+  submitLabel,
+  cancelLabel = "Hủy",
+  children,
+  size = "md",
+}: CrudModalProps) {
+  if (!isOpen) return null;
+
+  const resolvedTitle = title ?? (mode === "create" ? "Thêm mới" : "Chỉnh sửa");
+  const resolvedSubmitLabel =
+    submitLabel ?? (mode === "create" ? "Tạo mới" : "Lưu thay đổi");
+
+  return (
+    <div
+      className={`admin-crud-modal-overlay ${isOpen ? "open" : ""}`}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className={`admin-crud-modal ${size === "lg" ? "admin-crud-modal--lg" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-crud-modal-title"
+      >
+        <div className="admin-crud-modal-header">
+          <h2 id="admin-crud-modal-title" className="admin-crud-modal-title">
+            {resolvedTitle}
+          </h2>
+          <button type="button" className="admin-crud-modal-close" onClick={onClose} aria-label="Đóng">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <form className="admin-crud-modal-form admin-form" onSubmit={onSubmit}>
+          <div className="admin-crud-modal-body">{children}</div>
+          <div className="admin-form-actions">
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose} disabled={submitting}>
+              {cancelLabel}
+            </button>
+            <button type="submit" className="admin-btn admin-btn-primary" disabled={submitting}>
+              {submitting ? "Đang lưu..." : resolvedSubmitLabel}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function useCrudModal<T>() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<"create" | "edit">("create");
+  const [editingItem, setEditingItem] = useState<T | null>(null);
+
+  const openCreate = useCallback(() => {
+    setEditingItem(null);
+    setMode("create");
+    setIsOpen(true);
+  }, []);
+
+  const openEdit = useCallback((item: T) => {
+    setEditingItem(item);
+    setMode("edit");
+    setIsOpen(true);
+  }, []);
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    setEditingItem(null);
+  }, []);
+
+  return { isOpen, mode, editingItem, openCreate, openEdit, close };
+}
+
 // ── Form Field ────────────────────────────────────────────────────────────────
 interface FormFieldProps {
   label: string;
