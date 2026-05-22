@@ -1,22 +1,23 @@
 import { useLocation, NavLink } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import type { NavItem, AdminRole } from "../types/admin.types";
+import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
+import type { NavItem } from "../types/admin.types";
 
-// ── Nav config ───────────────────────────────────────────────────────────────
-const NAV_ITEMS: NavItem[] = [
+// ── Nav configs ──────────────────────────────────────────────────────────────
+const ADMIN_NAV_ITEMS: NavItem[] = [
   {
     key: "dashboard",
     label: "Tổng quan",
     icon: "",
     path: "/admin/dashboard",
-    allowedRoles: ["admin", "staff"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "orders",
     label: "Đơn hàng",
     icon: "",
     path: "/admin/orders",
-    allowedRoles: ["admin", "staff"],
+    allowedRoles: ["ADMIN"],
     badge: 8,
   },
   {
@@ -24,52 +25,87 @@ const NAV_ITEMS: NavItem[] = [
     label: "Sản phẩm",
     icon: "",
     path: "/admin/products",
-    allowedRoles: ["admin", "staff"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "customers",
     label: "Khách hàng",
     icon: "",
     path: "/admin/customers",
-    allowedRoles: ["admin"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "staff",
     label: "Nhân viên",
     icon: "",
     path: "/admin/staff",
-    allowedRoles: ["admin"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "reports",
     label: "Báo cáo",
     icon: "",
     path: "/admin/reports",
-    allowedRoles: ["admin"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "settings",
     label: "Cài đặt",
     icon: "",
     path: "/admin/settings",
-    allowedRoles: ["admin"],
+    allowedRoles: ["ADMIN"],
   },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [
+const STAFF_NAV_ITEMS: NavItem[] = [
+  {
+    key: "orders",
+    label: "Đơn hàng",
+    icon: "",
+    path: "/staff/orders",
+    allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
+    badge: 8,
+  },
+  {
+    key: "products",
+    label: "Sản phẩm",
+    icon: "",
+    path: "/staff/products",
+    allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
+  },
+];
+
+const ADMIN_BOTTOM_ITEMS: NavItem[] = [
   {
     key: "profile",
     label: "Hồ sơ",
     icon: "",
     path: "/admin/profile",
-    allowedRoles: ["admin", "staff"],
+    allowedRoles: ["ADMIN"],
   },
   {
     key: "logout",
     label: "Đăng xuất",
     icon: "",
     path: "/login",
-    allowedRoles: ["admin", "staff"],
+    allowedRoles: ["ADMIN"],
+  },
+];
+
+const STAFF_BOTTOM_ITEMS: NavItem[] = [
+  {
+    key: "profile",
+    label: "Hồ sơ",
+    icon: "",
+    path: "/staff/profile",
+    allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
+  },
+  {
+    key: "logout",
+    label: "Đăng xuất",
+    icon: "",
+    path: "/login",
+    allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
   },
 ];
 
@@ -182,17 +218,24 @@ function getIcon(key: string) {
 }
 
 // ── Sidebar Component ─────────────────────────────────────────────────────────
-interface AdminSidebarProps {
+interface DashboardSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
 }
 
-export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
-  const { user, role, isAdmin, switchRole } = useAdminAuth();
+export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
+  const { user, role } = useAdminAuth();
   const location = useLocation();
 
-  const visibleItems = NAV_ITEMS.filter((item) =>
-    item.allowedRoles.includes(role as AdminRole)
+  const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : STAFF_NAV_ITEMS;
+  const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
+
+  const visibleItems = navItems.filter((item) =>
+    item.allowedRoles.includes(role)
+  );
+
+  const visibleBottomItems = bottomItems.filter((item) =>
+    item.allowedRoles.includes(role)
   );
 
   return (
@@ -217,24 +260,6 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
         )}
       </div>
 
-      {/* Role switcher (demo) */}
-      {!collapsed && (
-        <div className="admin-role-switcher">
-          <button
-            className={`admin-role-btn ${isAdmin ? "active" : ""}`}
-            onClick={() => switchRole("admin")}
-          >
-            Admin
-          </button>
-          <button
-            className={`admin-role-btn ${!isAdmin ? "active" : ""}`}
-            onClick={() => switchRole("staff")}
-          >
-            Staff
-          </button>
-        </div>
-      )}
-
       {/* Nav section label */}
       {!collapsed && (
         <p className="admin-nav-section-label">MENU CHÍNH</p>
@@ -243,6 +268,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
       {/* Navigation */}
       <nav className="admin-nav">
         {visibleItems.map((item) => {
+          // Direct comparison or startsWith logic to determine active item
           const isActive = location.pathname === item.path ||
             (item.path !== "/admin/dashboard" && location.pathname.startsWith(item.path));
           return (
@@ -275,7 +301,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
       {/* Bottom items */}
       {!collapsed && <p className="admin-nav-section-label">TÀI KHOẢN</p>}
       <nav className="admin-nav admin-nav-bottom">
-        {BOTTOM_ITEMS.map((item) => {
+        {visibleBottomItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           return (
             <NavLink
@@ -295,12 +321,12 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
       {!collapsed && user && (
         <div className="admin-sidebar-user">
           <div className="admin-sidebar-avatar">
-            {user.fullName.charAt(0)}
+            {getAvatarInitial(getDisplayName(user))}
           </div>
           <div className="admin-sidebar-user-info">
             <p className="admin-sidebar-user-name">{user.fullName}</p>
             <p className="admin-sidebar-user-role">
-              {role === "admin" ? "Quản trị viên" : "Nhân viên"} · {user.department}
+              {role === "ADMIN" ? "Quản trị viên" : "Nhân viên"} · {user.department}
             </p>
           </div>
         </div>

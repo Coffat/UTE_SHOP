@@ -1,14 +1,18 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
+import { isAxiosError } from "axios";
 import { api } from "../../lib/api";
-import type { AdminRole, AdminUser } from "../types/admin.types";
+import { clearAuthSessionFlag, hasAuthSessionFlag } from "@/lib/authSession";
+import type { AdminUser } from "../types/admin.types";
 
 interface AdminAuthContextValue {
   user: AdminUser | null;
-  role: AdminRole;
+  role: string;
   isAdmin: boolean;
   isStaff: boolean;
-  switchRole: (role: AdminRole) => void;
+  isAuthenticated: boolean;
+  loading: boolean;
+  switchRole: (role: string) => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -19,32 +23,42 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+
     async function checkAuth() {
+      if (!hasAuthSessionFlag()) {
+        if (active) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         const { data } = await api.get("/api/v1/users/profile");
         if (!active) return;
-        
+
         if (data.success && data.data) {
           const dbUser = data.data;
-          
-          // Map backend roles to frontend admin roles
-          let mappedRole: AdminRole | null = null;
-          if (dbUser.role === "ADMIN") {
-            mappedRole = "admin";
-          } else if (["SALES", "WAREHOUSE_STAFF", "STORE_STAFF"].includes(dbUser.role)) {
-            mappedRole = "staff";
-          }
 
-          // If the user does not have permission, or is suspended/inactive
-          if (!mappedRole || dbUser.isActive === false || dbUser.status === "SUSPENDED") {
+          const userRole = dbUser.role?.toUpperCase();
+          const isAllowedRole = ["ADMIN", "SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(
+            userRole || ""
+          );
+
+          if (!isAllowedRole || dbUser.isActive === false || dbUser.status === "SUSPENDED") {
             setUser(null);
           } else {
             setUser({
               id: dbUser._id || dbUser.id,
               fullName: dbUser.fullName || "Nhân viên UTE SHOP",
-              email: dbUser.email,
-              role: mappedRole,
-              department: dbUser.role === "ADMIN" ? "Ban quản lý" : (dbUser.role === "WAREHOUSE_STAFF" ? "Kho vận" : "Bán hàng"),
+              email: dbUser.email ?? "",
+              role: userRole ?? "",
+              department:
+                dbUser.role === "ADMIN"
+                  ? "Ban quản lý"
+                  : dbUser.role === "WAREHOUSE_STAFF"
+                    ? "Kho vận"
+                    : "Bán hàng",
               isActive: dbUser.isActive !== false,
             });
           }
@@ -53,6 +67,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         if (active) {
+          if (isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
+            clearAuthSessionFlag();
+          }
           setUser(null);
         }
       } finally {
@@ -61,20 +78,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-    checkAuth();
+
+    void checkAuth();
     return () => {
       active = false;
     };
   }, []);
 
-  const switchRole = (newRole: AdminRole) => {
-    // switchRole is kept as a dummy or no-op so that it doesn't break any references
+  const switchRole = (newRole: string) => {
     console.warn("switchRole to", newRole, "is disabled in production integration mode.");
   };
 
   if (loading) {
     return (
-      <div 
+      <div
         style={{
           height: "100vh",
           display: "flex",
@@ -83,10 +100,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
           justifyContent: "center",
           background: "#050a14",
           color: "#e2e8f0",
-          fontFamily: "'DM Sans', sans-serif"
+          fontFamily: "'DM Sans', sans-serif",
         }}
       >
-        <div 
+        <div
           className="admin-loading-spinner"
           style={{
             width: "48px",
@@ -95,31 +112,39 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             border: "3px solid rgba(99,102,241,0.1)",
             borderTopColor: "#6366f1",
             animation: "spin 1s linear infinite",
-            marginBottom: "16px"
+            marginBottom: "16px",
           }}
         />
         <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>Đang xác thực thông tin Admin...</p>
-        <style dangerouslySetInnerHTML={{__html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           @keyframes spin {
             to { transform: rotate(360deg); }
           }
-        `}} />
+        `,
+          }}
+        />
       </div>
     );
   }
 
-  // If not authenticated or mapped as not allowed, redirect to login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  const isAdmin = user.role === "ADMIN";
+  const isStaff = ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(user.role);
 
   return (
     <AdminAuthContext.Provider
       value={{
         user,
         role: user.role,
-        isAdmin: user.role === "admin",
-        isStaff: user.role === "staff",
+        isAdmin,
+        isStaff,
+        isAuthenticated: true,
+        loading: false,
         switchRole,
       }}
     >
@@ -133,4 +158,3 @@ export function useAdminAuth(): AdminAuthContextValue {
   if (!ctx) throw new Error("useAdminAuth must be used inside AdminAuthProvider");
   return ctx;
 }
-

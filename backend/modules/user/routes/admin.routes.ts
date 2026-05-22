@@ -8,6 +8,7 @@ import {
 } from '../middlewares/staff.validation.js';
 import {
   validateCustomerListQuery,
+  validateCustomerId,
   validateUpdateCustomerStatus,
   validateCreateCustomer,
 } from '../middlewares/customer.validation.js';
@@ -23,6 +24,7 @@ import {
   updateStaff,
   deleteStaff,
   listCustomers,
+  getCustomer,
   updateCustomerStatus,
   createCustomer,
   listShifts,
@@ -45,6 +47,7 @@ router.delete('/staff/:id', validateStaffId, deleteStaff);
 
 // ─── Customer Management Routes ──────────────────────────────────────────────
 router.get('/customers', validateCustomerListQuery, listCustomers);
+router.get('/customers/:id', validateCustomerId, getCustomer);
 router.post('/customers', validateCreateCustomer, createCustomer);
 router.patch('/customers/:id/status', validateUpdateCustomerStatus, updateCustomerStatus);
 

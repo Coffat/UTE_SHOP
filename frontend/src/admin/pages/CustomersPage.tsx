@@ -1,7 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
-import { api } from "../../lib/api";
+import {
+  fetchCustomers as fetchCustomersApi,
+  createCustomer as createCustomerApi,
+  updateCustomerStatus,
+} from "../services/adminCustomers.api";
 
 interface Customer {
   id: string;
@@ -108,8 +112,7 @@ export function CustomersPage() {
         params.status = "ACTIVE";
       }
 
-      const response = await api.get("/api/v1/admin/customers", { params });
-      const { items, meta } = response.data.data;
+      const { items, meta } = await fetchCustomersApi(params);
 
       const mapped = items.map(mapBackendToFrontendCustomer);
       setCustomers(mapped);
@@ -147,7 +150,7 @@ export function CustomersPage() {
         password: "Uteshop@123",
       };
 
-      await api.post("/api/v1/admin/customers", payload);
+      await createCustomerApi(payload);
       
       setNewFullName("");
       setNewEmail("");
@@ -173,7 +176,7 @@ export function CustomersPage() {
 
     if (isConfirmed) {
       try {
-        await api.patch(`/api/v1/admin/customers/${cust.id}/status`, { status: 'BANNED' });
+        await updateCustomerStatus(cust.id, "BANNED");
         fetchCustomers();
       } catch (err: any) {
         alert(err.response?.data?.message || "Không thể khóa tài khoản khách hàng");

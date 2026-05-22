@@ -7,12 +7,47 @@ import {
   validateProductId,
   validateCreateVariant,
   validatePagination,
+  validateAdminProductList,
+  validateAdminCreateProduct,
+  validateAdminUpdateProduct,
 } from '../middlewares/catalog.validator.js';
 
 const router = express.Router();
 
 // ─── Public ───────────────────────────────────────────────────────────────────
 router.get('/', validatePagination, productController.listProducts);
+
+// ─── Admin (must be before /:id) ──────────────────────────────────────────────
+const ADMIN_STAFF_READ_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'] as const;
+
+router.get(
+  '/admin/summary',
+  authenticate,
+  authorize(...ADMIN_STAFF_READ_ROLES),
+  productController.adminProductSummary
+);
+router.get(
+  '/admin/list',
+  authenticate,
+  authorize(...ADMIN_STAFF_READ_ROLES),
+  validateAdminProductList,
+  productController.adminListProducts
+);
+router.post(
+  '/admin',
+  authenticate,
+  authorize('ADMIN'),
+  validateAdminCreateProduct,
+  productController.adminCreateProduct
+);
+router.put(
+  '/admin/:id',
+  authenticate,
+  authorize('ADMIN'),
+  validateAdminUpdateProduct,
+  productController.adminUpdateProduct
+);
+
 router.get('/:id', validateProductId, productController.getProduct);
 router.get('/:id/related', validateProductId, productController.getRelatedProducts);
 router.get('/:id/variants', validateProductId, productController.listVariants);

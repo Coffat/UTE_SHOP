@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { sendSuccess } from '../../../shared/utils/apiResponse.js';
+import { AppError } from '../../../shared/utils/AppError.js';
 import { adminService } from '../services/admin.service.js';
 
 // ─── Staff Controller Actions ────────────────────────────────────────────────
@@ -109,6 +110,15 @@ export const listCustomers = asyncHandler(async (req: Request, res: Response) =>
       pages: result.pages,
     },
   });
+});
+
+export const getCustomer = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const customer = await adminService.getCustomerById(id as string);
+  if (!customer) {
+    throw new AppError('Không tìm thấy khách hàng', 404);
+  }
+  return sendSuccess(res, 200, 'Lấy thông tin khách hàng thành công', customer);
 });
 
 export const updateCustomerStatus = asyncHandler(async (req: Request, res: Response) => {

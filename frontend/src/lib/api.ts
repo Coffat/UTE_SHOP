@@ -1,4 +1,6 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
+import { clearAuthSessionFlag } from "./authSession";
+import { runUnauthorizedHandler } from "./unauthorizedHandler";
 
 /**
  * Dev: để trống → gọi cùng origin (Vite), request `/api/*` được proxy tới backend → tránh CORS + Network Error khi quên bật CORS đúng origin.
@@ -22,3 +24,18 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      // 403 = đã đăng nhập nhưng không đủ quyền (vd. staff gọi /favorites) — không logout
+      if (status === 401) {
+        clearAuthSessionFlag();
+        runUnauthorizedHandler();
+      }
+    }
+    return Promise.reject(error);
+  }
+);

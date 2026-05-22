@@ -1,101 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
-import type { Product } from "../types/admin.types";
+import {
+  fetchAdminProducts,
+  fetchProductSummary,
+  fetchCategories,
+  createAdminProduct,
+  updateAdminProduct,
+  discontinueAdminProduct,
+  buildCreatePayloadFromForm,
+  buildUpdatePayloadFromForm,
+  type ProductSummary,
+  type CategoryOption,
+} from "../services/adminProducts.api";
+import type { AdminProductRow } from "../services/mappers/product.mapper";
 
-interface ExtendedProduct extends Product {
-  subName: string;
-  sku: string;
-  iconType: "headphones" | "sneaker" | "backpack" | "hoodie" | "keyboard" | "mouse" | "earbuds";
+function ProductThumbnail({
+  imageUrl,
+  iconType,
+  size = 42,
+}: {
+  imageUrl?: string;
+  iconType: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const showImage = Boolean(imageUrl?.trim()) && !imgError;
+
+  return (
+    <div
+      className="admin-product-thumb"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size <= 36 ? "6px" : "8px",
+        background: "rgba(255, 255, 255, 0.03)",
+        border: "1px solid rgba(255, 255, 255, 0.06)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
+    >
+      {showImage ? (
+        <img
+          src={imageUrl}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        getProductIcon(iconType)
+      )}
+    </div>
+  );
 }
-
-const INITIAL_PRODUCTS: ExtendedProduct[] = [
-  {
-    id: "SP-001",
-    name: "Tai nghe Bluetooth",
-    subName: "Sony WH-1000XM5",
-    sku: "SONY-WH1000XM5",
-    category: "Tai nghe",
-    price: 2990000,
-    stock: 120,
-    status: "active",
-    sales: 248,
-    iconType: "headphones"
-  },
-  {
-    id: "SP-002",
-    name: "Giày Thể Thao Nam",
-    subName: "UltraBoost Light",
-    sku: "UB-LIGHT-001",
-    category: "Giày dép",
-    price: 2350000,
-    stock: 48,
-    status: "active",
-    sales: 210,
-    iconType: "sneaker"
-  },
-  {
-    id: "SP-003",
-    name: "Balo Laptop 15.6 inch",
-    subName: "Mark Ryden MR-9001",
-    sku: "MR-9001-BLK",
-    category: "Balo",
-    price: 1250000,
-    stock: 15,
-    status: "active",
-    sales: 156,
-    iconType: "backpack"
-  },
-  {
-    id: "SP-004",
-    name: "Áo Hoodie Essentials",
-    subName: "Unisex",
-    sku: "HD-ESS-001-BLK",
-    category: "Thời trang",
-    price: 690000,
-    stock: 200,
-    status: "active",
-    sales: 220,
-    iconType: "hoodie"
-  },
-  {
-    id: "SP-005",
-    name: "Bàn phím cơ Keychron",
-    subName: "K8 Pro RGB Brown",
-    sku: "KBP-BRN-RGB",
-    category: "Phụ kiện",
-    price: 2190000,
-    stock: 32,
-    status: "active",
-    sales: 198,
-    iconType: "keyboard"
-  },
-  {
-    id: "SP-006",
-    name: "Chuột Gaming Logitech",
-    subName: "G Pro X Superlight 2",
-    sku: "LOGI-GPX2-BLK",
-    category: "Phụ kiện",
-    price: 2590000,
-    stock: 68,
-    status: "active",
-    sales: 178,
-    iconType: "mouse"
-  },
-  {
-    id: "SP-007",
-    name: "Tai nghe True Wireless",
-    subName: "Samsung Galaxy Buds2 Pro",
-    sku: "SS-BUDS2PRO",
-    category: "Tai nghe",
-    price: 2490000,
-    stock: 0,
-    status: "inactive",
-    sales: 0,
-    iconType: "earbuds"
-  }
-];
 
 function getProductIcon(iconType: string) {
   switch (iconType) {
@@ -190,17 +151,70 @@ export function ProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
-  const [products, setProducts] = useState<ExtendedProduct[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<AdminProductRow[]>([]);
+  const [summary, setSummary] = useState<ProductSummary | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
-  const [editProduct, setEditProduct] = useState<ExtendedProduct | null>(null);
+  const [editProduct, setEditProduct] = useState<AdminProductRow | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { confirm, ModalEl } = useConfirm();
 
-  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))];
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [listResult, summaryResult] = await Promise.all([
+        fetchAdminProducts({
+          page: currentPage,
+          limit: 10,
+          search: search.trim() || undefined,
+          categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+          stockFilter:
+            stockFilter === "all"
+              ? undefined
+              : (stockFilter as "in_stock" | "low_stock" | "out_of_stock"),
+        }),
+        fetchProductSummary(),
+      ]);
+      setProducts(listResult.items);
+      setSummary({
+        ...summaryResult,
+        topCategories: summaryResult.topCategories ?? [],
+        lowStockAlerts: summaryResult.lowStockAlerts ?? [],
+      });
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      setError("Không thể tải danh sách sản phẩm.");
+      setProducts([]);
+      setSummary(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, search, categoryFilter, stockFilter]);
 
-  const totalProductsCount = products.length;
-  const activeProductsCount = products.filter(p => p.status === "active" && p.stock > 0).length;
-  const lowStockProductsCount = products.filter(p => p.stock <= 50).length;
-  const categoriesCount = new Set(products.map(p => p.category)).size;
+  useEffect(() => {
+    fetchCategories()
+      .then(setCategoryOptions)
+      .catch((err) => console.error("Failed to fetch categories:", err));
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => loadProducts(), search ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [loadProducts]);
+
+  const categories = [
+    { id: "all", name: "Tất cả danh mục" },
+    ...categoryOptions.map((c) => ({ id: c.id, name: c.name })),
+  ];
+
+  const totalProductsCount = summary?.total ?? products.length;
+  const activeProductsCount = summary?.active ?? products.filter((p) => p.status === "active" && p.stock > 0).length;
+  const lowStockProductsCount = summary?.lowStock ?? products.filter((p) => p.stock <= 50).length;
+  const categoriesCount = summary?.categories ?? new Set(products.map((p) => p.category)).size;
 
   const statCards = [
     {
@@ -269,89 +283,65 @@ export function ProductsPage() {
     },
   ];
 
-  const filtered = products.filter((p) => {
-    const matchSearch =
-      search === "" ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.subName.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.id.toLowerCase().includes(search.toLowerCase());
+  const filtered = products;
 
-    const matchCat = categoryFilter === "all" || p.category === categoryFilter;
-
-    let matchStock = true;
-    if (stockFilter === "low_stock") {
-      matchStock = p.stock > 0 && p.stock <= 50;
-    } else if (stockFilter === "out_of_stock") {
-      matchStock = p.stock === 0;
-    } else if (stockFilter === "in_stock") {
-      matchStock = p.stock > 0;
-    }
-
-    return matchSearch && matchCat && matchStock;
-  });
-
-  function handleEdit(p: ExtendedProduct) {
+  function handleEdit(p: AdminProductRow) {
     setEditProduct(p);
     setSlideoverOpen(true);
   }
 
-  async function handleDelete(p: ExtendedProduct) {
+  async function handleDelete(p: AdminProductRow) {
+    if (!isAdmin) return;
     const ok = await confirm({
-      title: "Xóa sản phẩm",
-      message: `Bạn có chắc muốn xóa sản phẩm "${p.name} - ${p.subName}"? Thao tác này không thể hoàn tác.`,
+      title: "Ngừng kinh doanh",
+      message: `Ngừng kinh doanh sản phẩm "${p.name}"? Sản phẩm vẫn giữ lịch sử đơn hàng.`,
       variant: "danger",
-      confirmLabel: "Xóa ngay",
+      confirmLabel: "Ngừng KD",
     });
-    if (ok) {
-      setProducts(products.filter((item) => item.id !== p.id));
+    if (!ok) return;
+    try {
+      await discontinueAdminProduct(p.id);
+      await loadProducts();
+    } catch (err) {
+      console.error("Failed to discontinue product:", err);
+      setError("Không thể ngừng kinh doanh sản phẩm.");
     }
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!isAdmin) return;
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const subName = formData.get("subName") as string || "Standard Edition";
-    const sku = formData.get("sku") as string || `SP-${Date.now().toString().slice(-6)}`;
-    const category = formData.get("category") as string;
+    const subName = (formData.get("subName") as string) || "";
+    const sku = (formData.get("sku") as string) || `SKU-${Date.now().toString().slice(-6)}`;
+    const categoryId = formData.get("categoryId") as string;
     const price = Number(formData.get("price"));
     const stock = Number(formData.get("stock"));
-    const status = formData.get("status") as Product["status"];
+    const status = formData.get("status") as AdminProductRow["status"];
 
-    if (editProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editProduct.id
-            ? {
-                ...p,
-                name,
-                subName,
-                sku,
-                category,
-                price,
-                stock,
-                status,
-              }
-            : p
-        )
-      );
-    } else {
-      const newProduct: ExtendedProduct = {
-        id: `SP-${(products.length + 1).toString().padStart(3, "0")}`,
-        name,
-        subName,
-        sku,
-        category,
-        price,
-        stock,
-        status,
-        sales: 0,
-        iconType: "headphones",
-      };
-      setProducts([...products, newProduct]);
+    setSubmitting(true);
+    try {
+      if (editProduct) {
+        await updateAdminProduct(
+          editProduct.id,
+          buildUpdatePayloadFromForm({ name, subName, sku, categoryId, price, stock, status })
+        );
+      } else {
+        await createAdminProduct(
+          buildCreatePayloadFromForm({ name, subName, sku, categoryId, price, stock, status })
+        );
+      }
+      setSlideoverOpen(false);
+      setEditProduct(null);
+      await loadProducts();
+    } catch (err) {
+      console.error("Failed to save product:", err);
+      setError("Không thể lưu sản phẩm. Kiểm tra lại thông tin.");
+    } finally {
+      setSubmitting(false);
     }
-    setSlideoverOpen(false);
   }
 
   return (
@@ -420,32 +410,34 @@ export function ProductsPage() {
           <h2 className="admin-page-title">Sản phẩm</h2>
           <p className="admin-page-subtitle">Quản lý danh mục, tồn kho và trạng thái sản phẩm</p>
         </div>
-        <button
-          className="admin-btn"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "#6366f1",
-            border: "none",
-            color: "#fff",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            fontWeight: 500,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onClick={() => {
-            setEditProduct(null);
-            setSlideoverOpen(true);
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Thêm sản phẩm
-        </button>
+        {isAdmin && (
+          <button
+            className="admin-btn"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "#6366f1",
+              border: "none",
+              color: "#fff",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onClick={() => {
+              setEditProduct(null);
+              setSlideoverOpen(true);
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Thêm sản phẩm
+          </button>
+        )}
       </div>
 
       {/* Stats Cards Row */}
@@ -496,7 +488,10 @@ export function ProductsPage() {
                     className="admin-search-input"
                     style={{ paddingLeft: "32px", fontSize: "12.5px" }}
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
                   />
                 </div>
 
@@ -506,11 +501,14 @@ export function ProductsPage() {
                     className="admin-filter-select"
                     style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: "12.5px", outline: "none", cursor: "pointer", paddingRight: "15px" }}
                     value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    onChange={(e) => {
+                      setCategoryFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
                   >
                     {categories.map((c) => (
-                      <option key={c} value={c} style={{ background: "#0d1526", color: "#fff" }}>
-                        {c === "all" ? "Tất cả danh mục" : c}
+                      <option key={c.id} value={c.id} style={{ background: "#0d1526", color: "#fff" }}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
@@ -522,7 +520,10 @@ export function ProductsPage() {
                     className="admin-filter-select"
                     style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: "12.5px", outline: "none", cursor: "pointer", paddingRight: "15px" }}
                     value={stockFilter}
-                    onChange={(e) => setStockFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStockFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
                   >
                     <option value="all" style={{ background: "#0d1526", color: "#fff" }}>Tất cả tồn kho</option>
                     <option value="in_stock" style={{ background: "#0d1526", color: "#fff" }}>Còn hàng</option>
@@ -574,7 +575,21 @@ export function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((p) => {
+                  {loading && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
+                        Đang tải sản phẩm...
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && error && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#f43f5e" }}>
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && filtered.map((p) => {
                     const statusStyle = getProductStatusStyle(p.stock, p.status);
                     const statusLabel = getProductStatusLabel(p.stock, p.status);
 
@@ -582,23 +597,11 @@ export function ProductsPage() {
                       <tr key={p.id} className="admin-table-row">
                         <td>
                           <div className="admin-table-product" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            {/* Product Thumbnail Wrapper */}
-                            <div
-                              className="admin-product-thumb"
-                              style={{
-                                width: "42px",
-                                height: "42px",
-                                borderRadius: "8px",
-                                background: "rgba(255, 255, 255, 0.03)",
-                                border: "1px solid rgba(255, 255, 255, 0.06)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {getProductIcon(p.iconType)}
-                            </div>
+                            <ProductThumbnail
+                              imageUrl={p.mainImageUrl}
+                              iconType={p.iconType}
+                              size={42}
+                            />
                             <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
                               <p className="admin-product-name" style={{ color: "#fff", fontWeight: 600, fontSize: "14px", margin: 0 }}>
                                 {p.name}
@@ -668,6 +671,7 @@ export function ProductsPage() {
                         </td>
                         <td>
                           <div className="admin-table-actions" style={{ justifyContent: "flex-end", paddingRight: "8px", gap: "8px" }}>
+                            {isAdmin && (
                             <button
                               className="admin-action-btn edit"
                               title="Sửa"
@@ -679,10 +683,11 @@ export function ProductsPage() {
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                               </svg>
                             </button>
-                            {isAdmin && (
+                            )}
+                            {isAdmin && p.backendStatus !== "DISCONTINUED" && (
                               <button
                                 className="admin-action-btn delete"
-                                title="Xóa"
+                                title="Ngừng kinh doanh"
                                 style={{ width: "32px", height: "32px", borderRadius: "6px" }}
                                 onClick={() => handleDelete(p)}
                               >
@@ -725,7 +730,7 @@ export function ProductsPage() {
               }}
             >
               <span style={{ fontSize: "13px", color: "#64748b" }}>
-                Hiển thị 1 đến {filtered.length} trong tổng số 1,248 sản phẩm
+                Hiển thị {filtered.length} / {totalProductsCount.toLocaleString("vi-VN")} sản phẩm
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 {/* Previous Page Button */}
@@ -797,89 +802,23 @@ export function ProductsPage() {
               <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Danh mục nổi bật</h3>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {/* Category Item 1: Tai nghe */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Tai nghe</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>248 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>19.9%</span>
+              {(summary?.topCategories ?? []).length === 0 && (
+                <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>Chưa có dữ liệu danh mục.</p>
+              )}
+              {(summary?.topCategories ?? []).map((cat) => (
+                <div key={cat.categoryId}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                    <span style={{ color: "#e2e8f0", fontWeight: 500 }}>{cat.categoryName}</span>
+                    <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
+                      <span style={{ color: "#64748b" }}>{cat.productCount} sản phẩm</span>
+                      <span style={{ color: "#3b82f6", fontWeight: 600 }}>{cat.percentage}%</span>
+                    </div>
+                  </div>
+                  <div className="cat-progress-bg">
+                    <div className="cat-progress-fill" style={{ width: `${Math.min(cat.percentage, 100)}%` }} />
                   </div>
                 </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "19.9%" }} />
-                </div>
-              </div>
-
-              {/* Category Item 2: Giày dép */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Giày dép</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>210 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>16.9%</span>
-                  </div>
-                </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "16.9%" }} />
-                </div>
-              </div>
-
-              {/* Category Item 3: Balo */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Balo</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>156 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>12.5%</span>
-                  </div>
-                </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "12.5%" }} />
-                </div>
-              </div>
-
-              {/* Category Item 4: Phụ kiện */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Phụ kiện</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>198 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>15.9%</span>
-                  </div>
-                </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "15.9%" }} />
-                </div>
-              </div>
-
-              {/* Category Item 5: Thời trang */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Thời trang</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>220 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>17.7%</span>
-                  </div>
-                </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "17.7%" }} />
-                </div>
-              </div>
-
-              {/* Category Item 6: Khác */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>Khác</span>
-                  <div style={{ display: "flex", gap: "8px", fontFamily: "var(--adm-mono)" }}>
-                    <span style={{ color: "#64748b" }}>216 sản phẩm</span>
-                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>17.3%</span>
-                  </div>
-                </div>
-                <div className="cat-progress-bg">
-                  <div className="cat-progress-fill" style={{ width: "17.3%" }} />
-                </div>
-              </div>
+              ))}
             </div>
 
             <div
@@ -893,7 +832,11 @@ export function ProductsPage() {
               <a
                 href="#all-categories"
                 style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}
-                onClick={(e) => { e.preventDefault(); alert("Đang chuyển hướng tới trang quản lý tất cả danh mục..."); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCategoryFilter("all");
+                  setCurrentPage(1);
+                }}
               >
                 Xem tất cả danh mục &gt;
               </a>
@@ -906,198 +849,49 @@ export function ProductsPage() {
               <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Cảnh báo tồn kho</h3>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {/* Item 1: Samsung Buds */}
-              <div className="widget-list-item">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "6px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {getProductIcon("earbuds")}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>Tai nghe True Wireless</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>Samsung Galaxy Buds2 Pro</span>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(244, 63, 94, 0.12)",
-                    color: "#f43f5e",
-                    border: "1px solid rgba(244, 63, 94, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    fontFamily: "var(--adm-mono)",
-                  }}
-                >
-                  Tồn: 0
-                </span>
-              </div>
+              {(summary?.lowStockAlerts ?? []).length === 0 && (
+                <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>Không có cảnh báo tồn kho.</p>
+              )}
+              {(summary?.lowStockAlerts ?? []).map((item) => {
+                const isOut = item.stock === 0;
+                const badgeStyle = isOut
+                  ? {
+                      background: "rgba(244, 63, 94, 0.12)",
+                      color: "#f43f5e",
+                      border: "1px solid rgba(244, 63, 94, 0.25)",
+                    }
+                  : {
+                      background: "rgba(245, 158, 11, 0.12)",
+                      color: "#f59e0b",
+                      border: "1px solid rgba(245, 158, 11, 0.25)",
+                    };
 
-              {/* Item 2: Balo Mark Ryden */}
-              <div className="widget-list-item">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "6px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {getProductIcon("backpack")}
+                return (
+                  <div key={item.id} className="widget-list-item">
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <ProductThumbnail imageUrl={item.mainImageUrl} iconType="default" size={36} />
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>{item.name}</span>
+                        <span style={{ fontSize: "11px", color: "#64748b" }}>
+                          {item.description || "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        ...badgeStyle,
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11.5px",
+                        fontWeight: 700,
+                        fontFamily: "var(--adm-mono)",
+                      }}
+                    >
+                      Tồn: {item.stock}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>Balo Laptop 15.6 inch</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>Mark Ryden MR-9001</span>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(244, 63, 94, 0.12)",
-                    color: "#f43f5e",
-                    border: "1px solid rgba(244, 63, 94, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    fontFamily: "var(--adm-mono)",
-                  }}
-                >
-                  Tồn: 15
-                </span>
-              </div>
-
-              {/* Item 3: Giày UltraBoost */}
-              <div className="widget-list-item">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "6px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {getProductIcon("sneaker")}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>Giày Thể Thao Nam</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>UltraBoost Light</span>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(245, 158, 11, 0.12)",
-                    color: "#f59e0b",
-                    border: "1px solid rgba(245, 158, 11, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    fontFamily: "var(--adm-mono)",
-                  }}
-                >
-                  Tồn: 48
-                </span>
-              </div>
-
-              {/* Item 4: Bàn phím Keychron */}
-              <div className="widget-list-item">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "6px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {getProductIcon("keyboard")}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>Bàn phím cơ Keychron</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>K8 Pro RGB Brown</span>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(245, 158, 11, 0.12)",
-                    color: "#f59e0b",
-                    border: "1px solid rgba(245, 158, 11, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    fontFamily: "var(--adm-mono)",
-                  }}
-                >
-                  Tồn: 32
-                </span>
-              </div>
-
-              {/* Item 5: Ốp lưng Spigen */}
-              <div className="widget-list-item">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "6px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                      <line x1="12" y1="18" x2="12.01" y2="18" />
-                    </svg>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", color: "#fff", fontWeight: 500 }}>Ốp lưng iPhone 15 Pro Max</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>Spigen Liquid Air</span>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(244, 63, 94, 0.12)",
-                    color: "#f43f5e",
-                    border: "1px solid rgba(244, 63, 94, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    fontFamily: "var(--adm-mono)",
-                  }}
-                >
-                  Tồn: 9
-                </span>
-              </div>
+                );
+              })}
             </div>
 
             <div
@@ -1111,7 +905,11 @@ export function ProductsPage() {
               <a
                 href="#all-alerts"
                 style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}
-                onClick={(e) => { e.preventDefault(); alert("Đang chuyển hướng tới bộ lọc tồn kho thấp..."); setStockFilter("low_stock"); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setStockFilter("low_stock");
+                  setCurrentPage(1);
+                }}
               >
                 Xem tất cả cảnh báo &gt;
               </a>
@@ -1121,6 +919,7 @@ export function ProductsPage() {
       </div>
 
       {/* Product Form Slideover */}
+      {isAdmin && (
       <Slideover
         isOpen={slideoverOpen}
         title={editProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
@@ -1137,13 +936,13 @@ export function ProductsPage() {
             <FormInput name="sku" placeholder="Ví dụ: SONY-WH1000XM5" defaultValue={editProduct?.sku} />
           </FormField>
           <FormField label="Danh mục" required>
-            <FormSelect name="category" defaultValue={editProduct?.category} required>
+            <FormSelect name="categoryId" defaultValue={editProduct?.categoryId} required>
               <option value="">-- Chọn danh mục --</option>
-              <option value="Tai nghe">Tai nghe</option>
-              <option value="Giày dép">Giày dép</option>
-              <option value="Balo">Balo</option>
-              <option value="Phụ kiện">Phụ kiện</option>
-              <option value="Thời trang">Thời trang</option>
+              {categoryOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </FormSelect>
           </FormField>
           <div className="admin-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -1164,12 +963,13 @@ export function ProductsPage() {
             <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setSlideoverOpen(false)}>
               Hủy
             </button>
-            <button type="submit" className="admin-btn admin-btn-primary" style={{ background: "#6366f1", border: "none" }}>
-              {editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
+            <button type="submit" className="admin-btn admin-btn-primary" style={{ background: "#6366f1", border: "none" }} disabled={submitting}>
+              {submitting ? "Đang lưu..." : editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
             </button>
           </div>
         </form>
       </Slideover>
+      )}
     </div>
   );
 }

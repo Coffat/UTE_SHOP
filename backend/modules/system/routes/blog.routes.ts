@@ -4,6 +4,7 @@ import * as blogController from '../controllers/blog.controller.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
 import { handleValidationErrors } from '../../../shared/middlewares/handleValidation.js';
+import { BLOG_STAFF_ROLES } from '../constants/blogRoles.js';
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('ADMIN', 'STAFF'),
+  authorize('ADMIN', ...BLOG_STAFF_ROLES),
   createBlogValidators,
   asyncHandler(blogController.createBlogPost)
 );
@@ -60,7 +61,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'STAFF'),
+  authorize('ADMIN', ...BLOG_STAFF_ROLES),
   updateBlogValidators,
   asyncHandler(blogController.updateBlogPost)
 );
@@ -69,7 +70,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'STAFF'),
+  authorize('ADMIN', ...BLOG_STAFF_ROLES),
   [param('id').isMongoId().withMessage('ID bài viết không hợp lệ.'), handleValidationErrors],
   asyncHandler(blogController.deleteBlogPost)
 );

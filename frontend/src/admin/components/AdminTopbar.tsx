@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import { useDispatch } from "react-redux";
+import { resetAuth } from "@/features/auth/authSlice";
+import { resetProfile } from "@/features/profile/profileSlice";
+import { api } from "@/lib/api";
+import { clearAuthSessionFlag } from "@/lib/authSession";
+import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
 
 
 
@@ -48,6 +54,15 @@ function LightningIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
 const NOTIFICATIONS = [
   { id: 1, text: "Đơn hàng ORD-2415 cần xác nhận", time: "2 phút trước", unread: true, type: "order" },
   { id: 2, text: "Sản phẩm SP-004 hết hàng tồn kho", time: "1 giờ trước",  unread: true, type: "product" },
@@ -58,6 +73,7 @@ const NOTIFICATIONS = [
 export function AdminTopbar() {
   const { user, role } = useAdminAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [searchVal, setSearchVal] = useState("");
@@ -81,8 +97,17 @@ export function AdminTopbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  function handleLogout() {
-    navigate("/login");
+  async function handleLogout() {
+    try {
+      await api.post("/api/v1/auth/logout");
+    } catch (err) {
+      console.error("Lỗi khi đăng xuất admin", err);
+    } finally {
+      clearAuthSessionFlag();
+      dispatch(resetAuth());
+      dispatch(resetProfile());
+      navigate("/login");
+    }
   }
 
   return (
@@ -146,6 +171,17 @@ export function AdminTopbar() {
             <LightningIcon />
           </button>
         </div>
+
+        {/* Return to Storefront (Home) */}
+        <div className="admin-topbar-action-wrap">
+          <button 
+            className="admin-icon-btn text-[#6366f1] hover:bg-[#6366f1]/10 transition-colors"
+            onClick={() => navigate("/")}
+            title="Xem Cửa Hàng (Quay lại web thường)"
+          >
+            <HomeIcon />
+          </button>
+        </div>
         
         {/* Divider */}
         <div style={{ width: "1px", height: "24px", background: "var(--adm-border)", margin: "0 8px" }} />
@@ -158,27 +194,27 @@ export function AdminTopbar() {
             style={{ display: "flex", alignItems: "center", gap: "10px", background: "transparent", border: "none", cursor: "pointer" }}
           >
             <div className="admin-topbar-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#818cf8", fontWeight: 600 }}>
-              {user?.fullName.charAt(0) ?? "A"}
+              {user ? getAvatarInitial(getDisplayName(user)) : "A"}
             </div>
             <div className="admin-topbar-user-info" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
               <span className="admin-topbar-user-name" style={{ fontSize: "13.5px", fontWeight: 500, color: "var(--adm-text)" }}>{user?.fullName ?? "Admin"}</span>
               <span className="admin-role-badge" style={{ fontSize: "11.5px", color: "var(--adm-text-muted)" }}>
-                {role === "admin" ? "Quản trị viên" : "Nhân viên"}
+                {role === "ADMIN" ? "Quản trị viên" : "Nhân viên"}
               </span>
             </div>
             <span style={{ color: "var(--adm-text-muted)", marginLeft: "4px" }}><ChevronDown /></span>
           </button>
-
+ 
           {showProfile && (
             <div className="admin-dropdown admin-profile-dropdown" style={{ right: 0 }}>
               <div className="admin-dropdown-header">
                 <span>{user?.email}</span>
               </div>
               <div className="admin-dropdown-menu">
-                <button className="admin-dropdown-item" onClick={() => navigate("/admin/profile")}>
+                <button className="admin-dropdown-item" onClick={() => navigate(role === "ADMIN" ? "/admin/profile" : "/staff/profile")}>
                   Hồ sơ cá nhân
                 </button>
-                {role === "admin" && (
+                {role === "ADMIN" && (
                   <button className="admin-dropdown-item" onClick={() => navigate("/admin/settings")}>
                     Cài đặt hệ thống
                   </button>

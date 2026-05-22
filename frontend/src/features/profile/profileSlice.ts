@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { isAxiosError } from "axios";
 import { api } from "@/lib/api";
+import { clearAuthSessionFlag, hasAuthSessionFlag } from "@/lib/authSession";
 
 export type ProfileFetchStatus = "idle" | "loading" | "succeeded" | "failed";
 export type ProfileSaveStatus = "idle" | "loading" | "succeeded" | "failed";
@@ -79,23 +80,38 @@ function getProfileCaptureMock(): UserProfileDto | null {
   };
 }
 
+function normalizeProfile(data: UserProfileDto): UserProfileDto {
+  return {
+    ...data,
+    fullName: data.fullName?.trim() || data.email?.trim() || "User",
+    email: data.email ?? "",
+  };
+}
+
 export const fetchProfile = createAsyncThunk<
   UserProfileDto,
   void,
   { rejectValue: string }
 >("profile/fetchProfile", async (_, { rejectWithValue }) => {
+  if (!hasAuthSessionFlag()) {
+    return rejectWithValue(UNAUTH);
+  }
   const mock = getProfileCaptureMock();
   if (mock) {
-    return mock;
+    return normalizeProfile(mock);
   }
   try {
     const { data } = await api.get<ProfileResponse>("/api/v1/users/profile");
     if (!data.success || !data.data) {
       return rejectWithValue(data.message ?? "Không tải được hồ sơ");
     }
-    return data.data;
+    return normalizeProfile(data.data);
   } catch (err) {
-    return rejectWithValue(rejectFromAxios(err, "Không tải được hồ sơ"));
+    const code = rejectFromAxios(err, "Không tải được hồ sơ");
+    if (code === UNAUTH) {
+      clearAuthSessionFlag();
+    }
+    return rejectWithValue(code);
   }
 });
 
@@ -237,6 +253,9 @@ const profileSlice = createSlice({
         state.fetchStatus = "failed";
         state.fetchError = action.payload ?? "Không tải được hồ sơ";
         state.profile = null;
+        if (action.payload === UNAUTH) {
+          clearAuthSessionFlag();
+        }
       })
       .addCase(updateProfile.pending, (state) => {
         state.saveStatus = "loading";

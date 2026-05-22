@@ -10,6 +10,9 @@ import express from 'express';
 import authRoutes from '../modules/user/routes/auth.routes.js';
 import userRoutes from '../modules/user/routes/user.routes.js';
 import adminRoutes from '../modules/user/routes/admin.routes.js';
+import dashboardRoutes from '../modules/admin/routes/dashboard.routes.js';
+import reportsRoutes from '../modules/admin/routes/reports.routes.js';
+import settingsRoutes from '../modules/admin/routes/settings.routes.js';
 
 // ─── Module: Catalog ──────────────────────────────────────────────────────────
 
@@ -48,6 +51,9 @@ const router = express.Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/dashboard', dashboardRoutes);
+router.use('/admin/reports', reportsRoutes);
+router.use('/admin/settings', settingsRoutes);
 
 // Catalog
 router.use('/storefront', storefrontRoutes);

@@ -34,6 +34,8 @@ const paymentSchema = new Schema<IPayment>(
   { timestamps: true, discriminatorKey: 'method' }
 );
 
+paymentSchema.index({ order: 1, createdAt: -1 });
+
 const Payment = mongoose.model<IPayment>('Payment', paymentSchema);
 
 export const MOPayment = Payment.discriminator<IMOPayment>(

@@ -5,12 +5,13 @@ import {
   validatePlaceOrder,
   validateChangeStatus,
   validateCancelOrder,
+  validateListOrders,
 } from '../middlewares/order.validator.js';
 
 const router = express.Router();
 
 // GET /api/v1/orders – Danh sách đơn (admin thấy tất, customer thấy của mình)
-router.get('/', authenticate, orderController.listOrders);
+router.get('/', authenticate, validateListOrders, orderController.listOrders);
 
 // GET /api/v1/orders/:id – Chi tiết đơn
 router.get('/:id', authenticate, orderController.getOrder);

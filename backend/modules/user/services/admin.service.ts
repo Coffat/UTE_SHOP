@@ -97,6 +97,10 @@ export class AdminService {
     return userRepository.getCustomerList(params);
   }
 
+  async getCustomerById(id: string) {
+    return userRepository.getCustomerById(id);
+  }
+
   async updateCustomerStatus(id: string, status: 'ACTIVE' | 'BANNED' | 'PENDING' | 'SUSPENDED', adminUserId: string) {
     if (id === adminUserId) {
       throw new AppError('Bạn không thể tự cập nhật trạng thái tài khoản của chính mình', 400);

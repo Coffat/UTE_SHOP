@@ -1,7 +1,9 @@
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import { handleValidationErrors } from '../../../shared/middlewares/handleValidation.js';
 import mongoose from 'mongoose';
 import OrderType from '../../../shared/enums/OrderType.js';
+import OrderStatus from '../../../shared/enums/OrderStatus.js';
+import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
 
 const isObjectId = (val: string) => {
   if (!mongoose.Types.ObjectId.isValid(val)) throw new Error('ID không hợp lệ');
@@ -31,11 +33,44 @@ export const validatePlaceOrder = [
   handleValidationErrors,
 ];
 
+// ─── List Orders (admin) ──────────────────────────────────────────────────────
+
+export const validateListOrders = [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('status')
+    .optional()
+    .isIn(Object.values(OrderStatus))
+    .withMessage(`status phải là: ${Object.values(OrderStatus).join(', ')}`),
+  query('statusGroup')
+    .optional()
+    .isIn(['pending', 'shipping', 'completed', 'cancelled'])
+    .withMessage('statusGroup không hợp lệ'),
+  query('orderType')
+    .optional()
+    .isIn(Object.values(OrderType))
+    .withMessage(`orderType phải là: ${Object.values(OrderType).join(', ')}`),
+  query('paymentStatus')
+    .optional()
+    .isIn(Object.values(PaymentStatus))
+    .withMessage(`paymentStatus phải là: ${Object.values(PaymentStatus).join(', ')}`),
+  query('search').optional().trim().isLength({ max: 100 }),
+  query('dateFrom').optional().isISO8601().withMessage('dateFrom không hợp lệ'),
+  query('dateTo').optional().isISO8601().withMessage('dateTo không hợp lệ'),
+  query('includeSummary').optional().isIn(['true', 'false']),
+  query('customerId').optional().custom(isObjectId),
+  handleValidationErrors,
+];
+
 // ─── Change Order Status ───────────────────────────────────────────────────────
 
 export const validateChangeStatus = [
   param('id').custom(isObjectId),
-  body('status').notEmpty().withMessage('status là bắt buộc').isString(),
+  body('status')
+    .notEmpty()
+    .withMessage('status là bắt buộc')
+    .isIn(Object.values(OrderStatus))
+    .withMessage(`status phải là: ${Object.values(OrderStatus).join(', ')}`),
   body('note').optional().trim().isLength({ max: 500 }),
   handleValidationErrors,
 ];

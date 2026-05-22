@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  fetchAdminSettings,
+  updateAdminSettings,
+  rotateAdminApiKey,
+  type StoreSettings,
+} from "../services/adminSettings.api";
 
 const SETTING_SECTIONS = [
   { key: "general",   label: "Thông tin cửa hàng",   icon: "🏪" },
@@ -9,51 +15,193 @@ const SETTING_SECTIONS = [
   { key: "backup",    label: "Tích hợp",             icon: "🧩" },
 ];
 
+function applySettingsToForm(settings: StoreSettings, setters: {
+  setStoreName: (v: string) => void;
+  setSupportEmail: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAddress: (v: string) => void;
+  setTimezone: (v: string) => void;
+  setVnpayActive: (v: boolean) => void;
+  setCodActive: (v: boolean) => void;
+  setMomoActive: (v: boolean) => void;
+  setVat: (v: string) => void;
+  setRoundPrice: (v: string) => void;
+  setCurrency: (v: string) => void;
+  setNotifyEmail: (v: boolean) => void;
+  setNotifySMS: (v: boolean) => void;
+  setLowStock: (v: boolean) => void;
+  setNewOrder: (v: boolean) => void;
+  setTfaActive: (v: boolean) => void;
+  setSessionTimeout: (v: string) => void;
+  setApiKeyMasked: (v: string) => void;
+}) {
+  setters.setStoreName(settings.storeName);
+  setters.setSupportEmail(settings.supportEmail);
+  setters.setPhone(settings.phone);
+  setters.setAddress(settings.address);
+  setters.setTimezone(settings.timezone);
+  setters.setVnpayActive(settings.vnpayActive);
+  setters.setCodActive(settings.codActive);
+  setters.setMomoActive(settings.momoActive);
+  setters.setVat(settings.vat);
+  setters.setRoundPrice(settings.roundPrice);
+  setters.setCurrency(settings.currency);
+  setters.setNotifyEmail(settings.notifyEmail);
+  setters.setNotifySMS(settings.notifySMS);
+  setters.setLowStock(settings.lowStock);
+  setters.setNewOrder(settings.newOrder);
+  setters.setTfaActive(settings.tfaActive);
+  setters.setSessionTimeout(settings.sessionTimeout);
+  setters.setApiKeyMasked(settings.apiKeyMasked);
+}
+
 export function SettingsPage() {
   const [activeNav, setActiveNav] = useState("general");
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revealedApiKey, setRevealedApiKey] = useState<string | null>(null);
 
-  // Form states
   const [storeName, setStoreName] = useState("UTESHOP");
   const [supportEmail, setSupportEmail] = useState("support@uteshop.vn");
-  const [phone, setPhone] = useState("1900 1234");
-  const [address, setAddress] = useState("123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh, Việt Nam");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [timezone, setTimezone] = useState("(GMT+07:00) Bangkok, Hanoi, Jakarta");
 
-  // Payment states
   const [vnpayActive, setVnpayActive] = useState(true);
   const [codActive, setCodActive] = useState(true);
   const [momoActive, setMomoActive] = useState(true);
 
-  // Tax states
   const [vat, setVat] = useState("10");
   const [roundPrice, setRoundPrice] = useState("Làm tròn .000đ");
   const [currency, setCurrency] = useState("VND (Việt Nam Đồng)");
 
-  // Notification states
   const [notifyEmail, setNotifyEmail] = useState(true);
-  const [notifySMS, setNotifySMS] = useState(true);
+  const [notifySMS, setNotifySMS] = useState(false);
   const [lowStock, setLowStock] = useState(true);
   const [newOrder, setNewOrder] = useState(true);
 
-  // Security states
-  const [tfaActive, setTfaActive] = useState(true);
+  const [tfaActive, setTfaActive] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("30 phút");
-  const [apiKey, setApiKey] = useState("ute_shop_live_89f8d3f3fa2847a6b772d84f79a33578");
+  const [apiKeyMasked, setApiKeyMasked] = useState("ute_shop_live_****");
 
-  const handleSave = () => {
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 3000);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchAdminSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        applySettingsToForm(settings, {
+          setStoreName,
+          setSupportEmail,
+          setPhone,
+          setAddress,
+          setTimezone,
+          setVnpayActive,
+          setCodActive,
+          setMomoActive,
+          setVat,
+          setRoundPrice,
+          setCurrency,
+          setNotifyEmail,
+          setNotifySMS,
+          setLowStock,
+          setNewOrder,
+          setTfaActive,
+          setSessionTimeout,
+          setApiKeyMasked,
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to load settings:", err);
+        if (!cancelled) setError("Không thể tải cấu hình. Vui lòng thử lại.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const buildPayload = (): Partial<StoreSettings> => ({
+    storeName,
+    supportEmail,
+    phone,
+    address,
+    timezone,
+    vnpayActive,
+    codActive,
+    momoActive,
+    vat,
+    roundPrice,
+    currency,
+    notifyEmail,
+    notifySMS,
+    lowStock,
+    newOrder,
+    tfaActive,
+    sessionTimeout,
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateAdminSettings(buildPayload());
+      applySettingsToForm(updated, {
+        setStoreName,
+        setSupportEmail,
+        setPhone,
+        setAddress,
+        setTimezone,
+        setVnpayActive,
+        setCodActive,
+        setMomoActive,
+        setVat,
+        setRoundPrice,
+        setCurrency,
+        setNotifyEmail,
+        setNotifySMS,
+        setLowStock,
+        setNewOrder,
+        setTfaActive,
+        setSessionTimeout,
+        setApiKeyMasked,
+      });
+      setRevealedApiKey(null);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      setError("Không thể lưu cấu hình.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleRotateKey = () => {
-    const randomHex = Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join("");
-    setApiKey(`ute_shop_live_${randomHex}`);
+  const handleRotateKey = async () => {
+    setError(null);
+    try {
+      const result = await rotateAdminApiKey();
+      setApiKeyMasked(result.apiKeyMasked);
+      setRevealedApiKey(result.apiKey);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error("Failed to rotate API key:", err);
+      setError("Không thể xoay API key.");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
+        Đang tải cấu hình...
+      </div>
+    );
+  }
 
   const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
     return (
@@ -174,6 +322,7 @@ export function SettingsPage() {
         <button
           className="admin-btn admin-btn-primary"
           onClick={handleSave}
+          disabled={saving}
           style={{
             background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
             boxShadow: "0 4px 12px rgba(59,130,246,0.3)",
@@ -196,9 +345,13 @@ export function SettingsPage() {
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          <span>Lưu thay đổi</span>
+          <span>{saving ? "Đang lưu..." : "Lưu thay đổi"}</span>
         </button>
       </div>
+
+      {error && (
+        <p style={{ color: "#f87171", fontSize: "13px", margin: "0 0 16px" }}>{error}</p>
+      )}
 
       {/* Main Settings Body Grid */}
       <div
@@ -1070,7 +1223,7 @@ export function SettingsPage() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {apiKey}
+                        {revealedApiKey ?? apiKeyMasked}
                       </p>
                     </div>
                   </div>

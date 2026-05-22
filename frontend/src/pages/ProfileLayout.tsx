@@ -3,7 +3,10 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { AppLogo } from "@/components/ui/AppLogo";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RoseLineArt } from "@/icons";
-import { fetchProfile, UNAUTH } from "@/features/profile/profileSlice";
+import { fetchProfile, UNAUTH, resetProfile } from "@/features/profile/profileSlice";
+import { resetAuth } from "@/features/auth/authSlice";
+import { api } from "@/lib/api";
+import { clearAuthSessionFlag } from "@/lib/authSession";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const sideMenu = [
@@ -84,6 +87,18 @@ export function ProfileLayout() {
               <li className="pt-2 mt-2 border-t border-white/50">
                 <button
                   type="button"
+                  onClick={async () => {
+                    try {
+                      await api.post("/api/v1/auth/logout");
+                    } catch (err) {
+                      console.error("Lỗi khi đăng xuất profile", err);
+                    } finally {
+                      clearAuthSessionFlag();
+                      dispatch(resetAuth());
+                      dispatch(resetProfile());
+                      navigate("/login");
+                    }
+                  }}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left font-ui-label text-sm transition text-error hover:bg-error/10"
                 >
                   <MaterialIcon name="logout" className="text-[18px]" />

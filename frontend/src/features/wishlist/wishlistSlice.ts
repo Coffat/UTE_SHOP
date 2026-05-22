@@ -19,8 +19,11 @@ function rejectFromAxios(err: unknown, fallback: string): string {
   if (!isAxiosError(err)) {
     return fallback;
   }
-  if (err.response?.status === 401 || err.response?.status === 403) {
+  if (err.response?.status === 401) {
     return UNAUTH;
+  }
+  if (err.response?.status === 403) {
+    return "FORBIDDEN";
   }
   if (err.response == null && (err.code === "ERR_NETWORK" || err.message === "Network Error")) {
     return NETWORK_MSG;

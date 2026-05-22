@@ -11,6 +11,17 @@ import { createPaymentRecord } from '../../finance/services/payment.service.js';
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import OrderType from '../../../shared/enums/OrderType.js';
+import { AppError } from '../../../shared/utils/AppError.js';
+import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
+import {
+  mapOrderToAdminListItem,
+  type AdminOrderListItemDto,
+  type AttentionOrderDto,
+} from '../../../shared/mappers/order.mapper.js';
+import {
+  ORDER_STATUS_GROUP_MAP,
+  isValidOrderStatusTransition,
+} from '../constants/orderStatusGroups.js';
 
 const generateOrderCode = () => `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
@@ -306,11 +317,38 @@ export const updateOrderStatus = async (
   changedById?: string
 ): Promise<IOrder> => {
   const order = await Order.findById(orderId);
-  if (!order) throw new Error('Không tìm thấy đơn hàng');
+  if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+  const currentStatus = order.status as OrderStatus;
+  if (!Object.values(OrderStatus).includes(newStatus)) {
+    throw new AppError('Trạng thái đơn hàng không hợp lệ', 400);
+  }
+  if (currentStatus === newStatus) {
+    throw new AppError('Đơn hàng đã ở trạng thái này', 400);
+  }
+  if (!isValidOrderStatusTransition(currentStatus, newStatus)) {
+    throw new AppError(
+      `Không thể chuyển từ ${currentStatus} sang ${newStatus}`,
+      400
+    );
+  }
 
   order.status = newStatus;
-  order.statusHistory.push({ status: newStatus, note, changedBy: changedById as any });
+  order.statusHistory.push({ status: newStatus, note: note ?? '', changedBy: changedById as any });
   return order.save();
+};
+
+export const assertOrderAccess = (
+  order: IOrder,
+  userId: string,
+  role: string
+): void => {
+  if (role === 'CUSTOMER') {
+    const customerId = order.customer?.toString();
+    if (!customerId || customerId !== userId) {
+      throw new AppError('Bạn không có quyền xem đơn hàng này', 403);
+    }
+  }
 };
 
 /**
@@ -437,36 +475,238 @@ export const cancelOrder = async (
 interface GetOrdersParams {
   customerId?: string;
   status?: string;
+  statusGroup?: string;
+  orderType?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  paymentStatus?: string;
   page?: number;
   limit?: number;
+  includeSummary?: boolean;
 }
 
+export interface OrdersSummaryDto {
+  total: number;
+  pending: number;
+  shipping: number;
+  completed: number;
+  cancelled: number;
+  attentionCount: number;
+  attentionOrders: AttentionOrderDto[];
+}
+
+const ATTENTION_DELIVERY_DAYS = 3;
+
+const buildAttentionFilter = (): Record<string, unknown> => {
+  const deliveryCutoff = new Date();
+  deliveryCutoff.setDate(deliveryCutoff.getDate() - ATTENTION_DELIVERY_DAYS);
+
+  return {
+    $or: [
+      { status: { $in: [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.READY] } },
+      { status: OrderStatus.DELIVERING, updatedAt: { $lte: deliveryCutoff } },
+    ],
+  };
+};
+
+const resolveAttentionLabel = (status: OrderStatus, updatedAt: Date): string => {
+  if (status === OrderStatus.CANCELLED) return 'Đã hủy';
+  if (status === OrderStatus.DELIVERING) {
+    const deliveryCutoff = new Date();
+    deliveryCutoff.setDate(deliveryCutoff.getDate() - ATTENTION_DELIVERY_DAYS);
+    if (updatedAt <= deliveryCutoff) return 'Quá hạn giao';
+  }
+  if (
+    status === OrderStatus.PENDING ||
+    status === OrderStatus.CONFIRMED ||
+    status === OrderStatus.READY
+  ) {
+    return 'Chờ xử lý';
+  }
+  return 'Cần xem';
+};
+
+export const getAttentionOrders = async (limit = 5): Promise<AttentionOrderDto[]> => {
+  const orders = await Order.find(buildAttentionFilter())
+    .populate('customer', 'fullName')
+    .sort({ createdAt: 1 })
+    .limit(limit)
+    .lean();
+
+  return orders.map((order) => {
+    const customer = order.customer as Record<string, unknown> | null | undefined;
+    return {
+      id: String(order._id),
+      orderCode: String(order.orderCode),
+      customerName: String(
+        customer?.fullName ?? order.recipient?.fullName ?? 'Khách lẻ'
+      ),
+      createdAt: order.createdAt
+        ? new Date(order.createdAt).toISOString()
+        : new Date().toISOString(),
+      status: order.status as OrderStatus,
+      attentionLabel: resolveAttentionLabel(
+        order.status as OrderStatus,
+        order.updatedAt ? new Date(order.updatedAt) : new Date()
+      ),
+    };
+  });
+};
+
+export const getAttentionOrdersCount = async (): Promise<number> =>
+  Order.countDocuments(buildAttentionFilter());
+
 export interface PaginatedOrders {
-  items: IOrder[];
+  items: IOrder[] | AdminOrderListItemDto[];
   total: number;
   page: number;
   limit: number;
+  pages: number;
+  summary?: OrdersSummaryDto;
 }
+
+const buildOrdersFilter = ({
+  customerId,
+  status,
+  statusGroup,
+  orderType,
+  search,
+  dateFrom,
+  dateTo,
+}: Omit<GetOrdersParams, 'page' | 'limit' | 'includeSummary'>): Record<string, unknown> => {
+  const filter: Record<string, unknown> = {};
+  if (customerId) filter.customer = customerId;
+
+  if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
+    filter.status = status;
+  } else if (statusGroup && ORDER_STATUS_GROUP_MAP[statusGroup]) {
+    filter.status = { $in: ORDER_STATUS_GROUP_MAP[statusGroup] };
+  }
+
+  if (orderType && Object.values(OrderType).includes(orderType as OrderType)) {
+    filter.orderType = orderType;
+  }
+
+  if (dateFrom || dateTo) {
+    filter.createdAt = {};
+    if (dateFrom) {
+      (filter.createdAt as Record<string, Date>).$gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      (filter.createdAt as Record<string, Date>).$lte = end;
+    }
+  }
+
+  if (search?.trim()) {
+    const term = search.trim();
+    const regex = { $regex: term, $options: 'i' };
+    filter.$or = [
+      { orderCode: regex },
+      { 'recipient.fullName': regex },
+      { 'recipient.phone': regex },
+    ];
+  }
+
+  return filter;
+};
+
+const computeOrdersSummary = async (
+  baseFilter: Record<string, unknown>
+): Promise<OrdersSummaryDto> => {
+  const [total, pending, shipping, completed, cancelled, attentionCount, attentionOrders] =
+    await Promise.all([
+      Order.countDocuments(baseFilter),
+      Order.countDocuments({
+        ...baseFilter,
+        status: { $in: ORDER_STATUS_GROUP_MAP.pending },
+      }),
+      Order.countDocuments({
+        ...baseFilter,
+        status: { $in: ORDER_STATUS_GROUP_MAP.shipping },
+      }),
+      Order.countDocuments({
+        ...baseFilter,
+        status: { $in: ORDER_STATUS_GROUP_MAP.completed },
+      }),
+      Order.countDocuments({
+        ...baseFilter,
+        status: { $in: ORDER_STATUS_GROUP_MAP.cancelled },
+      }),
+      getAttentionOrdersCount(),
+      getAttentionOrders(5),
+    ]);
+  return { total, pending, shipping, completed, cancelled, attentionCount, attentionOrders };
+};
 
 export const getOrders = async ({
   customerId,
   status,
+  statusGroup,
+  orderType,
+  search,
+  dateFrom,
+  dateTo,
   page = 1,
-  limit = 20
+  limit = 20,
+  paymentStatus,
+  includeSummary = false,
 }: GetOrdersParams = {}): Promise<PaginatedOrders> => {
-  const filter: Record<string, any> = {};
-  if (customerId) filter.customer = customerId;
-  if (status) filter.status = status;
+  const filter = buildOrdersFilter({
+    customerId,
+    status,
+    statusGroup,
+    orderType,
+    search,
+    dateFrom,
+    dateTo,
+  });
 
-  const [items, total] = await Promise.all([
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(Math.max(1, limit), 100);
+
+  const [rawItems, total, summary] = await Promise.all([
     Order.find(filter)
-      .populate('customer', 'email fullName')
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
+      .populate('customer', 'email fullName phone')
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .sort({ createdAt: -1 })
+      .lean(),
     Order.countDocuments(filter),
+    includeSummary ? computeOrdersSummary(filter) : Promise.resolve(undefined),
   ]);
-  return { items, total, page, limit };
+
+  const orderIds = rawItems.map((o) => String(o._id));
+  const payments = await getPaymentsByOrderIds(orderIds);
+  const paymentByOrderId = new Map<string, Record<string, unknown>>();
+  for (const payment of payments) {
+    const oid = payment.order?.toString();
+    if (oid && !paymentByOrderId.has(oid)) {
+      paymentByOrderId.set(oid, payment.toObject() as Record<string, unknown>);
+    }
+  }
+
+  let items = rawItems.map((order) =>
+    mapOrderToAdminListItem(
+      order as Record<string, unknown>,
+      paymentByOrderId.get(String(order._id)) ?? null
+    )
+  );
+
+  if (paymentStatus) {
+    items = items.filter((item) => item.payment?.status === paymentStatus);
+  }
+
+  return {
+    items,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    pages: Math.ceil(total / safeLimit) || 1,
+    ...(summary ? { summary } : {}),
+  };
 };
 
 export const getOrderById = async (orderId: string): Promise<IOrder | null> => {

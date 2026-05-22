@@ -1,7 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
-import { api } from "../../lib/api";
+import {
+  fetchStaffList,
+  fetchShifts,
+  createStaffMember,
+  updateStaffMember,
+  deleteStaffMember,
+} from "../services/adminStaff.api";
 
 interface ExtendedStaffMember {
   id: string;
@@ -77,48 +83,18 @@ const mapFrontendStatusToBackend = (s: string): string => {
   return map[s] || "ACTIVE";
 };
 
-const LOGIN_LOGS = [
-  {
-    name: "Nguyễn Minh Anh",
-    role: "Admin",
-    action: "Đăng nhập thành công",
-    device: "Chrome • Windows",
-    time: "25/05/2024 09:32",
-    active: true,
-    initials: "MA",
-    avatarBg: "linear-gradient(135deg, #f59e0b, #d97706)",
-  },
-  {
-    name: "Trần Quỳnh Hoa",
-    role: "Staff",
-    action: "Đăng nhập thành công",
-    device: "Chrome • Windows",
-    time: "25/05/2024 09:15",
-    active: true,
-    initials: "QH",
-    avatarBg: "linear-gradient(135deg, #ec4899, #be185d)",
-  },
-  {
-    name: "Lê Hoàng Nam",
-    role: "Staff",
-    action: "Đăng nhập thành công",
-    device: "Safari • macOS",
-    time: "25/05/2024 08:58",
-    active: true,
-    initials: "HN",
-    avatarBg: "linear-gradient(135deg, #10b981, #047857)",
-  },
-  {
-    name: "Phạm Thu Trang",
-    role: "Staff",
-    action: "Đăng xuất",
-    device: "Chrome • Windows",
-    time: "25/05/2024 08:45",
-    active: false,
-    initials: "TT",
-    avatarBg: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-  },
-];
+function buildStaffActivityLogs(staff: ExtendedStaffMember[]) {
+  return staff.slice(0, 4).map((s) => ({
+    name: s.fullName,
+    role: s.role,
+    action: s.status === "Đang hoạt động" ? "Đang hoạt động" : "Nghỉ / tạm nghỉ",
+    device: "—",
+    time: "—",
+    active: s.status === "Đang hoạt động",
+    initials: s.avatarText,
+    avatarBg: s.avatarBg,
+  }));
+}
 
 export function StaffPage() {
   const [staffList, setStaffList] = useState<ExtendedStaffMember[]>([]);
@@ -146,9 +122,15 @@ export function StaffPage() {
   const [formPerformance, setFormPerformance] = useState(85);
 
   const itemsPerPage = 6;
+  const staffListRequestRef = useRef(0);
+  const statsRequestRef = useRef(0);
+
+  const STAFF_STATS_PAGE = 1;
+  const STAFF_STATS_LIMIT = 100;
 
   // Load staff list dynamically
   const fetchStaffData = async () => {
+    const requestId = ++staffListRequestRef.current;
     try {
       setLoading(true);
       const queryParams: any = {
@@ -168,68 +150,112 @@ export function StaffPage() {
         queryParams.status = mapFrontendStatusToBackend(statusFilter);
       }
 
-      const { data } = await api.get("/api/v1/admin/staff", { params: queryParams });
-      if (data.success && data.data) {
-        setStaffList(data.data.items.map(mapBackendUserToStaff));
-        setTotalPages(data.data.meta.pages);
-      }
+      const result = await fetchStaffList(queryParams);
+      if (requestId !== staffListRequestRef.current) return;
+      setStaffList((result.items as Parameters<typeof mapBackendUserToStaff>[0][]).map(mapBackendUserToStaff));
+      setTotalPages(result.meta.pages);
     } catch (error) {
-      console.error("Failed to load staff list:", error);
+      if (requestId === staffListRequestRef.current) {
+        console.error("Failed to load staff list:", error);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === staffListRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // Load stats and shifts dynamically
+  // Load stats and shifts dynamically (limit max 100 per backend validation)
   const fetchStatsAndShifts = async () => {
-    try {
-      const [staffRes, shiftRes] = await Promise.all([
-        api.get("/api/v1/admin/staff", { params: { limit: 1000 } }),
-        api.get("/api/v1/admin/shifts"),
-      ]);
+    const requestId = ++statsRequestRef.current;
 
-      if (staffRes.data.success && staffRes.data.data) {
-        const allStaff = staffRes.data.data.items;
-        const total = allStaff.length;
-        const active = allStaff.filter((s: any) => s.status === "ACTIVE").length;
-        const avg = allStaff.length > 0
-          ? Math.round((allStaff.reduce((sum: number, s: any) => sum + (s.performanceScore ?? 100), 0) / allStaff.length) * 10) / 10
+    const results = await Promise.allSettled([
+      fetchStaffList({
+        page: STAFF_STATS_PAGE,
+        limit: STAFF_STATS_LIMIT,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      }),
+      fetchStaffList({ page: 1, limit: 1, status: "ACTIVE" }),
+      fetchShifts(),
+    ]);
+
+    if (requestId !== statsRequestRef.current) return;
+
+    const [staffSampleResult, staffActiveResult, shiftResult] = results;
+
+    if (staffSampleResult.status === "fulfilled") {
+      const data = staffSampleResult.value;
+      const items = (data.items ?? []) as { performanceScore?: number }[];
+      const total = data.meta?.total ?? items.length;
+      const avg =
+        items.length > 0
+          ? Math.round(
+              (items.reduce((sum, s) => sum + (s.performanceScore ?? 100), 0) / items.length) * 10
+            ) / 10
           : 0;
+      setTotalCount(total);
+      setAvgPerformance(avg);
+    } else {
+      console.error("Failed to load staff stats sample:", staffSampleResult.reason);
+    }
 
-        setTotalCount(total);
-        setActiveCount(active);
-        setAvgPerformance(avg);
-      }
+    if (staffActiveResult.status === "fulfilled") {
+      setActiveCount(staffActiveResult.value.meta?.total ?? 0);
+    } else {
+      console.error("Failed to load active staff count:", staffActiveResult.reason);
+    }
 
-      if (shiftRes.data.success && shiftRes.data.data) {
-        const mappedShifts = shiftRes.data.data.map((s: any) => {
+    if (shiftResult.status === "fulfilled") {
+      const shiftData = shiftResult.value;
+      if (Array.isArray(shiftData)) {
+        type ShiftRow = {
+          _id?: string;
+          id?: string;
+          title?: string;
+          startTime?: string;
+          endTime?: string;
+          color?: string;
+          bg?: string;
+          assignedStaff?: { fullName?: string }[];
+        };
+        const mappedShifts = (shiftData as ShiftRow[]).map((s) => {
           const shiftColor = s.color || "#10b981";
           const shiftBg = s.bg || "rgba(16,185,129,0.12)";
+          const assigned = s.assignedStaff ?? [];
 
           return {
             id: s._id || s.id,
             title: s.title || "Ca trực",
             time: `${s.startTime} - ${s.endTime}`,
-            count: s.assignedStaff?.length || 0,
+            count: assigned.length,
             color: shiftColor,
             bg: shiftBg,
-            staff: s.assignedStaff?.map((staff: any) => staff.fullName).join(", ") || "Chưa phân công",
-            subtext: s.assignedStaff?.length > 3 ? `... và ${s.assignedStaff.length - 3} nhân viên khác` : "",
+            staff: assigned.map((staff) => staff.fullName).filter(Boolean).join(", ") || "Chưa phân công",
+            subtext: assigned.length > 3 ? `... và ${assigned.length - 3} nhân viên khác` : "",
           };
         });
         setShifts(mappedShifts);
       }
-    } catch (error) {
-      console.error("Failed to load shifts/stats:", error);
+    } else {
+      console.error("Failed to load shifts:", shiftResult.reason);
     }
   };
 
+  const loginLogs = buildStaffActivityLogs(staffList);
+
   useEffect(() => {
-    fetchStaffData();
+    void fetchStaffData();
+    return () => {
+      staffListRequestRef.current += 1;
+    };
   }, [currentPage, search, roleFilter, statusFilter]);
 
   useEffect(() => {
-    fetchStatsAndShifts();
+    void fetchStatsAndShifts();
+    return () => {
+      statsRequestRef.current += 1;
+    };
   }, []);
 
   // Set local dummy objects for backward compatible UI calculations without rewriting standard JSX
@@ -273,7 +299,7 @@ export function StaffPage() {
     });
     if (accepted) {
       try {
-        await api.delete(`/api/v1/admin/staff/${s.id}`);
+        await deleteStaffMember(s.id);
         fetchStaffData();
         fetchStatsAndShifts();
       } catch (error: any) {
@@ -296,7 +322,7 @@ export function StaffPage() {
           status: mapFrontendStatusToBackend(formStatus),
           performanceScore: Number(formPerformance),
         };
-        await api.put(`/api/v1/admin/staff/${editStaff.id}`, payload);
+        await updateStaffMember(editStaff.id, payload);
       } else {
         // Create Staff
         const payload = {
@@ -308,7 +334,7 @@ export function StaffPage() {
           performanceScore: Number(formPerformance),
           password: "Uteshop@123", // default temporary password
         };
-        await api.post("/api/v1/admin/staff", payload);
+        await createStaffMember(payload);
       }
       setSlideoverOpen(false);
       fetchStaffData();
@@ -937,15 +963,19 @@ export function StaffPage() {
             <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: "0 0 20px" }}>Hoạt động đăng nhập</h3>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {LOGIN_LOGS.map((log, idx) => (
+              {loginLogs.length === 0 ? (
+                <p style={{ color: "#94a3b8", fontSize: "13px", padding: "8px 0" }}>
+                  Chưa có hoạt động gần đây.
+                </p>
+              ) : loginLogs.map((log, idx) => (
                 <div
                   key={idx}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    paddingBottom: idx === LOGIN_LOGS.length - 1 ? 0 : "14px",
-                    borderBottom: idx === LOGIN_LOGS.length - 1 ? "none" : "1px solid var(--adm-border)",
+                    paddingBottom: idx === loginLogs.length - 1 ? 0 : "14px",
+                    borderBottom: idx === loginLogs.length - 1 ? "none" : "1px solid var(--adm-border)",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>

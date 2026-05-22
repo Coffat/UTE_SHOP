@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { AdminSidebar } from "../components/AdminSidebar";
+import { DashboardSidebar } from "../components/DashboardSidebar";
 import { AdminTopbar } from "../components/AdminTopbar";
 import "../admin.css";
 
-
-export function AdminLayout() {
+export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="admin-root">
-      <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <DashboardSidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <div className="admin-content-area">
         <AdminTopbar />
         <main className="admin-main">

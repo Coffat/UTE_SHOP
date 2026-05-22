@@ -19,6 +19,17 @@ export const editProfile = asyncHandler(async (req: Request, res: Response) => {
   sendSuccess(res, 200, 'Cập nhật profile thành công', updated);
 });
 
+// POST /api/v1/users/change-password
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'Unauthorized');
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword: string;
+    newPassword: string;
+  };
+  await userService.changeUserPassword(req.user.id, currentPassword, newPassword);
+  sendSuccess(res, 200, 'Đổi mật khẩu thành công', null);
+});
+
 // GET /api/v1/users/favorites
 export const getFavorites = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) return sendError(res, 401, 'Unauthorized');

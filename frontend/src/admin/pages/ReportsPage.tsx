@@ -1,9 +1,16 @@
-import { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { StatCardWidget } from "../components/StatCard";
+import {
+  fetchAdminReports,
+  type ReportsData,
+  type ReportsOrderSource,
+  type ReportsPeriod,
+  type ReportsTopProduct,
+} from "../services/adminReports.api";
 
 const chartTooltipStyle = {
   backgroundColor: "#0d1526",
@@ -15,8 +22,33 @@ const chartTooltipStyle = {
   backdropFilter: "blur(12px)",
 };
 
-// Data for "Tăng trưởng doanh thu" AreaChart
-const REVENUE_GROWTH_DATA = [
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * 46;
+
+function buildDonutSegments(sources: ReportsOrderSource[]) {
+  let cumulative = 0;
+  return sources.map((source, index) => {
+    const arc = (source.percentage / 100) * DONUT_CIRCUMFERENCE;
+    const gap = index < sources.length - 1 ? 2 : 0;
+    const segment = {
+      color: source.color,
+      strokeDasharray: `${Math.max(arc - gap, 0)} ${DONUT_CIRCUMFERENCE}`,
+      strokeDashoffset: -cumulative,
+    };
+    cumulative += arc;
+    return segment;
+  });
+}
+
+const PRODUCT_AVATARS = [
+  { avatarBg: "linear-gradient(135deg, #3b82f6, #1d4ed8)", avatarSymbol: "🌸" },
+  { avatarBg: "linear-gradient(135deg, #a78bfa, #7c3aed)", avatarSymbol: "💐" },
+  { avatarBg: "linear-gradient(135deg, #10b981, #059669)", avatarSymbol: "🌹" },
+  { avatarBg: "linear-gradient(135deg, #fb923c, #d97706)", avatarSymbol: "🪻" },
+  { avatarBg: "linear-gradient(135deg, #ef4444, #dc2626)", avatarSymbol: "🌻" },
+];
+
+/** Legacy mock — giữ fallback khi API lỗi */
+const REVENUE_GROWTH_FALLBACK = [
   { month: "Th01", value: 2.6, label: "2.6B" },
   { month: "Th02", value: 2.9, label: "2.9B" },
   { month: "Th03", value: 3.2, label: "3.2B" },
@@ -31,8 +63,7 @@ const REVENUE_GROWTH_DATA = [
   { month: "Th12", value: 4.4, label: "4.4B" },
 ];
 
-// Data for "Doanh thu theo danh mục" BarChart
-const CATEGORY_REVENUE_DATA = [
+const CATEGORY_REVENUE_FALLBACK = [
   { category: "Giày dép", value: 1.8, label: "1.8B" },
   { category: "Thời trang", value: 1.2, label: "1.2B" },
   { category: "Phụ kiện", value: 0.86, label: "860M" },
@@ -40,8 +71,7 @@ const CATEGORY_REVENUE_DATA = [
   { category: "Khác", value: 0.26, label: "260M" },
 ];
 
-// Donut data for "Nguồn đơn hàng"
-const ORDER_SOURCES = [
+const ORDER_SOURCES_FALLBACK = [
   { name: "Website", count: 612, percentage: 49.0, color: "#10b981" },
   { name: "Shopee", count: 310, percentage: 24.8, color: "#fb923c" },
   { name: "Lazada", count: 180, percentage: 14.4, color: "#f59e0b" },
@@ -49,8 +79,7 @@ const ORDER_SOURCES = [
   { name: "Facebook", count: 50, percentage: 4.0, color: "#3b82f6" },
 ];
 
-// Table products data for "Top sản phẩm bán chạy"
-const TOP_PRODUCTS = [
+const TOP_PRODUCTS_FALLBACK = [
   {
     id: 1,
     name: "Giày Thể Thao Nam UltraBoost",
@@ -108,8 +137,7 @@ const TOP_PRODUCTS = [
   }
 ];
 
-// Channels progress data for "Hiệu suất theo kênh"
-const CHANNEL_PERFORMANCE = [
+const CHANNEL_PERFORMANCE_FALLBACK = [
   { name: "Website", revenue: "2,148,600,000 đ", ratio: "49.0%", progress: 86, color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
   { name: "Shopee", revenue: "1,188,200,000 đ", ratio: "27.1%", progress: 74, color: "#fb923c", bg: "rgba(251,146,60,0.12)" },
   { name: "Lazada", revenue: "678,000,000 đ", ratio: "15.5%", progress: 62, color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
@@ -117,77 +145,147 @@ const CHANNEL_PERFORMANCE = [
   { name: "Facebook", revenue: "102,000,000 đ", ratio: "2.3%", progress: 41, color: "#60a5fa", bg: "rgba(96,165,250,0.12)" }
 ];
 
-export function ReportsPage() {
-  const [dateRange] = useState("19/05/2024 - 25/05/2024");
+function buildReportsFallback(): ReportsData {
+  return {
+    period: "30d",
+    periodLabel: "Dữ liệu mẫu",
+    stats: [
+      { id: "report-revenue", label: "Doanh thu tháng", value: 4385600000, change: 12.6, changeLabel: "so với tháng trước", color: "indigo", tooltip: "Tổng doanh thu" },
+      { id: "report-profit", label: "Lợi nhuận", value: 985240000, change: 8.8, changeLabel: "so với tháng trước", color: "purple", tooltip: "Lợi nhuận gộp" },
+      { id: "report-aov", label: "AOV", value: 1248000, change: 6.1, changeLabel: "so với tháng trước", color: "cyan", tooltip: "Giá trị TB đơn hàng" },
+      { id: "report-returns", label: "Tỷ lệ hoàn đơn", value: "2.31%", change: -0.42, changeLabel: "so với tháng trước", color: "amber", tooltip: "Tỷ lệ đơn hủy" },
+    ],
+    revenueGrowth: REVENUE_GROWTH_FALLBACK,
+    categoryRevenue: CATEGORY_REVENUE_FALLBACK,
+    orderSources: ORDER_SOURCES_FALLBACK,
+    totalOrdersInPeriod: 1248,
+    topProducts: TOP_PRODUCTS_FALLBACK.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      sku: p.sku,
+      sold: p.sold,
+      revenue: p.revenue,
+      growth: p.growth,
+      isUp: p.isUp,
+    })),
+    channelPerformance: CHANNEL_PERFORMANCE_FALLBACK,
+    monthlyGoal: { target: "5,000,000,000 đ", achievedPercent: 87.7 },
+  };
+}
 
-  const statCards = [
-    {
-      id: "report-revenue",
-      label: "Doanh thu tháng",
-      value: 4385600000,
-      change: 12.6,
-      changeLabel: "so với tháng trước",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-          <line x1="12" y1="18" x2="12" y2="18" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-        </svg>
-      ),
-      color: "indigo" as const,
-      tooltip: "Tổng doanh thu tích lũy trong tháng hiện tại",
-      sparklinePoints: "M2 24L12 18L22 26L32 14L44 22L56 8L68 18L76 4",
-    },
-    {
-      id: "report-profit",
-      label: "Lợi nhuận",
-      value: 985240000,
-      change: 8.8,
-      changeLabel: "so với tháng trước",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-          <polyline points="16 7 22 7 22 13" />
-        </svg>
-      ),
-      color: "purple" as const,
-      tooltip: "Tổng lợi nhuận thực tế sau khi trừ chi phí",
-      sparklinePoints: "M2 18L12 26L22 14L32 20L44 10L56 22L68 12L76 16",
-    },
-    {
-      id: "report-aov",
-      label: "AOV",
-      value: 1248000,
-      change: 6.1,
-      changeLabel: "so với tháng trước",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-      color: "cyan" as const,
-      tooltip: "Giá trị trung bình của một đơn hàng thành công",
-      sparklinePoints: "M2 24L12 12L22 24L32 14L44 26L56 16L68 20L76 8",
-    },
-    {
-      id: "report-returns",
-      label: "Tỷ lệ hoàn đơn",
-      value: "2.31%",
-      change: -0.42,
-      changeLabel: "so với tháng trước",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 17 4 12 9 7" />
-          <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-        </svg>
-      ),
-      color: "amber" as const,
-      tooltip: "Tỷ lệ đơn hàng bị trả lại hoặc hoàn tiền",
-      sparklinePoints: "M2 22L12 26L22 14L32 18L44 8L56 24L68 12L76 16",
-    },
-  ];
+export function ReportsPage() {
+  const [period] = useState<ReportsPeriod>("30d");
+  const [data, setData] = useState<ReportsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchAdminReports(period, 5)
+      .then((result) => {
+        if (!cancelled) {
+          setData(result);
+          setUsedFallback(false);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch reports:", err);
+        if (!cancelled) {
+          setData(buildReportsFallback());
+          setUsedFallback(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  const report = data ?? buildReportsFallback();
+  const revenueGrowth =
+    !usedFallback && report.revenueGrowth.length > 0
+      ? report.revenueGrowth
+      : usedFallback
+        ? REVENUE_GROWTH_FALLBACK
+        : report.revenueGrowth;
+  const categoryRevenue =
+    !usedFallback && report.categoryRevenue.length > 0
+      ? report.categoryRevenue
+      : usedFallback
+        ? CATEGORY_REVENUE_FALLBACK
+        : report.categoryRevenue;
+  const orderSources =
+    !usedFallback && report.orderSources.length > 0
+      ? report.orderSources
+      : usedFallback
+        ? ORDER_SOURCES_FALLBACK
+        : report.orderSources;
+  const topProducts: ReportsTopProduct[] = usedFallback
+    ? TOP_PRODUCTS_FALLBACK.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        sku: p.sku,
+        sold: p.sold,
+        revenue: p.revenue,
+        growth: p.growth,
+        isUp: p.isUp,
+      }))
+    : report.topProducts;
+  const channelPerformance =
+    !usedFallback && report.channelPerformance.length > 0
+      ? report.channelPerformance
+      : usedFallback
+        ? CHANNEL_PERFORMANCE_FALLBACK
+        : report.channelPerformance;
+  const donutSegments = useMemo(() => buildDonutSegments(orderSources), [orderSources]);
+
+  const maxRevenueGrowth = Math.max(...revenueGrowth.map((d) => d.value), 0.5);
+  const maxCategoryValue = Math.max(...categoryRevenue.map((d) => d.value), 0.5);
+
+  const statIconMap: Record<string, React.ReactNode> = {
+    "report-revenue": (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+        <line x1="12" y1="18" x2="12" y2="18" />
+        <line x1="2" y1="10" x2="22" y2="10" />
+      </svg>
+    ),
+    "report-profit": (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+        <polyline points="16 7 22 7 22 13" />
+      </svg>
+    ),
+    "report-aov": (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="20" cy="21" r="1" />
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+      </svg>
+    ),
+    "report-returns": (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 17 4 12 9 7" />
+        <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+      </svg>
+    ),
+  };
+
+  const statSparklines: Record<string, string> = {
+    "report-revenue": "M2 24L12 18L22 26L32 14L44 22L56 8L68 18L76 4",
+    "report-profit": "M2 18L12 26L22 14L32 20L44 10L56 22L68 12L76 16",
+    "report-aov": "M2 24L12 12L22 24L32 14L44 26L56 16L68 20L76 8",
+    "report-returns": "M2 22L12 26L22 14L32 18L44 8L56 24L68 12L76 16",
+  };
+
+  const statCards = report.stats.map((stat) => ({
+    ...stat,
+    icon: statIconMap[stat.id],
+    sparklinePoints: statSparklines[stat.id],
+  }));
 
   // Custom node labels for Area/Line Chart
   const CustomLineLabel = (props: any) => {
@@ -211,6 +309,14 @@ export function ReportsPage() {
       </text>
     );
   };
+
+  if (loading && !data) {
+    return (
+      <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
+        Đang tải báo cáo...
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">
@@ -250,7 +356,7 @@ export function ReportsPage() {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span>{dateRange}</span>
+            <span>{report.periodLabel}</span>
             {/* Down Chevron */}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--adm-text-muted)", marginLeft: "4px" }}>
               <polyline points="6 9 12 15 18 9" />
@@ -337,9 +443,9 @@ export function ReportsPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: "260px" }}>
+          <div className="h-[320px] min-h-[300px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={REVENUE_GROWTH_DATA} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={revenueGrowth} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="glow-area-blue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="rgba(99, 102, 241, 0.4)" />
@@ -354,12 +460,11 @@ export function ReportsPage() {
                   tickLine={false}
                 />
                 <YAxis
-                  domain={[0, 5]}
-                  ticks={[0, 1.0, 2.0, 3.0, 4.0, 5.0]}
+                  domain={[0, Math.ceil(maxRevenueGrowth * 1.2 * 10) / 10]}
                   tick={{ fill: "#64748b", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(v) => v === 0 ? "0" : `${v.toFixed(1)}B`}
+                  tickFormatter={(v) => v === 0 ? "0" : `${Number(v).toFixed(1)}B`}
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle}
@@ -405,9 +510,9 @@ export function ReportsPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: "260px" }}>
+          <div className="h-[320px] min-h-[300px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={CATEGORY_REVENUE_DATA} margin={{ top: 20, right: 0, left: -25, bottom: 0 }}>
+              <BarChart data={categoryRevenue} margin={{ top: 20, right: 0, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="glow-bar-blue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" />
@@ -422,12 +527,16 @@ export function ReportsPage() {
                   tickLine={false}
                 />
                 <YAxis
-                  domain={[0, 2.0]}
-                  ticks={[0, 0.5, 1.0, 1.5, 2.0]}
+                  domain={[0, Math.ceil(maxCategoryValue * 1.2 * 10) / 10]}
                   tick={{ fill: "#64748b", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(v) => v === 0 ? "0" : v === 0.5 ? "500M" : `${v.toFixed(1)}B`}
+                  tickFormatter={(v) => {
+                    const n = Number(v);
+                    if (n === 0) return "0";
+                    if (n < 1) return `${Math.round(n * 1000)}M`;
+                    return `${n.toFixed(1)}B`;
+                  }}
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle}
@@ -484,68 +593,21 @@ export function ReportsPage() {
                     - Facebook (4.0% = 11.6): offset -363.6 (-277.2), length = 9.6, gap = 2
                 */}
                 <circle cx="65" cy="65" r="46" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="12" />
-                
-                {/* Website Segment (Green) */}
-                <circle
-                  cx="65"
-                  cy="65"
-                  r="46"
-                  fill="transparent"
-                  stroke="#10b981"
-                  strokeWidth="12"
-                  strokeDasharray="139.6 289.02"
-                  strokeDashoffset="72.2"
-                  transform="rotate(-90 65 65)"
-                  style={{ transition: "stroke-dasharray 0.3s" }}
-                />
-                {/* Shopee Segment (Orange) */}
-                <circle
-                  cx="65"
-                  cy="65"
-                  r="46"
-                  fill="transparent"
-                  stroke="#fb923c"
-                  strokeWidth="12"
-                  strokeDasharray="69.7 289.02"
-                  strokeDashoffset="-69.4"
-                  transform="rotate(-90 65 65)"
-                />
-                {/* Lazada Segment (Yellow) */}
-                <circle
-                  cx="65"
-                  cy="65"
-                  r="46"
-                  fill="transparent"
-                  stroke="#f59e0b"
-                  strokeWidth="12"
-                  strokeDasharray="39.6 289.02"
-                  strokeDashoffset="-141.1"
-                  transform="rotate(-90 65 65)"
-                />
-                {/* Tiktok Segment (Pink) */}
-                <circle
-                  cx="65"
-                  cy="65"
-                  r="46"
-                  fill="transparent"
-                  stroke="#ec4899"
-                  strokeWidth="12"
-                  strokeDasharray="20.3 289.02"
-                  strokeDashoffset="-182.7"
-                  transform="rotate(-90 65 65)"
-                />
-                {/* Facebook Segment (Blue) */}
-                <circle
-                  cx="65"
-                  cy="65"
-                  r="46"
-                  fill="transparent"
-                  stroke="#3b82f6"
-                  strokeWidth="12"
-                  strokeDasharray="9.6 289.02"
-                  strokeDashoffset="-205.0"
-                  transform="rotate(-90 65 65)"
-                />
+                {donutSegments.map((segment, index) => (
+                  <circle
+                    key={index}
+                    cx="65"
+                    cy="65"
+                    r="46"
+                    fill="transparent"
+                    stroke={segment.color}
+                    strokeWidth="12"
+                    strokeDasharray={segment.strokeDasharray}
+                    strokeDashoffset={segment.strokeDashoffset}
+                    transform="rotate(-90 65 65)"
+                    style={{ transition: "stroke-dasharray 0.3s" }}
+                  />
+                ))}
               </svg>
 
               {/* Center Donut text label */}
@@ -560,14 +622,14 @@ export function ReportsPage() {
                   pointerEvents: "none",
                 }}
               >
-                <span style={{ fontSize: "18px", fontWeight: "700", color: "#fff", fontFamily: "var(--adm-mono)" }}>1,248</span>
+                <span style={{ fontSize: "18px", fontWeight: "700", color: "#fff", fontFamily: "var(--adm-mono)" }}>{report.totalOrdersInPeriod.toLocaleString("vi-VN")}</span>
                 <span style={{ fontSize: "10px", color: "var(--adm-text-muted)", fontWeight: "500", textTransform: "uppercase" }}>Tổng đơn</span>
               </div>
             </div>
 
             {/* Vertically Aligned Compact Legends */}
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
-              {ORDER_SOURCES.map((source, index) => (
+              {orderSources.map((source, index) => (
                 <div key={index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "12.5px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: source.color }} />
@@ -657,19 +719,27 @@ export function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {TOP_PRODUCTS.map((prod, index) => (
+                {topProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: "24px 16px", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
+                      Chưa có dữ liệu bán hàng trong kỳ này.
+                    </td>
+                  </tr>
+                ) : topProducts.map((prod, index) => {
+                  const avatar = PRODUCT_AVATARS[index % PRODUCT_AVATARS.length];
+                  return (
                   <tr
                     key={prod.id}
                     className="admin-table-row"
                     style={{
-                      borderBottom: index === TOP_PRODUCTS.length - 1 ? "none" : "1px solid var(--adm-border)",
+                      borderBottom: index === topProducts.length - 1 ? "none" : "1px solid var(--adm-border)",
                       background: "transparent",
                       transition: "background 0.2s"
                     }}
                   >
                     {/* Index */}
                     <td style={{ padding: "12px 16px", color: "var(--adm-text-muted)", fontSize: "13px", fontWeight: "600" }}>
-                      {prod.id}
+                      {index + 1}
                     </td>
                     
                     {/* Product visual + Name */}
@@ -681,16 +751,25 @@ export function ReportsPage() {
                             width: "36px",
                             height: "36px",
                             borderRadius: "8px",
-                            background: prod.avatarBg,
+                            background: prod.mainImageUrl ? "rgba(255,255,255,0.03)" : avatar.avatarBg,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: "16px",
                             boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
-                            flexShrink: 0
+                            flexShrink: 0,
+                            overflow: "hidden",
                           }}
                         >
-                          {prod.avatarSymbol}
+                          {prod.mainImageUrl ? (
+                            <img
+                              src={prod.mainImageUrl}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            avatar.avatarSymbol
+                          )}
                         </div>
                         <span style={{ fontWeight: 550, color: "#fff", fontSize: "13.5px" }}>
                           {prod.name}
@@ -735,7 +814,7 @@ export function ReportsPage() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
@@ -772,7 +851,7 @@ export function ReportsPage() {
 
           {/* List of channels */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: 1 }}>
-            {CHANNEL_PERFORMANCE.map((channel, idx) => (
+            {channelPerformance.map((channel, idx) => (
               <div
                 key={idx}
                 style={{
@@ -876,10 +955,10 @@ export function ReportsPage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px" }}>
               <span style={{ color: "var(--adm-text-dim)" }}>
-                Mục tiêu doanh thu tháng: <strong style={{ color: "#fff", fontFamily: "var(--adm-mono)" }}>5,000,000,000 đ</strong>
+                Mục tiêu doanh thu tháng: <strong style={{ color: "#fff", fontFamily: "var(--adm-mono)" }}>{report.monthlyGoal.target}</strong>
               </span>
               <span style={{ color: "#10b981", fontWeight: "600" }}>
-                Đạt 87.7%
+                Đạt {report.monthlyGoal.achievedPercent}%
               </span>
             </div>
 
@@ -887,7 +966,7 @@ export function ReportsPage() {
             <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.06)", borderRadius: "4px", overflow: "hidden" }}>
               <div
                 style={{
-                  width: "87.7%",
+                  width: `${report.monthlyGoal.achievedPercent}%`,
                   height: "100%",
                   background: "linear-gradient(90deg, #10b981, #34d399)",
                   borderRadius: "4px",
