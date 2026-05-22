@@ -13,9 +13,10 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
+    // 422 Unprocessable Entity: request is well-formed but contains semantic validation errors
     return sendError(
       res,
-      400,
+      422,
       'Validation failed',
       errors.array().map((e: any) => ({ field: e.path || e.param, message: e.msg }))
     );

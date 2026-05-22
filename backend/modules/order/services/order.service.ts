@@ -2,6 +2,10 @@ import mongoose, { ClientSession } from 'mongoose';
 import Order, { IOrder } from '../models/Order.js';
 import Cart, { ICart } from '../models/Cart.js';
 import Product from '../../catalog/models/Product.js';
+import { orderRepository } from '../repositories/order.repository.js';
+import { cartRepository } from '../repositories/cart.repository.js';
+export type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.repository.js';
+import type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.repository.js';
 
 // ─── Cross-module imports (gọi SERVICE, không import MODEL) ───────────────────
 import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
@@ -19,7 +23,6 @@ import {
   type AttentionOrderDto,
 } from '../../../shared/mappers/order.mapper.js';
 import {
-  ORDER_STATUS_GROUP_MAP,
   isValidOrderStatusTransition,
 } from '../constants/orderStatusGroups.js';
 
@@ -28,12 +31,15 @@ const generateOrderCode = () => `ORD-${Date.now()}-${Math.random().toString(36).
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
 export const getOrCreateCart = async (customerId?: string, sessionId?: string): Promise<ICart> => {
-  const filter = customerId ? { customer: customerId } : { sessionId };
-  let cart = await Cart.findOne({ ...filter, status: 'ACTIVE' }).populate('items.productVariant');
-  if (!cart) {
-    cart = await Cart.create({ ...filter, items: [] });
-  }
-  return cart;
+  const existing = customerId
+    ? await cartRepository.findActiveByCustomer(customerId)
+    : sessionId
+      ? await cartRepository.findActiveBySession(sessionId)
+      : null;
+  if (existing) return existing;
+  return cartRepository.create(
+    customerId ? { customer: customerId as any, items: [] } : { sessionId, items: [] }
+  );
 };
 
 export const syncCart = async (customerId: string, items: { variantId: string; quantity: number }[] = []): Promise<ICart> => {
@@ -49,7 +55,7 @@ export const syncCart = async (customerId: string, items: { variantId: string; q
 };
 
 export const addToCart = async (cartId: string, variantId: string, quantity: number): Promise<ICart> => {
-  const cart = await Cart.findById(cartId);
+  const cart = await cartRepository.findById(cartId);
   if (!cart) throw new Error('Không tìm thấy giỏ hàng');
   const existingItem = cart.items.find((i) => i.productVariant.toString() === variantId);
   if (existingItem) {
@@ -61,7 +67,7 @@ export const addToCart = async (cartId: string, variantId: string, quantity: num
 };
 
 export const removeFromCart = async (cartId: string, variantId: string): Promise<ICart | null> => {
-  return Cart.findByIdAndUpdate(cartId, { $pull: { items: { productVariant: variantId } } }, { new: true });
+  return cartRepository.removeItem(cartId, variantId);
 };
 
 // ─── Place Order (ACID Transaction with Standalone Fallback) ──────────────────
@@ -359,7 +365,7 @@ export const cancelOrderWithoutTransaction = async (
   reason: string,
   cancelledById: string
 ): Promise<IOrder> => {
-  const order = await Order.findById(orderId).populate('items.productVariant');
+  const order = await orderRepository.findByIdWithVariants(orderId);
   if (!order) throw new Error('Không tìm thấy đơn hàng');
 
   if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -368,7 +374,7 @@ export const cancelOrderWithoutTransaction = async (
 
   order.status = OrderStatus.CANCELLED;
   order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById as any });
-  await order.save();
+  await (order as any).save();
 
   // Hoàn trả kho
   for (const item of order.items) {
@@ -405,7 +411,7 @@ export const cancelOrder = async (
   session?: ClientSession
 ): Promise<IOrder> => {
   if (session) {
-    const order = await Order.findById(orderId).populate('items.productVariant').session(session);
+    const order = await orderRepository.findByIdWithSession(orderId, session);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -434,7 +440,7 @@ export const cancelOrder = async (
   }
 
   try {
-    const order = await Order.findById(orderId).populate('items.productVariant').session(newSession);
+    const order = await orderRepository.findByIdWithSession(orderId, newSession);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -472,90 +478,9 @@ export const cancelOrder = async (
   }
 };
 
-interface GetOrdersParams {
-  customerId?: string;
-  status?: string;
-  statusGroup?: string;
-  orderType?: string;
-  search?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  paymentStatus?: string;
-  page?: number;
-  limit?: number;
-  includeSummary?: boolean;
-}
+export const getAttentionOrders = (limit = 5) => orderRepository.getAttentionOrders(limit);
 
-export interface OrdersSummaryDto {
-  total: number;
-  pending: number;
-  shipping: number;
-  completed: number;
-  cancelled: number;
-  attentionCount: number;
-  attentionOrders: AttentionOrderDto[];
-}
-
-const ATTENTION_DELIVERY_DAYS = 3;
-
-const buildAttentionFilter = (): Record<string, unknown> => {
-  const deliveryCutoff = new Date();
-  deliveryCutoff.setDate(deliveryCutoff.getDate() - ATTENTION_DELIVERY_DAYS);
-
-  return {
-    $or: [
-      { status: { $in: [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.READY] } },
-      { status: OrderStatus.DELIVERING, updatedAt: { $lte: deliveryCutoff } },
-    ],
-  };
-};
-
-const resolveAttentionLabel = (status: OrderStatus, updatedAt: Date): string => {
-  if (status === OrderStatus.CANCELLED) return 'Đã hủy';
-  if (status === OrderStatus.DELIVERING) {
-    const deliveryCutoff = new Date();
-    deliveryCutoff.setDate(deliveryCutoff.getDate() - ATTENTION_DELIVERY_DAYS);
-    if (updatedAt <= deliveryCutoff) return 'Quá hạn giao';
-  }
-  if (
-    status === OrderStatus.PENDING ||
-    status === OrderStatus.CONFIRMED ||
-    status === OrderStatus.READY
-  ) {
-    return 'Chờ xử lý';
-  }
-  return 'Cần xem';
-};
-
-export const getAttentionOrders = async (limit = 5): Promise<AttentionOrderDto[]> => {
-  const orders = await Order.find(buildAttentionFilter())
-    .populate('customer', 'fullName')
-    .sort({ createdAt: 1 })
-    .limit(limit)
-    .lean();
-
-  return orders.map((order) => {
-    const customer = order.customer as Record<string, unknown> | null | undefined;
-    return {
-      id: String(order._id),
-      orderCode: String(order.orderCode),
-      customerName: String(
-        customer?.fullName ?? order.recipient?.fullName ?? 'Khách lẻ'
-      ),
-      createdAt: order.createdAt
-        ? new Date(order.createdAt).toISOString()
-        : new Date().toISOString(),
-      status: order.status as OrderStatus,
-      attentionLabel: resolveAttentionLabel(
-        order.status as OrderStatus,
-        order.updatedAt ? new Date(order.updatedAt) : new Date()
-      ),
-    };
-  });
-};
-
-export const getAttentionOrdersCount = async (): Promise<number> =>
-  Order.countDocuments(buildAttentionFilter());
+export const getAttentionOrdersCount = () => orderRepository.getAttentionOrdersCount();
 
 export interface PaginatedOrders {
   items: IOrder[] | AdminOrderListItemDto[];
@@ -565,81 +490,6 @@ export interface PaginatedOrders {
   pages: number;
   summary?: OrdersSummaryDto;
 }
-
-const buildOrdersFilter = ({
-  customerId,
-  status,
-  statusGroup,
-  orderType,
-  search,
-  dateFrom,
-  dateTo,
-}: Omit<GetOrdersParams, 'page' | 'limit' | 'includeSummary'>): Record<string, unknown> => {
-  const filter: Record<string, unknown> = {};
-  if (customerId) filter.customer = customerId;
-
-  if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
-    filter.status = status;
-  } else if (statusGroup && ORDER_STATUS_GROUP_MAP[statusGroup]) {
-    filter.status = { $in: ORDER_STATUS_GROUP_MAP[statusGroup] };
-  }
-
-  if (orderType && Object.values(OrderType).includes(orderType as OrderType)) {
-    filter.orderType = orderType;
-  }
-
-  if (dateFrom || dateTo) {
-    filter.createdAt = {};
-    if (dateFrom) {
-      (filter.createdAt as Record<string, Date>).$gte = new Date(dateFrom);
-    }
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      (filter.createdAt as Record<string, Date>).$lte = end;
-    }
-  }
-
-  if (search?.trim()) {
-    const term = search.trim();
-    const regex = { $regex: term, $options: 'i' };
-    filter.$or = [
-      { orderCode: regex },
-      { 'recipient.fullName': regex },
-      { 'recipient.phone': regex },
-    ];
-  }
-
-  return filter;
-};
-
-const computeOrdersSummary = async (
-  baseFilter: Record<string, unknown>
-): Promise<OrdersSummaryDto> => {
-  const [total, pending, shipping, completed, cancelled, attentionCount, attentionOrders] =
-    await Promise.all([
-      Order.countDocuments(baseFilter),
-      Order.countDocuments({
-        ...baseFilter,
-        status: { $in: ORDER_STATUS_GROUP_MAP.pending },
-      }),
-      Order.countDocuments({
-        ...baseFilter,
-        status: { $in: ORDER_STATUS_GROUP_MAP.shipping },
-      }),
-      Order.countDocuments({
-        ...baseFilter,
-        status: { $in: ORDER_STATUS_GROUP_MAP.completed },
-      }),
-      Order.countDocuments({
-        ...baseFilter,
-        status: { $in: ORDER_STATUS_GROUP_MAP.cancelled },
-      }),
-      getAttentionOrdersCount(),
-      getAttentionOrders(5),
-    ]);
-  return { total, pending, shipping, completed, cancelled, attentionCount, attentionOrders };
-};
 
 export const getOrders = async ({
   customerId,
@@ -654,7 +504,7 @@ export const getOrders = async ({
   paymentStatus,
   includeSummary = false,
 }: GetOrdersParams = {}): Promise<PaginatedOrders> => {
-  const filter = buildOrdersFilter({
+  const filter = orderRepository.buildOrdersFilter({
     customerId,
     status,
     statusGroup,
@@ -668,17 +518,12 @@ export const getOrders = async ({
   const safeLimit = Math.min(Math.max(1, limit), 100);
 
   const [rawItems, total, summary] = await Promise.all([
-    Order.find(filter)
-      .populate('customer', 'email fullName phone')
-      .skip((safePage - 1) * safeLimit)
-      .limit(safeLimit)
-      .sort({ createdAt: -1 })
-      .lean(),
-    Order.countDocuments(filter),
-    includeSummary ? computeOrdersSummary(filter) : Promise.resolve(undefined),
+    orderRepository.findOrders(filter, safePage, safeLimit),
+    orderRepository.countOrders(filter),
+    includeSummary ? orderRepository.computeOrdersSummary(filter) : Promise.resolve(undefined),
   ]);
 
-  const orderIds = rawItems.map((o) => String(o._id));
+  const orderIds = (rawItems as IOrder[]).map((o) => String((o as any)._id));
   const payments = await getPaymentsByOrderIds(orderIds);
   const paymentByOrderId = new Map<string, Record<string, unknown>>();
   for (const payment of payments) {
@@ -688,10 +533,10 @@ export const getOrders = async ({
     }
   }
 
-  let items = rawItems.map((order) =>
+  let items = (rawItems as IOrder[]).map((order) =>
     mapOrderToAdminListItem(
-      order as Record<string, unknown>,
-      paymentByOrderId.get(String(order._id)) ?? null
+      order as unknown as Record<string, unknown>,
+      paymentByOrderId.get(String((order as any)._id)) ?? null
     )
   );
 
@@ -709,8 +554,5 @@ export const getOrders = async ({
   };
 };
 
-export const getOrderById = async (orderId: string): Promise<IOrder | null> => {
-  return Order.findById(orderId)
-    .populate('items.productVariant', 'sku sizeName price')
-    .populate('customer', 'email fullName');
-};
+export const getOrderById = (orderId: string): Promise<IOrder | null> =>
+  orderRepository.findById(orderId);

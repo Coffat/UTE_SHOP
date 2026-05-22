@@ -46,7 +46,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     req.user = decoded; // { id, email, role, iat, exp }
     next();
   } catch {
-    return sendError(res, 403, 'Invalid or expired token.');
+    // 401 Unauthenticated: token invalid or expired (not 403 which means authenticated but forbidden)
+    return sendError(res, 401, 'Invalid or expired token.');
   }
 };
 

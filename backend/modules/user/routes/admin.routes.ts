@@ -42,7 +42,7 @@ router.use(authorize('ADMIN'));
 // ─── Staff Management Routes ─────────────────────────────────────────────────
 router.get('/staff', validateStaffListQuery, listStaff);
 router.post('/staff', validateCreateStaff, createStaff);
-router.put('/staff/:id', validateUpdateStaff, updateStaff);
+router.patch('/staff/:id', validateUpdateStaff, updateStaff);
 router.delete('/staff/:id', validateStaffId, deleteStaff);
 
 // ─── Customer Management Routes ──────────────────────────────────────────────
@@ -54,7 +54,7 @@ router.patch('/customers/:id/status', validateUpdateCustomerStatus, updateCustom
 // ─── Shift Management Routes ─────────────────────────────────────────────────
 router.get('/shifts', validateShiftListQuery, listShifts);
 router.post('/shifts', validateCreateShift, createShift);
-router.put('/shifts/:id', validateUpdateShift, updateShift);
+router.patch('/shifts/:id', validateUpdateShift, updateShift);
 router.delete('/shifts/:id', validateShiftId, cancelShift);
 
 export default router;

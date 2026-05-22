@@ -25,6 +25,7 @@ export interface AdminCategoriesListResult {
     page: number;
     limit: number;
     pages: number;
+    totalPages: number;
     activeCount: number;
     inactiveCount: number;
     totalProducts: number;
@@ -70,35 +71,50 @@ export async function fetchAdminCategories(
   if (params.search) query.search = params.search;
   if (params.isActive !== undefined) query.isActive = params.isActive;
 
-  const response = await api.get("/api/v1/categories/admin/list", { params: query });
-  const data = response.data.data as {
-    items: BackendCategoryRow[];
-    meta: AdminCategoriesListResult["meta"];
+  const response = await api.get("/api/v1/admin/categories", { params: query });
+  // New endpoint: data is top-level array, meta is top-level object
+  const items = response.data.data as BackendCategoryRow[];
+  const rawMeta = response.data.meta as {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    activeCount: number;
+    inactiveCount: number;
+    totalProducts: number;
   };
 
   return {
-    items: data.items.map(mapCategoryRow),
-    meta: data.meta,
+    items: items.map(mapCategoryRow),
+    meta: {
+      ...rawMeta,
+      pages: rawMeta.totalPages,
+    },
   };
 }
 
 export async function createAdminCategory(payload: CategoryPayload) {
-  const response = await api.post("/api/v1/categories/admin", payload);
+  const response = await api.post("/api/v1/admin/categories", payload);
   return response.data.data;
 }
 
 export async function updateAdminCategory(id: string, payload: Partial<CategoryPayload>) {
-  const response = await api.put(`/api/v1/categories/admin/${id}`, payload);
+  const response = await api.patch(`/api/v1/admin/categories/${id}`, payload);
   return response.data.data;
 }
 
+/**
+ * Toggle category active status.
+ * Calls PATCH /admin/categories/:id with { isActive } body.
+ * Replaces the legacy PATCH /categories/admin/:id/toggle endpoint.
+ */
 export async function toggleAdminCategory(id: string, isActive: boolean) {
-  const response = await api.patch(`/api/v1/categories/admin/${id}/toggle`, { isActive });
+  const response = await api.patch(`/api/v1/admin/categories/${id}`, { isActive });
   return response.data.data;
 }
 
 export async function deleteAdminCategory(id: string) {
-  const response = await api.delete(`/api/v1/categories/admin/${id}`);
+  const response = await api.delete(`/api/v1/admin/categories/${id}`);
   return response.data.data;
 }
 

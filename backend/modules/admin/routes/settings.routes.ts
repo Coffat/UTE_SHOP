@@ -12,7 +12,7 @@ router.get(
   settingsController.getSettings
 );
 
-router.put(
+router.patch(
   '/',
   authenticate,
   authorize('ADMIN'),

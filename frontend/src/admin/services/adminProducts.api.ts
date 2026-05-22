@@ -55,25 +55,33 @@ export interface ProductsListResult {
     page: number;
     limit: number;
     pages: number;
+    totalPages: number;
   };
 }
 
 export async function fetchProductSummary(): Promise<ProductSummary> {
-  const response = await api.get("/api/v1/products/admin/summary");
+  const response = await api.get("/api/v1/admin/products/summary");
   return response.data.data as ProductSummary;
 }
 
 export async function fetchAdminProducts(
   params: ProductsListParams = {}
 ): Promise<ProductsListResult> {
-  const response = await api.get("/api/v1/products/admin/list", { params });
-  const data = response.data.data as {
-    items: BackendAdminProduct[];
-    meta: ProductsListResult["meta"];
+  const response = await api.get("/api/v1/admin/products", { params });
+  // New endpoint: data is top-level array, meta is top-level object
+  const items = response.data.data as BackendAdminProduct[];
+  const rawMeta = response.data.meta as {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
   };
   return {
-    items: data.items.map(mapBackendProductToRow),
-    meta: data.meta,
+    items: items.map(mapBackendProductToRow),
+    meta: {
+      ...rawMeta,
+      pages: rawMeta.totalPages,
+    },
   };
 }
 
@@ -98,7 +106,7 @@ export interface CreateProductPayload {
 }
 
 export async function createAdminProduct(payload: CreateProductPayload) {
-  const response = await api.post("/api/v1/products/admin", {
+  const response = await api.post("/api/v1/admin/products", {
     ...payload,
     status: payload.status ?? uiStatusToBackend("active"),
   });
@@ -116,12 +124,12 @@ export interface UpdateProductPayload {
 }
 
 export async function updateAdminProduct(id: string, payload: UpdateProductPayload) {
-  const response = await api.put(`/api/v1/products/admin/${id}`, payload);
+  const response = await api.patch(`/api/v1/admin/products/${id}`, payload);
   return response.data.data;
 }
 
 export async function discontinueAdminProduct(id: string) {
-  const response = await api.patch(`/api/v1/products/${id}/discontinue`);
+  const response = await api.delete(`/api/v1/admin/products/${id}`);
   return response.data.data;
 }
 

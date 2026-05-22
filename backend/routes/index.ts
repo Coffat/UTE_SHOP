@@ -14,6 +14,8 @@ import dashboardRoutes from '../modules/admin/routes/dashboard.routes.js';
 import reportsRoutes from '../modules/admin/routes/reports.routes.js';
 import settingsRoutes from '../modules/admin/routes/settings.routes.js';
 import uploadRoutes from '../modules/admin/routes/upload.routes.js';
+import adminProductRoutes from '../modules/admin/routes/products.routes.js';
+import adminCategoryRoutes from '../modules/admin/routes/categories.routes.js';
 
 // ─── Module: Catalog ──────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ import notificationRoutes from '../modules/notification/routes/notification.rout
 // ─── Module: Blog & System Support ────────────────────────────────────────────
 import blogRoutes from '../modules/system/routes/blog.routes.js';
 import supportRoutes from '../modules/system/routes/support.routes.js';
+import adminBlogRoutes from '../modules/system/routes/blog.routes.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -56,6 +59,12 @@ router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/reports', reportsRoutes);
 router.use('/admin/settings', settingsRoutes);
 router.use('/admin/upload', uploadRoutes);
+// New namespaced admin routes (Phase 1B)
+router.use('/admin/products', adminProductRoutes);
+router.use('/admin/categories', adminCategoryRoutes);
+// Admin namespace aliases for inventory and vouchers (Phase 3)
+router.use('/admin/stock', stockRoutes);
+router.use('/admin/vouchers', voucherRoutes);
 
 // Catalog
 router.use('/storefront', storefrontRoutes);
@@ -83,6 +92,7 @@ router.use('/notifications', notificationRoutes);
 
 // Blogs & Support
 router.use('/blogs', blogRoutes);
+router.use('/admin/blogs', adminBlogRoutes); // Admin namespace alias (Phase 5)
 router.use('/support', supportRoutes);
 
 export default router;

@@ -18,6 +18,7 @@ const router = express.Router();
 router.get('/', validatePagination, productController.listProducts);
 
 // ─── Admin (must be before /:id) ──────────────────────────────────────────────
+// @deprecated Use GET /api/v1/admin/products/summary instead. Kept for backward compatibility.
 const ADMIN_STAFF_READ_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'] as const;
 
 router.get(
@@ -26,6 +27,7 @@ router.get(
   authorize(...ADMIN_STAFF_READ_ROLES),
   productController.adminProductSummary
 );
+// @deprecated Use GET /api/v1/admin/products instead. Kept for backward compatibility.
 router.get(
   '/admin/list',
   authenticate,
@@ -33,6 +35,7 @@ router.get(
   validateAdminProductList,
   productController.adminListProducts
 );
+// @deprecated Use POST /api/v1/admin/products instead. Kept for backward compatibility.
 router.post(
   '/admin',
   authenticate,
@@ -40,6 +43,7 @@ router.post(
   validateAdminCreateProduct,
   productController.adminCreateProduct
 );
+// @deprecated Use PATCH /api/v1/admin/products/:id instead. Kept for backward compatibility.
 router.put(
   '/admin/:id',
   authenticate,
@@ -54,6 +58,7 @@ router.get('/:id/variants', validateProductId, productController.listVariants);
 router.post('/:id/view', productController.incrementViews);
 
 // ─── ADMIN only ───────────────────────────────────────────────────────────────
+// @deprecated Use POST /api/v1/admin/products instead. Kept for backward compatibility.
 router.post(
   '/',
   authenticate, authorize('ADMIN'),
@@ -61,6 +66,7 @@ router.post(
   productController.createProduct
 );
 
+// @deprecated Use PATCH /api/v1/admin/products/:id instead. Kept for backward compatibility.
 router.put(
   '/:id',
   authenticate, authorize('ADMIN'),
@@ -68,6 +74,7 @@ router.put(
   productController.updateProduct
 );
 
+// @deprecated Use PATCH /api/v1/admin/products/:id with { status: 'ACTIVE' } instead.
 router.patch(
   '/:id/publish',
   authenticate, authorize('ADMIN'),
@@ -75,6 +82,7 @@ router.patch(
   productController.publishProduct
 );
 
+// @deprecated Use DELETE /api/v1/admin/products/:id instead. Kept for backward compatibility.
 router.patch(
   '/:id/discontinue',
   authenticate, authorize('ADMIN'),

@@ -39,7 +39,7 @@ export async function createStaffMember(payload: Record<string, unknown>) {
 }
 
 export async function updateStaffMember(id: string, payload: Record<string, unknown>) {
-  const response = await api.put(`/api/v1/admin/staff/${id}`, payload);
+  const response = await api.patch(`/api/v1/admin/staff/${id}`, payload);
   return response.data.data;
 }
 
@@ -63,7 +63,7 @@ export async function createShift(payload: ShiftPayload) {
 }
 
 export async function updateShift(id: string, payload: Partial<ShiftPayload>) {
-  const response = await api.put(`/api/v1/admin/shifts/${id}`, payload);
+  const response = await api.patch(`/api/v1/admin/shifts/${id}`, payload);
   return response.data.data;
 }
 

@@ -21,3 +21,24 @@ export const sendError = (
   if (errors !== null) payload.errors = errors;
   return res.status(statusCode).json(payload);
 };
+
+/**
+ * sendPaginated — helper for new /admin/* list endpoints.
+ * Returns { success, message, data: items[], meta: { page, limit, total, totalPages, ...extras } }.
+ * Old endpoints continue using sendSuccess with their existing format.
+ * The meta object may carry additional domain-specific counts (e.g. activeCount, inactiveCount).
+ */
+export const sendPaginated = (
+  res: Response,
+  items: any[],
+  meta: { page: number; limit: number; total: number; totalPages: number } & Record<string, unknown>,
+  message = 'OK',
+  statusCode = 200
+): Response => {
+  return res.status(statusCode).json({
+    success: true,
+    message,
+    data: items,
+    meta,
+  });
+};

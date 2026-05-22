@@ -8,9 +8,12 @@ import StockLevel from '../../inventory/models/StockLevel.js';
 import Warehouse from '../../inventory/models/Warehouse.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 import {
-  mapProductToAdminListItem,
-  type AdminProductListItemDto,
-} from '../../../shared/mappers/product.mapper.js';
+  productRepository,
+  type AdminTopCategory,
+  type AdminLowStockAlert,
+  type PaginatedAdminProducts,
+  type GetAdminProductsParams,
+} from '../repositories/product.repository.js';
 
 // ─── Product CRUD ─────────────────────────────────────────────────────────────
 
@@ -205,12 +208,6 @@ export const deactivateVariant = async (variantId: string): Promise<IProductVari
 
 // ─── Admin helpers ────────────────────────────────────────────────────────────
 
-const decimalToNumber = (value: unknown): number => {
-  if (value == null) return 0;
-  if (typeof value === 'number') return value;
-  return parseFloat(String(value)) || 0;
-};
-
 export const generateProductSlug = (name: string): string =>
   name
     .toLowerCase()
@@ -238,79 +235,6 @@ const getDefaultWarehouse = async () => {
   return warehouse;
 };
 
-const buildStockMaps = async (productIds: string[]) => {
-  const products = await Product.find({ _id: { $in: productIds } })
-    .select('minifiedVariants')
-    .lean();
-
-  const variantIds = products.flatMap((p) =>
-    (p.minifiedVariants ?? []).map((mv) => mv.variantId.toString())
-  );
-
-  const [stockAgg, variants] = await Promise.all([
-    StockLevel.aggregate<{ _id: mongoose.Types.ObjectId; totalQty: number }>([
-      { $match: { productVariant: { $in: variantIds.map((id) => new mongoose.Types.ObjectId(id)) } } },
-      {
-        $group: {
-          _id: '$productVariant',
-          totalQty: { $sum: { $toDouble: '$quantity' } },
-        },
-      },
-    ]),
-    ProductVariant.find({ product: { $in: productIds }, isActive: true })
-      .select('product sku price')
-      .lean(),
-  ]);
-
-  const stockByVariant = new Map(
-    stockAgg.map((row) => [row._id.toString(), row.totalQty])
-  );
-
-  const stockByProductId = new Map<string, number>();
-  const skuByProductId = new Map<string, string>();
-  const priceByProductId = new Map<string, number>();
-  const primaryVariantByProductId = new Map<string, string>();
-
-  for (const product of products) {
-    const pid = product._id.toString();
-    let totalStock = 0;
-    for (const mv of product.minifiedVariants ?? []) {
-      const vid = mv.variantId.toString();
-      totalStock += stockByVariant.get(vid) ?? 0;
-      if (!primaryVariantByProductId.has(pid)) {
-        primaryVariantByProductId.set(pid, vid);
-      }
-    }
-    stockByProductId.set(pid, totalStock);
-  }
-
-  for (const variant of variants) {
-    const pid = variant.product.toString();
-    if (!skuByProductId.has(pid)) {
-      skuByProductId.set(pid, variant.sku);
-      priceByProductId.set(pid, decimalToNumber(variant.price));
-      primaryVariantByProductId.set(pid, variant._id.toString());
-    }
-  }
-
-  return { stockByProductId, skuByProductId, priceByProductId, primaryVariantByProductId };
-};
-
-export interface AdminTopCategory {
-  categoryId: string;
-  categoryName: string;
-  productCount: number;
-  percentage: number;
-}
-
-export interface AdminLowStockAlert {
-  id: string;
-  name: string;
-  description: string;
-  stock: number;
-  mainImageUrl: string;
-}
-
 export interface AdminProductSummary {
   total: number;
   active: number;
@@ -321,87 +245,29 @@ export interface AdminProductSummary {
   lowStockAlerts: AdminLowStockAlert[];
 }
 
-const LOW_STOCK_THRESHOLD = 50;
+export const getAdminTopCategories = (limit = 6): Promise<AdminTopCategory[]> =>
+  productRepository.getAdminTopCategories(limit);
 
-export const getAdminTopCategories = async (limit = 6): Promise<AdminTopCategory[]> => {
-  const [grouped, total] = await Promise.all([
-    Product.aggregate<{
-      categoryId: mongoose.Types.ObjectId;
-      categoryName: string;
-      productCount: number;
-    }>([
-      { $match: { status: { $ne: ProductStatus.DISCONTINUED } } },
-      { $group: { _id: '$category', productCount: { $sum: 1 } } },
-      { $sort: { productCount: -1 } },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
-      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          categoryId: '$_id',
-          categoryName: { $ifNull: ['$category.name', 'Chưa phân loại'] },
-          productCount: 1,
-          _id: 0,
-        },
-      },
-    ]),
-    Product.countDocuments({ status: { $ne: ProductStatus.DISCONTINUED } }),
-  ]);
-
-  return grouped.map((row) => ({
-    categoryId: row.categoryId?.toString() ?? '',
-    categoryName: row.categoryName,
-    productCount: row.productCount,
-    percentage: total > 0 ? Math.round((row.productCount / total) * 1000) / 10 : 0,
-  }));
-};
-
-export const getAdminLowStockAlerts = async (limit = 5): Promise<AdminLowStockAlert[]> => {
-  const products = await Product.find({ status: { $ne: ProductStatus.DISCONTINUED } })
-    .select('name description mainImageUrl minifiedVariants')
-    .lean();
-
-  const productIds = products.map((p) => p._id.toString());
-  const { stockByProductId } = await buildStockMaps(productIds);
-
-  const alerts = products
-    .map((p) => ({
-      id: p._id.toString(),
-      name: p.name,
-      description: p.description ?? '',
-      stock: stockByProductId.get(p._id.toString()) ?? 0,
-      mainImageUrl: p.mainImageUrl ?? '',
-    }))
-    .filter((p) => p.stock <= LOW_STOCK_THRESHOLD)
-    .sort((a, b) => a.stock - b.stock)
-    .slice(0, limit);
-
-  return alerts;
-};
+export const getAdminLowStockAlerts = (limit = 5): Promise<AdminLowStockAlert[]> =>
+  productRepository.getAdminLowStockAlerts(limit);
 
 export const getAdminProductSummary = async (): Promise<AdminProductSummary> => {
   const [total, active, discontinued, categoryIds, lowStockProducts, topCategories, lowStockAlerts] =
     await Promise.all([
-      Product.countDocuments(),
-      Product.countDocuments({ status: ProductStatus.ACTIVE }),
-      Product.countDocuments({ status: ProductStatus.DISCONTINUED }),
-      Product.distinct('category'),
+      productRepository.countAll(),
+      productRepository.countByStatus(ProductStatus.ACTIVE),
+      productRepository.countByStatus(ProductStatus.DISCONTINUED),
+      productRepository.distinctCategories(),
       Product.find({ status: { $ne: ProductStatus.DISCONTINUED } })
         .select('_id minifiedVariants')
         .lean(),
-      getAdminTopCategories(6),
-      getAdminLowStockAlerts(5),
+      productRepository.getAdminTopCategories(6),
+      productRepository.getAdminLowStockAlerts(5),
     ]);
 
   const productIds = lowStockProducts.map((p) => p._id.toString());
-  const { stockByProductId } = await buildStockMaps(productIds);
+  const { stockByProductId } = await productRepository.buildStockMaps(productIds);
+  const LOW_STOCK_THRESHOLD = 50;
   const lowStock =
     productIds.filter((id) => {
       const stock = stockByProductId.get(id) ?? 0;
@@ -419,84 +285,9 @@ export const getAdminProductSummary = async (): Promise<AdminProductSummary> => 
   };
 };
 
-interface GetAdminProductsParams {
-  status?: string;
-  categoryId?: string;
-  search?: string;
-  stockFilter?: 'in_stock' | 'low_stock' | 'out_of_stock';
-  page?: number;
-  limit?: number;
-}
-
-export interface PaginatedAdminProducts {
-  items: AdminProductListItemDto[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
-}
-
-export const getAdminProducts = async ({
-  status,
-  categoryId,
-  search,
-  stockFilter,
-  page = 1,
-  limit = 20,
-}: GetAdminProductsParams = {}): Promise<PaginatedAdminProducts> => {
-  const filter: Record<string, unknown> = {};
-  if (status && Object.values(ProductStatus).includes(status as ProductStatus)) {
-    filter.status = status;
-  }
-  if (categoryId) filter.category = categoryId;
-  if (search?.trim()) {
-    filter.name = { $regex: search.trim(), $options: 'i' };
-  }
-
-  const safePage = Math.max(1, page);
-  const safeLimit = Math.min(Math.max(1, limit), 100);
-
-  let rawItems = await Product.find(filter)
-    .populate('category', 'name slug')
-    .sort({ createdAt: -1 })
-    .lean();
-
-  const productIds = rawItems.map((p) => p._id.toString());
-  const maps = await buildStockMaps(productIds);
-
-  let items = rawItems.map((product) =>
-    mapProductToAdminListItem(
-      product as Record<string, unknown>,
-      maps.stockByProductId,
-      maps.skuByProductId,
-      maps.priceByProductId,
-      maps.primaryVariantByProductId
-    )
-  );
-
-  if (stockFilter === 'in_stock') {
-    items = items.filter((p) => p.stock > 0);
-  } else if (stockFilter === 'low_stock') {
-    items = items.filter((p) => p.stock > 0 && p.stock <= 50);
-  } else if (stockFilter === 'out_of_stock') {
-    items = items.filter((p) => p.stock === 0);
-  }
-
-  const total = items.length;
-  const paginatedItems = items.slice((safePage - 1) * safeLimit, safePage * safeLimit);
-
-  return {
-    items: paginatedItems,
-    meta: {
-      total,
-      page: safePage,
-      limit: safeLimit,
-      pages: Math.ceil(total / safeLimit) || 1,
-    },
-  };
-};
+export const getAdminProducts = (
+  params: GetAdminProductsParams = {}
+): Promise<PaginatedAdminProducts> => productRepository.getAdminProducts(params);
 
 export interface CreateAdminProductInput {
   name: string;

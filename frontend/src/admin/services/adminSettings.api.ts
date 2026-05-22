@@ -39,7 +39,7 @@ export async function fetchAdminSettings(): Promise<StoreSettings> {
 export async function updateAdminSettings(
   payload: Partial<StoreSettings> & { apiKey?: string }
 ): Promise<StoreSettings> {
-  const response = await api.put("/api/v1/admin/settings", payload);
+  const response = await api.patch("/api/v1/admin/settings", payload);
   return response.data.data as StoreSettings;
 }
 

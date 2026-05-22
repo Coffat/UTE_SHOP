@@ -126,8 +126,10 @@ export class AdminService {
       throw new AppError('Email này đã được sử dụng bởi người dùng khác', 400);
     }
 
-    const passwordRaw = data.passwordHash || 'Uteshop@123';
-    const hashed = await bcrypt.hash(passwordRaw, 10);
+    if (!data.passwordHash) {
+      throw new AppError('Mật khẩu là bắt buộc khi tạo tài khoản khách hàng', 422);
+    }
+    const hashed = await bcrypt.hash(data.passwordHash, 10);
 
     return userRepository.createCustomer({
       ...data,

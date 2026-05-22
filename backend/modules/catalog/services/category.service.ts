@@ -1,39 +1,11 @@
 import Category, { ICategory } from '../models/Category.js';
-import Product from '../models/Product.js';
 import { slugify, ensureUniqueSlug } from '../../../shared/utils/slugify.js';
 import { AppError } from '../../../shared/utils/AppError.js';
+import { categoryRepository } from '../repositories/category.repository.js';
 
-export interface AdminCategoryListParams {
-  search?: string;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-}
-
-export interface AdminCategoryRow {
-  _id: string;
-  name: string;
-  slug: string;
-  description: string;
-  imageUrl: string;
-  isActive: boolean;
-  productCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface AdminCategoryListResult {
-  items: AdminCategoryRow[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-    activeCount: number;
-    inactiveCount: number;
-    totalProducts: number;
-  };
-}
+// Re-export types from repository so existing imports continue to work
+export type { AdminCategoryListParams, AdminCategoryListResult, AdminCategoryRow } from '../repositories/category.repository.js';
+import type { AdminCategoryListParams, AdminCategoryListResult } from '../repositories/category.repository.js';
 
 const normalizeCategoryPayload = async (
   data: Partial<ICategory>,
@@ -76,99 +48,31 @@ export const createCategory = async (data: Partial<ICategory>): Promise<ICategor
   return Category.create(payload);
 };
 
-export const getCategories = async (): Promise<ICategory[]> =>
-  Category.find({ isActive: true }).sort('name');
+export const getCategories = (): Promise<ICategory[]> => categoryRepository.findAll();
 
-export const getCategoryById = async (id: string): Promise<ICategory | null> =>
-  Category.findById(id);
+export const getCategoryById = (id: string): Promise<ICategory | null> =>
+  categoryRepository.findById(id);
 
-export const getCategoryBySlug = async (slug: string): Promise<ICategory | null> =>
-  Category.findOne({ slug });
+export const getCategoryBySlug = (slug: string): Promise<ICategory | null> =>
+  categoryRepository.findBySlug(slug);
 
 export const updateCategory = async (
   id: string,
   data: Partial<ICategory>
 ): Promise<ICategory | null> => {
   const payload = await normalizeCategoryPayload(data, id);
-  return Category.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+  return categoryRepository.updateById(id, payload);
 };
 
-export const toggleCategory = async (id: string, isActive: boolean): Promise<ICategory | null> =>
-  Category.findByIdAndUpdate(id, { isActive }, { new: true });
+export const toggleCategory = (id: string, isActive: boolean): Promise<ICategory | null> =>
+  categoryRepository.toggleActive(id, isActive);
 
-export const countProductsInCategory = async (categoryId: string): Promise<number> =>
-  Product.countDocuments({ category: categoryId });
+export const countProductsInCategory = (categoryId: string): Promise<number> =>
+  categoryRepository.countProducts(categoryId);
 
-export const deleteCategory = async (id: string): Promise<void> => {
-  const productCount = await countProductsInCategory(id);
-  if (productCount > 0) {
-    throw new AppError('Không thể xóa danh mục đang có sản phẩm', 409);
-  }
-  const deleted = await Category.findByIdAndDelete(id);
-  if (!deleted) {
-    throw new AppError('Không tìm thấy danh mục', 404);
-  }
-};
+export const deleteCategory = (id: string): Promise<void> =>
+  categoryRepository.deleteById(id);
 
-export const getAdminCategories = async (
+export const getAdminCategories = (
   params: AdminCategoryListParams = {}
-): Promise<AdminCategoryListResult> => {
-  const page = Math.max(1, params.page ?? 1);
-  const limit = Math.min(100, Math.max(1, params.limit ?? 20));
-  const skip = (page - 1) * limit;
-
-  const filter: Record<string, unknown> = {};
-  if (params.isActive !== undefined) {
-    filter.isActive = params.isActive;
-  }
-  if (params.search?.trim()) {
-    const regex = new RegExp(params.search.trim(), 'i');
-    filter.$or = [{ name: regex }, { slug: regex }];
-  }
-
-  const [items, total, activeCount, inactiveCount, totalProducts] = await Promise.all([
-    Category.aggregate([
-      { $match: filter },
-      { $sort: { name: 1 } },
-      { $skip: skip },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: 'products',
-          localField: '_id',
-          foreignField: 'category',
-          as: 'products',
-        },
-      },
-      {
-        $project: {
-          name: 1,
-          slug: 1,
-          description: 1,
-          imageUrl: 1,
-          isActive: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          productCount: { $size: '$products' },
-        },
-      },
-    ]),
-    Category.countDocuments(filter),
-    Category.countDocuments({ isActive: true }),
-    Category.countDocuments({ isActive: false }),
-    Product.countDocuments(),
-  ]);
-
-  return {
-    items: items as AdminCategoryRow[],
-    meta: {
-      total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit) || 1,
-      activeCount,
-      inactiveCount,
-      totalProducts,
-    },
-  };
-};
+): Promise<AdminCategoryListResult> => categoryRepository.getAdminCategories(params);

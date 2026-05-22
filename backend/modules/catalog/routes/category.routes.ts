@@ -16,6 +16,7 @@ const router = express.Router();
 const ADMIN_STAFF_READ_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'] as const;
 
 // ─── Admin (must be before /:idOrSlug) ───────────────────────────────────────
+// @deprecated Use GET /api/v1/admin/categories instead. Kept for backward compatibility.
 router.get(
   '/admin/list',
   authenticate,
@@ -24,6 +25,7 @@ router.get(
   categoryController.adminListCategories
 );
 
+// @deprecated Use POST /api/v1/admin/categories instead. Kept for backward compatibility.
 router.post(
   '/admin',
   authenticate,
@@ -32,6 +34,7 @@ router.post(
   categoryController.adminCreateCategory
 );
 
+// @deprecated Use PATCH /api/v1/admin/categories/:id instead. Kept for backward compatibility.
 router.put(
   '/admin/:id',
   authenticate,
@@ -40,6 +43,7 @@ router.put(
   categoryController.adminUpdateCategory
 );
 
+// @deprecated Use PATCH /api/v1/admin/categories/:id with body { isActive } instead.
 router.patch(
   '/admin/:id/toggle',
   authenticate,
@@ -49,6 +53,7 @@ router.patch(
   categoryController.adminToggleCategory
 );
 
+// @deprecated Use DELETE /api/v1/admin/categories/:id instead. Kept for backward compatibility.
 router.delete(
   '/admin/:id',
   authenticate,
@@ -61,7 +66,7 @@ router.delete(
 router.get('/', categoryController.listCategories);
 router.get('/:idOrSlug', categoryController.getCategory);
 
-// ─── Legacy ADMIN routes (keep for backward compatibility) ────────────────────
+// @deprecated (legacy) Use POST /api/v1/admin/categories instead.
 router.post(
   '/',
   authenticate,
@@ -70,6 +75,7 @@ router.post(
   categoryController.createCategory
 );
 
+// @deprecated (legacy) Use PATCH /api/v1/admin/categories/:id instead.
 router.put(
   '/:id',
   authenticate,
