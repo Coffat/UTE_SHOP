@@ -40,12 +40,12 @@ export function FeaturedCategories() {
             to={item.href}
             className="group flex w-[42vw] min-w-[148px] max-w-[168px] shrink-0 snap-start flex-col rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-lavender-mist sm:min-w-[156px] sm:max-w-[175px] lg:min-h-0 lg:w-auto lg:min-w-0 lg:max-w-none"
           >
-            <div className="flex h-full min-h-[44px] flex-col gap-3 rounded-3xl border border-crystal-border bg-pure-ivory/70 p-3 shadow-[0_10px_40px_rgba(168,85,247,0.06)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_48px_rgba(168,85,247,0.1)] sm:p-3.5 lg:gap-3.5">
+            <div className="flex h-full min-h-[44px] flex-col gap-3 rounded-3xl border border-crystal-border bg-pure-ivory/70 p-3 backdrop-blur-xl hover-lift sm:p-3.5 lg:gap-3.5">
               <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/50 bg-lavender-mist/40">
                 <BgImage
                   src={item.image.src}
                   alt={item.image.alt}
-                  className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                  className="absolute inset-0 image-hover-zoom"
                 />
               </div>
               <span className="font-home-heading px-0.5 text-center text-xs font-semibold text-midnight-purple transition-colors group-hover:text-primary sm:text-sm">

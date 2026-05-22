@@ -15,7 +15,7 @@ export function AuthBrandingColumn({ bodyText }: AuthBrandingColumnProps) {
         to="/"
         className="group mb-6 inline-flex items-center gap-2.5 self-start font-ui-label text-[11px] font-bold uppercase tracking-widest text-[#7158e2] transition-colors duration-300 hover:text-[#ff758c]"
       >
-        <span className="flex size-7 items-center justify-center rounded-full bg-soft-amethyst/30 text-[#7158e2] transition-all duration-300 group-hover:-translate-x-1 group-hover:bg-[#ff758c] group-hover:text-pure-ivory shadow-[0_2px_8px_rgba(113,88,226,0.08)]">
+        <span className="flex size-7 items-center justify-center rounded-full bg-soft-amethyst/30 text-[#7158e2] transition-[color,background-color,transform] duration-300 group-hover:-translate-x-1 group-hover:bg-[#ff758c] group-hover:text-pure-ivory shadow-[0_2px_8px_rgba(113,88,226,0.08)]">
           <MaterialIcon name="arrow_back" className="text-xs shrink-0" />
         </span>
         <span>Về trang chủ</span>

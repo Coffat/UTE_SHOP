@@ -238,7 +238,7 @@ export function ProductDetail() {
                 >
                   {activeImages.map((src: string, idx: number) => (
                     <SwiperSlide key={`thumb-${idx}`}>
-                      <div className="cursor-pointer overflow-hidden rounded-2xl aspect-square border-2 border-transparent transition-all duration-300 [&.swiper-slide-thumb-active]:border-dreamy-purple [&.swiper-slide-thumb-active]:shadow-md hover:opacity-100 opacity-60">
+                      <div className="cursor-pointer overflow-hidden rounded-2xl aspect-square border-2 border-transparent transition-[border-color,box-shadow,opacity] duration-300 [&.swiper-slide-thumb-active]:border-dreamy-purple [&.swiper-slide-thumb-active]:shadow-md hover:opacity-100 opacity-60">
                         <img src={src} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
                       </div>
                     </SwiperSlide>
@@ -306,7 +306,7 @@ export function ProductDetail() {
                           setSelectedVariant(v);
                           setQuantity(1);
                         }}
-                        className={`rounded-2xl border px-5 py-2.5 text-sm font-medium transition-all duration-300 shadow-sm ${
+                        className={`rounded-2xl border px-5 py-2.5 text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-300 shadow-sm ${
                           isActive
                             ? "bg-deep-plum border-deep-plum text-pure-ivory ring-2 ring-primary/20 scale-[1.02]"
                             : "bg-pure-ivory/60 border-crystal-border text-midnight-purple hover:bg-soft-amethyst/30"

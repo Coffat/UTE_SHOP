@@ -82,14 +82,14 @@ export function TopProductsSlider({
           <div className="flex items-center gap-2">
             <button
               ref={prevRef}
-              className="prev-btn flex h-9 w-9 items-center justify-center rounded-full border border-crystal-border bg-white/70 shadow-sm text-primary transition-all duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90"
+              className="prev-btn flex h-9 w-9 items-center justify-center rounded-full border border-crystal-border bg-white/70 shadow-sm text-primary transition-[color,background-color,box-shadow,transform] duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90"
               aria-label="Previous slide"
             >
               <MaterialIcon name="chevron_left" className="text-[20px]" />
             </button>
             <button
               ref={nextRef}
-              className="next-btn flex h-9 w-9 items-center justify-center rounded-full border border-crystal-border bg-white/70 shadow-sm text-primary transition-all duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90"
+              className="next-btn flex h-9 w-9 items-center justify-center rounded-full border border-crystal-border bg-white/70 shadow-sm text-primary transition-[color,background-color,box-shadow,transform] duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90"
               aria-label="Next slide"
             >
               <MaterialIcon name="chevron_right" className="text-[20px]" />

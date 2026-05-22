@@ -26,7 +26,7 @@ export function OccasionNavigation() {
             className="group flex flex-col items-center gap-4 cursor-pointer"
             href={occasion.href}
           >
-            <div className="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 3xl:w-40 3xl:h-40 rounded-full bg-pure-ivory/60 border border-crystal-border shadow-sm flex items-center justify-center group-hover:bg-soft-amethyst/50 group-hover:shadow-[0_10px_30px_rgba(192,132,252,0.15)] transition-all duration-300">
+            <div className="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 3xl:w-40 3xl:h-40 rounded-full bg-pure-ivory/60 border border-crystal-border shadow-sm flex items-center justify-center group-hover:bg-soft-amethyst/50 group-hover:shadow-[0_10px_30px_rgba(192,132,252,0.15)] transition-[background-color,box-shadow] duration-300">
               <MaterialIcon
                 name={occasion.icon}
                 className="text-[32px] md:text-[36px] lg:text-[40px] xl:text-[48px] 3xl:text-[56px] text-deep-plum group-hover:text-primary transition-colors font-light"

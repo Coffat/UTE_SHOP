@@ -54,7 +54,7 @@ export function BlogDetail() {
           showToast(data.message || "Không tải được bài viết.", "error");
           navigate("/blogs", { replace: true });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
         showToast("Lỗi kết nối khi tải bài viết.", "error");
         navigate("/blogs", { replace: true });
@@ -194,16 +194,15 @@ export function BlogDetail() {
           
           <div className="grid gap-6 md:grid-cols-3">
             {relatedPosts.map((rPost) => (
-              <motion.article
+              <article
                 key={rPost._id}
-                whileHover={{ y: -6 }}
-                className="glass-panel overflow-hidden rounded-[20px] shadow-[0_6px_24px_rgba(74,59,82,0.02)] border border-crystal-border flex flex-col h-full group"
+                className="glass-panel overflow-hidden rounded-[20px] shadow-[0_6px_24px_rgba(74,59,82,0.02)] border border-crystal-border hover-lift flex flex-col h-full group"
               >
                 <Link to={`/blogs/${rPost.slug}`} className="block h-36 overflow-hidden bg-lavender-mist shrink-0">
                   <img
                     src={rPost.coverImage}
                     alt={rPost.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-103"
+                    className="h-full w-full object-cover image-hover-zoom"
                   />
                 </Link>
                 <div className="p-4 flex flex-col flex-1">
@@ -222,7 +221,7 @@ export function BlogDetail() {
                     </span>
                   </div>
                 </div>
-              </motion.article>
+              </article>
             ))}
           </div>
         </section>

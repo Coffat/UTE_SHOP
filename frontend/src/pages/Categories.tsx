@@ -6,6 +6,28 @@ import { fetchCategories } from "@/features/catalog/categoriesSlice";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { motion } from "framer-motion";
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
 export function Categories() {
   const dispatch = useDispatch<AppDispatch>();
   const { items: categories, loading, error } = useSelector(
@@ -72,56 +94,73 @@ export function Categories() {
             <p className="text-xs text-dusk-gray mt-1 max-w-md">{error}</p>
             <button
               onClick={() => dispatch(fetchCategories())}
-              className="mt-4 rounded-full bg-primary px-5 py-2 text-xs font-bold text-pure-ivory shadow-md hover:bg-primary-dark transition-all duration-300"
+              className="mt-4 rounded-full bg-primary px-5 py-2 text-xs font-bold text-pure-ivory shadow-md hover:bg-primary-dark transition-colors duration-300"
             >
               Thử lại
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {categories.map((cat, index) => (
-              <Link
-                key={cat._id}
-                to={`/category/${cat.slug}`}
-                className="group relative flex flex-col overflow-hidden rounded-[24px] border border-crystal-border bg-pure-ivory/80 shadow-sm transition-all duration-350 hover:-translate-y-1.5 hover:shadow-xl hover:border-primary/25 z-10"
-                style={{
-                  animationDelay: `${index * 50}ms`
-                }}
-              >
-                {/* Image Container with Zoom effect */}
-                <div className="aspect-[4/3] w-full overflow-hidden border-b border-crystal-border/80 bg-lavender-mist relative">
-                  <img
-                    src={cat.imageUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600"}
-                    alt={cat.name}
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-midnight-purple/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Category Card Floating Arrow Icon */}
-                  <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 scale-90 rounded-full bg-pure-ivory/95 p-2 text-primary shadow-lg backdrop-blur-md transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-hover:scale-100">
-                    <MaterialIcon name="arrow_forward" className="text-[18px]" />
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          >
+            {categories.map((cat, index) => {
+              const cardElement = (
+                <Link
+                  to={`/category/${cat.slug}`}
+                  className="group relative flex flex-col overflow-hidden rounded-[24px] border border-crystal-border bg-pure-ivory/80 shadow-sm hover-lift hover:border-primary/25 z-10 h-full"
+                >
+                  {/* Image Container with Zoom effect */}
+                  <div className="aspect-[4/3] w-full overflow-hidden border-b border-crystal-border/80 bg-lavender-mist relative">
+                    <img
+                      src={cat.imageUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600"}
+                      alt={cat.name}
+                      className="h-full w-full object-cover image-hover-zoom"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-midnight-purple/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Category Card Floating Arrow Icon */}
+                    <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 scale-90 rounded-full bg-pure-ivory/95 p-2 text-primary shadow-lg backdrop-blur-md transition-[transform,opacity] duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-hover:scale-100">
+                      <MaterialIcon name="arrow_forward" className="text-[18px]" />
+                    </div>
                   </div>
-                </div>
 
-                {/* Content Container */}
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="font-home-heading text-lg font-bold text-midnight-purple group-hover:text-primary transition-colors duration-200">
-                    {cat.name}
-                  </h3>
-                  <p className="mt-2 flex-1 font-home-heading text-xs leading-relaxed text-dusk-gray group-hover:text-midnight-purple/80 transition-colors duration-200 line-clamp-3">
-                    {cat.description || "Khám phá các sản phẩm hoa tươi được lựa chọn kỹ lưỡng, phù hợp cho mọi sự kiện."}
-                  </p>
-                  
-                  {/* Footer link trigger visual decoration */}
-                  <div className="mt-4 flex items-center gap-1 text-[11px] font-bold text-primary group-hover:text-primary-dark transition-colors duration-200">
-                    <span>Xem bộ sưu tập</span>
-                    <MaterialIcon name="keyboard_arrow_right" className="text-[16px] transition-transform duration-200 group-hover:translate-x-0.5" />
+                  {/* Content Container */}
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="font-home-heading text-lg font-bold text-midnight-purple group-hover:text-primary transition-colors duration-200">
+                      {cat.name}
+                    </h3>
+                    <p className="mt-2 flex-1 font-home-heading text-xs leading-relaxed text-dusk-gray group-hover:text-midnight-purple/80 transition-colors duration-200 line-clamp-3">
+                      {cat.description || "Khám phá các sản phẩm hoa tươi được lựa chọn kỹ lượng, phù hợp cho mọi sự kiện."}
+                    </p>
+                    
+                    {/* Footer link trigger visual decoration */}
+                    <div className="mt-4 flex items-center gap-1 text-[11px] font-bold text-primary group-hover:text-primary-dark transition-colors duration-200">
+                      <span>Xem bộ sưu tập</span>
+                      <MaterialIcon name="keyboard_arrow_right" className="text-[16px] transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </div>
                   </div>
+                </Link>
+              );
+
+              if (index < 12) {
+                return (
+                  <motion.div key={cat._id} variants={itemVariants}>
+                    {cardElement}
+                  </motion.div>
+                );
+              }
+
+              return (
+                <div key={cat._id}>
+                  {cardElement}
                 </div>
-              </Link>
-            ))}
-          </div>
+              );
+            })}
+          </motion.div>
         )}
         
       </div>
