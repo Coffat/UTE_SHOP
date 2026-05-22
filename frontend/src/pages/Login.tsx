@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { AuthSocialOAuthSection } from "@/components/auth/AuthSocialOAuthSection";
@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 export function Login() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const authStatus = useAppSelector((s) => s.auth.login.status);
   const authError = useAppSelector((s) => s.auth.login.error);
 
@@ -39,7 +40,8 @@ export function Login() {
               const result = await dispatch(login({ email: email.trim(), password }));
               if (login.fulfilled.match(result)) {
                 await dispatch(fetchProfile());
-                const to = result.payload.redirectUrl ?? "/";
+                const redirectParam = searchParams.get("redirect");
+                const to = redirectParam || result.payload.redirectUrl || "/";
                 navigate(to, { replace: true });
               }
             }}

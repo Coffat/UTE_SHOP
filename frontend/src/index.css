@@ -76,6 +76,8 @@
   --spacing-gutter: 24px;
   --spacing-section: 120px;
 
+  --font-sans: "Quicksand", sans-serif;
+  --font-serif: "Cormorant Garamond", serif;
   --font-ui-label: "Quicksand", sans-serif;
   --font-hero-display-mobile: "Cormorant Garamond", serif;
   --font-sub-heading: "Cormorant Garamond", serif;
@@ -120,9 +122,16 @@
   body {
     background-color: var(--color-lavender-mist);
     color: var(--color-midnight-purple);
-    font-family: var(--font-body-standard);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font-family: inherit;
   }
 
   ::selection {

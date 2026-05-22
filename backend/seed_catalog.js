@@ -177,18 +177,18 @@ const seedCatalog = async () => {
     // 3. Seed 12 Categories
     console.log('📁 Seeding 12 Categories...');
     const categoriesData = [
-      { name: 'Hoa Sinh Nhật', slug: 'hoa-sinh-nhat', description: 'Món quà sinh nhật rực rỡ, mang niềm vui và lời chúc tuổi mới trọn vẹn.' },
-      { name: 'Hoa Tình Yêu', slug: 'hoa-tinh-yeu', description: 'Sắc hồng, sắc đỏ nồng nàn minh chứng cho tình yêu lãng mạn vĩnh cửu.' },
-      { name: 'Hoa Khai Trương', slug: 'hoa-khai-truong', description: 'Kệ hoa, lẵng hoa sang trọng chúc mừng hồng phát, thành công rực rỡ.' },
-      { name: 'Bình Hoa Nghệ Thuật', slug: 'binh-hoa-nghe-thuat', description: 'Những tác phẩm hoa cắm bình gốm, bình thủy tinh sang trọng cho không gian sống.' },
-      { name: 'Giỏ Hoa Đồng Quê', slug: 'gio-hoa-dong-que', description: 'Vẻ đẹp mộc mạc, bình dị từ giỏ mây tre đan đan cài hoa dại, cúc họa mi.' },
-      { name: 'Bó Hoa Ngân Sách', slug: 'hoa-ngan-sach', description: 'Những bó hoa xinh xắn thiết kế tối giản với giá cả cực kỳ hợp lý dưới 250,000đ.' },
-      { name: 'Combo Gấu & Hoa', slug: 'combo-gau-va-hoa', description: 'Sự kết hợp hoàn hảo ngọt ngào giữa đóa hoa tươi và chú gấu bông dễ thương.' },
-      { name: 'Hoa Chia Buồn', slug: 'hoa-chia-buon', description: 'Vòng hoa kính viếng trang trọng, gửi gắm lời chia buồn sâu sắc và thành kính nhất.' },
-      { name: 'Hoa Kỷ Niệm', slug: 'hoa-ky-niem', description: 'Gửi trao yêu thương, kỷ niệm những khoảnh khắc ngọt ngào bên nhau.' },
-      { name: 'Hoa Chúc Mừng', slug: 'hoa-chuc-mung', description: 'Chúc mừng tốt nghiệp, kỷ niệm ngày thành lập hay thăng tiến sự nghiệp.' },
-      { name: 'Loại hoa lẻ', slug: 'loai-hoa-le', description: 'Tự do lựa chọn từng cành hoa yêu thích cắm trang trí phòng tại nhà.' },
-      { name: 'Tiệc & Sự kiện', slug: 'tiec-va-su-kien', description: 'Thiết kế hoa bàn tiệc, cổng hoa cưới và decor trọn gói sự kiện sang trọng.' }
+      { name: 'Hoa Sinh Nhật', slug: 'hoa-sinh-nhat', description: 'Món quà sinh nhật rực rỡ, mang niềm vui và lời chúc tuổi mới trọn vẹn.', imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Tình Yêu', slug: 'hoa-tinh-yeu', description: 'Sắc hồng, sắc đỏ nồng nàn minh chứng cho tình yêu lãng mạn vĩnh cửu.', imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Khai Trương', slug: 'hoa-khai-truong', description: 'Kệ hoa, lẵng hoa sang trọng chúc mừng hồng phát, thành công rực rỡ.', imageUrl: 'https://images.unsplash.com/photo-1590004953392-5aba2e72269a?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Bình Hoa Nghệ Thuật', slug: 'binh-hoa-nghe-thuat', description: 'Những tác phẩm hoa cắm bình gốm, bình thủy tinh sang trọng cho không gian sống.', imageUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Giỏ Hoa Đồng Quê', slug: 'gio-hoa-dong-que', description: 'Vẻ đẹp mộc mạc, bình dị từ giỏ mây tre đan đan cài hoa dại, cúc họa mi.', imageUrl: 'https://images.unsplash.com/photo-1565118531796-763e5082d113?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Bó Hoa Ngân Sách', slug: 'hoa-ngan-sach', description: 'Những bó hoa xinh xắn thiết kế tối giản với giá cả cực kỳ hợp lý dưới 250,000đ.', imageUrl: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Combo Gấu & Hoa', slug: 'combo-gau-va-hoa', description: 'Sự kết hợp hoàn hảo ngọt ngào giữa đóa hoa tươi và chú gấu bông dễ thương.', imageUrl: 'https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Chia Buồn', slug: 'hoa-chia-buon', description: 'Vòng hoa kính viếng trang trọng, gửi gắm lời chia buồn sâu sắc và thành kính nhất.', imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Kỷ Niệm', slug: 'hoa-ky-niem', description: 'Gửi trao yêu thương, kỷ niệm những khoảnh khắc ngọt ngào bên nhau.', imageUrl: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Chúc Mừng', slug: 'hoa-chuc-mung', description: 'Chúc mừng tốt nghiệp, kỷ niệm ngày thành lập hay thăng tiến sự nghiệp.', imageUrl: 'https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Loại hoa lẻ', slug: 'loai-hoa-le', description: 'Tự do lựa chọn từng cành hoa yêu thích cắm trang trí phòng tại nhà.', imageUrl: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Tiệc & Sự kiện', slug: 'tiec-va-su-kien', description: 'Thiết kế hoa bàn tiệc, cổng hoa cưới và decor trọn gói sự kiện sang trọng.', imageUrl: 'https://images.unsplash.com/photo-1566393028639-d108a42c46a7?q=80&w=600&auto=format&fit=crop' }
     ];
 
     const categories = {};

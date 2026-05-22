@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
@@ -6,18 +6,41 @@ import { RootState, AppDispatch } from "@/store";
 import { clearCart } from "@/features/cart/cartSlice";
 import { formatVND } from "./ProductList";
 import { api } from "@/lib/api";
+import { CashVNIcon, MomoIcon, VNPayIcon, CardVNIcon } from "@/icons";
+import { fetchProfile } from "@/features/profile/profileSlice";
+import { useToast } from "@/components/ui/ToastContext";
 
 export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
   const { items, subtotal } = useSelector((state: RootState) => state.cart);
   const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  // Get user profile state
+  const { profile, fetchStatus } = useSelector((state: RootState) => state.profile);
 
   // Form states
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [giftNote, setGiftNote] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO" | "VNPAY" | "CARD">("COD");
+
+  // Fetch profile on mount if idle
+  useEffect(() => {
+    if (fetchStatus === "idle") {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, fetchStatus]);
+
+  // Autofill form fields when profile is loaded
+  useEffect(() => {
+    if (profile) {
+      if (profile.fullName && !fullName) setFullName(profile.fullName);
+      if (profile.phone && !phone) setPhone(profile.phone);
+      if (profile.address && !address) setAddress(profile.address);
+    }
+  }, [profile]);
 
   // Flow states
   const [loading, setLoading] = useState(false);
@@ -31,7 +54,7 @@ export function Checkout() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !phone || !address) {
-      alert("Vui lòng điền đầy đủ thông tin giao hàng.");
+      showToast("Vui lòng điền đầy đủ thông tin giao hàng.", "warning");
       return;
     }
 
@@ -59,7 +82,7 @@ export function Checkout() {
           phone,
           deliveryNote: address,
         },
-        paymentMethod: paymentMethod === "MOMO" ? "MOMO" : "COD",
+        paymentMethod: (paymentMethod === "MOMO" || paymentMethod === "VNPAY") ? "MOMO" : "COD",
         note: giftNote,
       });
 
@@ -78,11 +101,11 @@ export function Checkout() {
       const processResponse = await api.post(`/api/v1/payments/${paymentId}/process`);
       const processResult = processResponse.data.data;
 
-      if (paymentMethod === "MOMO") {
+      if (paymentMethod === "MOMO" || paymentMethod === "VNPAY") {
         if (processResult.redirectUrl) {
           navigate(processResult.redirectUrl);
         } else {
-          throw new Error("Không thể tạo liên kết thanh toán MoMo.");
+          throw new Error(`Không thể tạo liên kết thanh toán trực tuyến ${paymentMethod === "MOMO" ? "MoMo" : "VNPay"}.`);
         }
       } else {
         dispatch(clearCart());
@@ -99,6 +122,72 @@ export function Checkout() {
       setLoading(false);
     }
   };
+
+  if (fetchStatus === "loading" || fetchStatus === "idle") {
+    return (
+      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
+        <div className="mx-auto max-w-lg px-4 text-center">
+          <div className="glass-panel p-10 rounded-[32px] shadow-[0_10px_40px_rgba(49,27,146,0.06)] relative overflow-hidden flex flex-col items-center">
+            <div className="relative w-16 h-16 mb-6 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+              <MaterialIcon name="lock" className="text-primary text-[28px] animate-pulse" />
+            </div>
+            <h3 className="font-hero-display text-xl font-bold text-deep-plum mb-2">Đang xác thực thông tin</h3>
+            <p className="text-midnight-purple/60 text-sm">Vui lòng chờ trong giây lát...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
+        <div className="mx-auto max-w-xl px-4 text-center">
+          <div className="glass-panel p-8 sm:p-10 rounded-[32px] shadow-[0_15px_45px_rgba(49,27,146,0.08)] border-white/80 relative overflow-hidden group">
+            
+            {/* Decorative background glow */}
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700"></div>
+            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[#ff758c]/10 rounded-full blur-3xl group-hover:bg-[#ff758c]/20 transition-all duration-700"></div>
+            
+            {/* Shield Icon container with pulsing ring */}
+            <div className="relative mx-auto w-20 h-20 mb-6 bg-pure-ivory/80 rounded-3xl flex items-center justify-center shadow-md border border-crystal-border flex-shrink-0 transition-transform duration-500 group-hover:scale-110">
+              <div className="absolute inset-0 rounded-3xl border-2 border-primary/30 animate-ping opacity-75"></div>
+              <MaterialIcon name="lock_person" className="text-primary text-[40px]" />
+            </div>
+
+            {/* Content */}
+            <h1 className="font-hero-display text-2xl sm:text-3xl font-bold text-deep-plum mb-3 tracking-tight">
+              Yêu Cầu Đăng Nhập
+            </h1>
+            <p className="text-midnight-purple/80 text-sm sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+              Để bảo mật thông tin đơn hàng và tiếp tục các bước thanh toán, vui lòng đăng nhập tài khoản UTESHOP của bạn.
+            </p>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link 
+                to="/login?redirect=/checkout" 
+                className="w-full sm:w-auto btn-hero-cta-gradient px-8 py-3.5 rounded-full font-bold shadow-md hover:-translate-y-0.5 transition flex items-center justify-center gap-2 group-hover:shadow-lg active:scale-[0.98]"
+              >
+                <MaterialIcon name="login" className="text-[20px]" />
+                Đăng nhập ngay
+              </Link>
+              <Link 
+                to="/cart" 
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold border border-crystal-border bg-pure-ivory/60 text-deep-plum hover:bg-pure-ivory/95 hover:-translate-y-0.5 transition flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+              >
+                <MaterialIcon name="shopping_cart" className="text-[20px] text-dusk-gray" />
+                Quay lại giỏ hàng
+              </Link>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -210,12 +299,12 @@ export function Checkout() {
                 <label className="text-xs font-semibold text-dusk-gray block mb-3">Phương thức thanh toán</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   
-                  {/* COD */}
+                  {/* Tiền mặt (COD) */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3 cursor-pointer transition ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
                       paymentMethod === "COD"
-                        ? "bg-soft-amethyst/30 border-primary"
-                        : "bg-pure-ivory/50 border-crystal-border"
+                        ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
+                        : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
                     }`}
                   >
                     <input
@@ -223,23 +312,23 @@ export function Checkout() {
                       name="payMethod"
                       checked={paymentMethod === "COD"}
                       onChange={() => setPaymentMethod("COD")}
-                      className="accent-primary"
+                      className="accent-primary w-4 h-4 cursor-pointer"
                     />
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
-                      <MaterialIcon name="local_atm" />
+                    <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm border border-crystal-border/30">
+                      <CashVNIcon size={44} />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-deep-plum">Giao hàng nhận tiền (COD)</p>
-                      <p className="text-xs text-dusk-gray mt-0.5">Thanh toán tiền mặt khi nhận hoa</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-deep-plum truncate">Tiền mặt (COD)</p>
+                      <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán trực tiếp khi nhận hoa</p>
                     </div>
                   </label>
 
                   {/* MoMo Pay */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3 cursor-pointer transition ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
                       paymentMethod === "MOMO"
-                        ? "bg-soft-amethyst/30 border-primary"
-                        : "bg-pure-ivory/50 border-crystal-border"
+                        ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
+                        : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
                     }`}
                   >
                     <input
@@ -247,14 +336,62 @@ export function Checkout() {
                       name="payMethod"
                       checked={paymentMethod === "MOMO"}
                       onChange={() => setPaymentMethod("MOMO")}
-                      className="accent-primary"
+                      className="accent-primary w-4 h-4 cursor-pointer"
                     />
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-rose-500">
-                      <MaterialIcon name="payment" />
+                    <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm border border-crystal-border/30">
+                      <MomoIcon size={44} />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-deep-plum">Ví Điện Tử MoMo</p>
-                      <p className="text-xs text-dusk-gray mt-0.5">Thanh toán qua Ví MoMo cực nhanh</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-deep-plum truncate">Ví Điện Tử MoMo</p>
+                      <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán siêu tốc qua ví MoMo</p>
+                    </div>
+                  </label>
+
+                  {/* VNPay Pay */}
+                  <label
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                      paymentMethod === "VNPAY"
+                        ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
+                        : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payMethod"
+                      checked={paymentMethod === "VNPAY"}
+                      onChange={() => setPaymentMethod("VNPAY")}
+                      className="accent-primary w-4 h-4 cursor-pointer"
+                    />
+                    <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm border border-crystal-border/30">
+                      <VNPayIcon size={44} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-deep-plum truncate">Cổng Ví VNPay</p>
+                      <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán VNPay QR & Thẻ nội địa</p>
+                    </div>
+                  </label>
+
+                  {/* Thẻ thanh toán (Card/Napas) */}
+                  <label
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                      paymentMethod === "CARD"
+                        ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
+                        : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payMethod"
+                      checked={paymentMethod === "CARD"}
+                      onChange={() => setPaymentMethod("CARD")}
+                      className="accent-primary w-4 h-4 cursor-pointer"
+                    />
+                    <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm border border-crystal-border/30">
+                      <CardVNIcon size={44} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-deep-plum truncate">Thẻ ATM / Visa / Napas</p>
+                      <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán thẻ ATM nội địa & Quốc tế</p>
                     </div>
                   </label>
 

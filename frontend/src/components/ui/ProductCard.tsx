@@ -5,6 +5,7 @@ import { BgImage } from "@/components/ui/BgImage";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { addToCart } from "@/features/cart/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/features/wishlist/wishlistSlice";
+import { useToast } from "@/components/ui/ToastContext";
 
 export type ProductBadge = {
   label: string;
@@ -80,13 +81,14 @@ export function ProductCard({
   const { profile } = useSelector((state: RootState) => state.profile);
   const wishlistItems = useSelector((state: RootState) => state.wishlist?.items || []);
   const isFavorited = wishlistItems.some((item) => item._id === id);
+  const { showToast } = useToast();
 
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!profile) {
-      alert("Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích của bạn.");
+      showToast("Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích của bạn.", "warning");
       return;
     }
 
@@ -131,7 +133,7 @@ export function ProductCard({
         stock: 99,
       })
     );
-    alert(`Đã thêm "${name}" vào giỏ hàng thành công!`);
+    showToast(`Đã thêm "${name}" vào giỏ hàng thành công!`, "success");
   };
 
   return (

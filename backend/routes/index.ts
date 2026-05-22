@@ -34,6 +34,10 @@ import addressRoutes from '../modules/logistics/routes/address.routes.js';
 // ─── Module: Notification ─────────────────────────────────────────────────────
 import notificationRoutes from '../modules/notification/routes/notification.routes.js';
 
+// ─── Module: Blog & System Support ────────────────────────────────────────────
+import blogRoutes from '../modules/system/routes/blog.routes.js';
+import supportRoutes from '../modules/system/routes/support.routes.js';
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const router = express.Router();
@@ -65,5 +69,9 @@ router.use('/addresses', addressRoutes);
 
 // Notifications
 router.use('/notifications', notificationRoutes);
+
+// Blogs & Support
+router.use('/blogs', blogRoutes);
+router.use('/support', supportRoutes);
 
 export default router;

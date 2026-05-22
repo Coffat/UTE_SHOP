@@ -10,6 +10,7 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ProductList } from "./pages/ProductList";
 import { ProductDetail } from "./pages/ProductDetail";
+import { Categories } from "./pages/Categories";
 import { CategoryProductList } from "./pages/CategoryProductList";
 import { Cart } from "./pages/Cart";
 import { ProfileLayout } from "./pages/ProfileLayout";
@@ -18,6 +19,10 @@ import { Favorites } from "./pages/Favorites";
 import { Checkout } from "./pages/Checkout";
 import { MockMomoGateway } from "./pages/MockMomoGateway";
 import { OrderSuccess } from "./pages/OrderSuccess";
+import { BlogList } from "./pages/BlogList";
+import { BlogDetail } from "./pages/BlogDetail";
+import { Notifications } from "./pages/Notifications";
+import { Support } from "./pages/Support";
 
 // Admin Imports
 import { AdminLayout } from "./admin/layouts/AdminLayout";
@@ -78,11 +83,15 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Home /> },
           { path: "products", element: <ProductList /> },
+          { path: "categories", element: <Categories /> },
           { path: "product/:id", element: <ProductDetail /> },
           { path: "category/:slug", element: <CategoryProductList /> },
           { path: "cart", element: <Cart /> },
           { path: "checkout", element: <Checkout /> },
           { path: "order-success/:orderId", element: <OrderSuccess /> },
+          { path: "blogs", element: <BlogList /> },
+          { path: "blogs/:slug", element: <BlogDetail /> },
+          { path: "support", element: <Support /> },
           { 
             path: "user/profile", 
             element: <ProfileLayout />,
@@ -90,6 +99,7 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to="overview" replace /> },
               { path: "overview", element: <ProfileOverview /> },
               { path: "favorites", element: <Favorites /> },
+              { path: "notifications", element: <Notifications /> },
             ]
           },
           { path: "403", element: <Forbidden /> },

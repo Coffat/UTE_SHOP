@@ -6,10 +6,12 @@ import { AppDispatch, RootState } from "@/store";
 import { fetchWishlist, removeFromWishlist } from "@/features/wishlist/wishlistSlice";
 import { addToCart } from "@/features/cart/cartSlice";
 import { getProductImage, formatVND } from "./ProductList";
+import { useToast } from "@/components/ui/ToastContext";
 
 export function Favorites() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { showToast } = useToast();
   
   const favoriteItems = useSelector((state: RootState) => state.wishlist.items);
   const { status } = useSelector((state: RootState) => state.wishlist);
@@ -40,7 +42,7 @@ export function Favorites() {
         stock: stockVal,
       })
     );
-    alert(`Đã thêm "${p.name}" vào giỏ hàng thành công!`);
+    showToast(`Đã thêm "${p.name}" vào giỏ hàng thành công!`, "success");
   };
 
   return (
