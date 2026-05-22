@@ -125,7 +125,7 @@ export function Checkout() {
 
   if (fetchStatus === "loading" || fetchStatus === "idle") {
     return (
-      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
+      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center motion-safe:animate-fade-in">
         <div className="mx-auto max-w-lg px-4 text-center">
           <div className="glass-panel p-10 rounded-[32px] shadow-[0_10px_40px_rgba(49,27,146,0.06)] relative overflow-hidden flex flex-col items-center">
             <div className="relative w-16 h-16 mb-6 flex items-center justify-center">
@@ -143,13 +143,13 @@ export function Checkout() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
+      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center motion-safe:animate-fade-in">
         <div className="mx-auto max-w-xl px-4 text-center">
           <div className="glass-panel p-8 sm:p-10 rounded-[32px] shadow-[0_15px_45px_rgba(49,27,146,0.08)] border-white/80 relative overflow-hidden group">
             
             {/* Decorative background glow */}
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700"></div>
-            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[#ff758c]/10 rounded-full blur-3xl group-hover:bg-[#ff758c]/20 transition-all duration-700"></div>
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-700"></div>
+            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[#ff758c]/10 rounded-full blur-3xl group-hover:bg-[#ff758c]/20 transition-colors duration-700"></div>
             
             {/* Shield Icon container with pulsing ring */}
             <div className="relative mx-auto w-20 h-20 mb-6 bg-pure-ivory/80 rounded-3xl flex items-center justify-center shadow-md border border-crystal-border flex-shrink-0 transition-transform duration-500 group-hover:scale-110">
@@ -169,14 +169,14 @@ export function Checkout() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
                 to="/login?redirect=/checkout" 
-                className="w-full sm:w-auto btn-hero-cta-gradient px-8 py-3.5 rounded-full font-bold shadow-md hover:-translate-y-0.5 transition flex items-center justify-center gap-2 group-hover:shadow-lg active:scale-[0.98]"
+                className="w-full sm:w-auto btn-hero-cta-gradient px-8 py-3.5 rounded-full font-bold shadow-md flex items-center justify-center gap-2 hover-lift active-press"
               >
                 <MaterialIcon name="login" className="text-[20px]" />
                 Đăng nhập ngay
               </Link>
               <Link 
                 to="/cart" 
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold border border-crystal-border bg-pure-ivory/60 text-deep-plum hover:bg-pure-ivory/95 hover:-translate-y-0.5 transition flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold border border-crystal-border bg-pure-ivory/60 text-deep-plum hover:bg-pure-ivory/95 transition flex items-center justify-center gap-2 shadow-sm hover-lift active-press"
               >
                 <MaterialIcon name="shopping_cart" className="text-[20px] text-dusk-gray" />
                 Quay lại giỏ hàng
@@ -191,12 +191,12 @@ export function Checkout() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center">
+      <div className="min-h-screen bg-lavender-mist pt-32 pb-20 flex items-center justify-center motion-safe:animate-fade-in">
         <div className="mx-auto max-w-lg px-4 text-center">
           <div className="glass-panel p-10 rounded-[32px] shadow-[0_10px_40px_rgba(49,27,146,0.06)] relative overflow-hidden">
             <h1 className="font-hero-display text-2xl font-bold text-deep-plum mb-4">Không có sản phẩm để thanh toán</h1>
             <p className="text-midnight-purple/80 mb-6">Hãy thêm bó hoa vào giỏ hàng trước khi tiếp tục nhé!</p>
-            <Link to="/products" className="btn-hero-cta-gradient px-8 py-3 rounded-full font-bold">
+            <Link to="/products" className="btn-hero-cta-gradient px-8 py-3 rounded-full font-bold inline-block hover-lift active-press">
               Khám Phá Hoa Tươi
             </Link>
           </div>
@@ -206,7 +206,7 @@ export function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-lavender-mist pt-28 pb-20">
+    <div className="min-h-screen bg-lavender-mist pt-28 pb-20 motion-safe:animate-fade-in">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header Title */}
@@ -220,7 +220,7 @@ export function Checkout() {
           {/* Left Column: Delivery Form */}
           <div className="lg:col-span-7 space-y-6">
             
-            <form onSubmit={handlePlaceOrder} className="glass-panel p-6 sm:p-8 rounded-[2rem] shadow-[0_10px_35px_rgba(49,27,146,0.04)] border-white/60 space-y-6">
+            <form onSubmit={handlePlaceOrder} className="glass-panel p-6 sm:p-8 rounded-[2rem] shadow-[0_10px_35px_rgba(49,27,146,0.04)] border-white/60 space-y-6 motion-safe:animate-fade-up">
               
               <h2 className="font-hero-display text-2xl font-bold text-deep-plum pb-3 border-b border-crystal-border/60 flex items-center gap-2">
                 <MaterialIcon name="local_shipping" className="text-primary text-[24px]" />
@@ -301,7 +301,7 @@ export function Checkout() {
                   
                   {/* Tiền mặt (COD) */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer relative overflow-hidden select-none hover-lift active-press ${
                       paymentMethod === "COD"
                         ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
                         : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
@@ -325,7 +325,7 @@ export function Checkout() {
 
                   {/* MoMo Pay */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer relative overflow-hidden select-none hover-lift active-press ${
                       paymentMethod === "MOMO"
                         ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
                         : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
@@ -349,7 +349,7 @@ export function Checkout() {
 
                   {/* VNPay Pay */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer relative overflow-hidden select-none hover-lift active-press ${
                       paymentMethod === "VNPAY"
                         ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
                         : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
@@ -373,7 +373,7 @@ export function Checkout() {
 
                   {/* Thẻ thanh toán (Card/Napas) */}
                   <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer transition-all duration-300 relative overflow-hidden select-none hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer relative overflow-hidden select-none hover-lift active-press ${
                       paymentMethod === "CARD"
                         ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
                         : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
@@ -409,7 +409,7 @@ export function Checkout() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-lg hover:-translate-y-0.5 transition shadow-md flex items-center justify-center gap-2"
+                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-lg shadow-md flex items-center justify-center gap-2 hover-lift active-press"
               >
                 {loading ? (
                   <>
@@ -431,7 +431,7 @@ export function Checkout() {
           {/* Right Column: Order items summary review */}
           <div className="lg:col-span-5 space-y-6">
             
-            <div className="glass-panel p-6 rounded-[2rem] shadow-[0_10px_35px_rgba(49,27,146,0.04)] border-white/60">
+            <div className="glass-panel p-6 rounded-[2rem] shadow-[0_10px_35px_rgba(49,27,146,0.04)] border-white/60 motion-safe:animate-fade-up">
               
               <h2 className="font-hero-display text-xl font-bold text-deep-plum pb-3 border-b border-crystal-border/60 mb-4 flex items-center gap-2">
                 <MaterialIcon name="assignment" className="text-primary text-[20px]" />

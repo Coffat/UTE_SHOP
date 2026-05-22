@@ -168,7 +168,7 @@ export function Support() {
                 return (
                   <div 
                     key={idx}
-                    className={`glass-panel overflow-hidden rounded-[20px] border transition-all duration-300 ${
+                    className={`glass-panel overflow-hidden rounded-[20px] border transition-[background-color,border-color,box-shadow] duration-300 ${
                       isExpanded 
                         ? "border-primary/30 bg-white shadow-[0_8px_30px_rgba(168,85,247,0.04)]" 
                         : "border-crystal-border/80 bg-pure-ivory/55 hover:border-primary/20 hover:bg-pure-ivory/80"
@@ -260,7 +260,7 @@ export function Support() {
                   <label className="block text-xs font-bold text-midnight-purple/80 mb-1.5 font-home-heading">
                     Họ và tên <span className="text-rose-500">*</span>
                   </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-all duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
+                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
                     <MaterialIcon name="person" className="text-[18px] text-dusk-gray" />
                     <input
                       type="text"
@@ -279,7 +279,7 @@ export function Support() {
                   <label className="block text-xs font-bold text-midnight-purple/80 mb-1.5 font-home-heading">
                     Địa chỉ Email <span className="text-rose-500">*</span>
                   </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-all duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
+                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
                     <MaterialIcon name="mail" className="text-[18px] text-dusk-gray" />
                     <input
                       type="email"
@@ -298,7 +298,7 @@ export function Support() {
                   <label className="block text-xs font-bold text-midnight-purple/80 mb-1.5 font-home-heading">
                     Số điện thoại <span className="text-rose-500">*</span>
                   </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-all duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
+                  <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
                     <MaterialIcon name="call" className="text-[18px] text-dusk-gray" />
                     <input
                       type="tel"
@@ -319,7 +319,7 @@ export function Support() {
                     <label className="block text-xs font-bold text-midnight-purple/80 mb-1.5 font-home-heading">
                       Danh mục <span className="text-rose-500">*</span>
                     </label>
-                    <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-all duration-300 focus-within:border-primary/40 focus-within:bg-white">
+                    <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:bg-white">
                       <MaterialIcon name="category" className="text-[18px] text-dusk-gray" />
                       <select
                         value={category}
@@ -339,7 +339,7 @@ export function Support() {
                     <label className="block text-xs font-bold text-midnight-purple/80 mb-1.5 font-home-heading">
                       Tiêu đề <span className="text-rose-500">*</span>
                     </label>
-                    <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-all duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
+                    <div className="flex items-center gap-2 rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
                       <MaterialIcon name="title" className="text-[18px] text-dusk-gray" />
                       <input
                         type="text"
@@ -363,7 +363,7 @@ export function Support() {
                     placeholder="Mô tả chi tiết vấn đề bạn đang gặp phải..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 text-xs font-semibold text-midnight-purple placeholder-dusk-gray outline-none transition-all duration-300 focus:border-primary/40 focus:bg-white focus:ring-2 focus:ring-primary/10"
+                    className="w-full rounded-xl border border-crystal-border/80 bg-white/50 px-3 py-2.5 text-xs font-semibold text-midnight-purple placeholder-dusk-gray outline-none transition-[border-color,background-color,box-shadow] duration-300 focus:border-primary/40 focus:bg-white focus:ring-2 focus:ring-primary/10"
                     required
                   />
                 </div>
@@ -372,7 +372,7 @@ export function Support() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 rounded-full login-gradient-bg py-3 px-6 text-xs font-extrabold text-pure-ivory shadow-md transition-all duration-300 hover:shadow-lg hover:brightness-105 disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 rounded-full login-gradient-bg py-3 px-6 text-xs font-extrabold text-pure-ivory shadow-md transition-[box-shadow,filter,opacity] duration-300 hover:shadow-lg hover:brightness-105 disabled:opacity-60"
                 >
                   {submitting ? (
                     <>

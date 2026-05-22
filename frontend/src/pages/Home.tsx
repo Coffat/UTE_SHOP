@@ -10,6 +10,7 @@ import type { Product, ProductBadge } from "@/components/ui/ProductCard";
 import { images } from "@/lib/images";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchHomeProducts, fetchTopProducts, BackendProduct } from "@/features/catalog/catalogSlice";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 const { products } = images;
 
@@ -71,62 +72,83 @@ export function Home() {
   return (
     <>
       <Hero />
-      <FeaturedCategories />
+      
+      <ScrollReveal>
+        <FeaturedCategories />
+      </ScrollReveal>
 
       {/* Flagship: Horizontal carousels duo for top-performing items */}
       <div className="flex flex-col gap-16 py-8 md:gap-24">
         {(loading || (topProducts && bestSellers.length > 0)) && (
-          <TopProductsSlider
-            title="Sản phẩm bán chạy nhất"
-            subtitle="Top 10 bó hoa tươi thắm được quý khách ưu ái và đặt nhiều nhất tại UTE SHOP."
-            products={bestSellers}
-            isLoading={loading && !topProducts}
-            viewAllHref="/products"
-          />
+          <ScrollReveal>
+            <TopProductsSlider
+              title="Sản phẩm bán chạy nhất"
+              subtitle="Top 10 bó hoa tươi thắm được quý khách ưu ái và đặt nhiều nhất tại UTE SHOP."
+              products={bestSellers}
+              isLoading={loading && !topProducts}
+              viewAllHref="/products"
+            />
+          </ScrollReveal>
         )}
 
         {(loading || (topProducts && mostViewed.length > 0)) && (
-          <TopProductsSlider
-            title="Sản phẩm được xem nhiều nhất"
-            subtitle="Top 10 thiết kế nhận được sự quan tâm và lượt xem nhiều nhất tuần qua."
-            products={mostViewed}
-            isLoading={loading && !topProducts}
-            viewAllHref="/products"
-          />
+          <ScrollReveal>
+            <TopProductsSlider
+              title="Sản phẩm được xem nhiều nhất"
+              subtitle="Top 10 thiết kế nhận được sự quan tâm và lượt xem nhiều nhất tuần qua."
+              products={mostViewed}
+              isLoading={loading && !topProducts}
+              viewAllHref="/products"
+            />
+          </ScrollReveal>
         )}
       </div>
 
       {popularProducts.length > 0 && (
-        <ProductRowSection
-          title="Bó hoa được yêu thích"
-          subtitle="Những thiết kế được đặt nhiều nhất tại UTESHOP."
-          products={popularProducts}
-        />
+        <ScrollReveal>
+          <ProductRowSection
+            title="Bó hoa được yêu thích"
+            subtitle="Những thiết kế được đặt nhiều nhất tại UTESHOP."
+            products={popularProducts}
+          />
+        </ScrollReveal>
       )}
       {comfortProducts.length > 0 && (
-        <ProductRowSection
-          title="Hoa an ủi"
-          subtitle="Trao lời chia sẻ nhẹ nhàng, chân thành."
-          products={comfortProducts}
-        />
+        <ScrollReveal>
+          <ProductRowSection
+            title="Hoa an ủi"
+            subtitle="Trao lời chia sẻ nhẹ nhàng, chân thành."
+            products={comfortProducts}
+          />
+        </ScrollReveal>
       )}
       {bearComboProducts.length > 0 && (
-        <ProductRowSection
-          title="Combo gấu & hoa"
-          subtitle="Quà kèm gấu bông — đáng yêu và đầy đủ."
-          products={bearComboProducts}
-        />
+        <ScrollReveal>
+          <ProductRowSection
+            title="Combo gấu & hoa"
+            subtitle="Quà kèm gấu bông — đáng yêu và đầy đủ."
+            products={bearComboProducts}
+          />
+        </ScrollReveal>
       )}
       {congratsProducts.length > 0 && (
-        <ProductRowSection
-          title="Hoa chúc mừng"
-          subtitle="Khai trương, thăng chức, thành công."
-          products={congratsProducts}
-        />
+        <ScrollReveal>
+          <ProductRowSection
+            title="Hoa chúc mừng"
+            subtitle="Khai trương, thăng chức, thành công."
+            products={congratsProducts}
+          />
+        </ScrollReveal>
       )}
-      <OccasionByEvent />
-      <CustomerTestimonials />
-      <PromoBanner />
+      <ScrollReveal>
+        <OccasionByEvent />
+      </ScrollReveal>
+      <ScrollReveal>
+        <CustomerTestimonials />
+      </ScrollReveal>
+      <ScrollReveal>
+        <PromoBanner />
+      </ScrollReveal>
     </>
   );
 }

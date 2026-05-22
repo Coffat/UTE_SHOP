@@ -95,7 +95,7 @@ export function Favorites() {
             return (
               <div
                 key={p._id}
-                className="glass-panel group p-4 rounded-3xl flex flex-col h-full hover:shadow-[0_15px_40px_rgba(123,65,180,0.08)] hover:border-dreamy-purple/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden border border-white/60 bg-white/40"
+                className="glass-panel group p-4 rounded-3xl flex flex-col h-full hover:shadow-[0_15px_40px_rgba(123,65,180,0.08)] hover:border-dreamy-purple/40 hover:-translate-y-1 transition-[box-shadow,border-color,transform] duration-300 relative overflow-hidden border border-white/60 bg-white/40"
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-soft-amethyst/5 to-transparent opacity-40 -z-10"></div>
                 
@@ -139,7 +139,7 @@ export function Favorites() {
                     <button
                       type="button"
                       onClick={() => handleAddToCart(p)}
-                      className="bg-primary hover:bg-deep-plum text-pure-ivory text-xs font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                      className="bg-primary hover:bg-deep-plum text-pure-ivory text-xs font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-[background-color,transform] duration-200 active:scale-95 shadow-sm"
                     >
                       <MaterialIcon name="shopping_cart" className="text-[14px]" />
                       Thêm giỏ

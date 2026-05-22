@@ -138,7 +138,7 @@ export function ProductCard({
 
   return (
     <article
-      className={`group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory shadow-[0_8px_28px_rgba(49,27,146,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(49,27,146,0.1)] sm:rounded-[1.35rem] ${className}`.trim()}
+      className={`group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory hover-lift sm:rounded-[1.35rem] ${className}`.trim()}
     >
       <Link
         to={`/product/${id}`}
@@ -147,7 +147,7 @@ export function ProductCard({
         <BgImage
           src={imageUrl}
           alt={imageAlt}
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
+          className="absolute inset-0 bg-cover bg-center image-hover-zoom"
         />
         {badge ? (
           <div
@@ -163,12 +163,12 @@ export function ProductCard({
           type="button"
           onClick={handleFavoriteToggle}
           aria-label={isFavorited ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
-          className="absolute left-2.5 bottom-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-pure-ivory/70 backdrop-blur-md shadow-[0_4px_12px_rgba(49,27,146,0.06)] transition-all duration-300 hover:bg-rose-50/80 active:scale-90 sm:left-3 sm:bottom-3 sm:h-9 sm:w-9 group/fav"
+          className="absolute left-2.5 bottom-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-pure-ivory/70 backdrop-blur-md shadow-[0_4px_12px_rgba(49,27,146,0.06)] transition-[background-color,transform] duration-300 hover:bg-rose-50/80 active-press sm:left-3 sm:bottom-3 sm:h-9 sm:w-9 group/fav"
         >
           <MaterialIcon
             name="favorite"
             filled={isFavorited}
-            className={`text-[16px] sm:text-[18px] transition-all duration-300 ${
+            className={`text-[16px] sm:text-[18px] transition-[color,transform] duration-300 ${
               isFavorited
                 ? "text-rose-500 scale-110"
                 : "text-deep-plum/60 group-hover/fav:text-rose-400 group-hover/fav:scale-110"
@@ -201,7 +201,7 @@ export function ProductCard({
             type="button"
             onClick={handleAddToCart}
             aria-label={`Thêm ${name} vào giỏ`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-pure-ivory shadow-sm transition hover:bg-deep-plum sm:h-10 sm:w-10 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-pure-ivory shadow-sm transition-colors duration-300 hover:bg-deep-plum active-press sm:h-10 sm:w-10"
           >
             <MaterialIcon name="shopping_bag" filled={false} className="text-[16px] sm:text-[17px]" />
           </button>

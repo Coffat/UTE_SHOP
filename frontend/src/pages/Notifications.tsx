@@ -133,7 +133,7 @@ export function Notifications() {
           <button
             onClick={markAllAsRead}
             disabled={loading}
-            className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-soft-amethyst/30 px-4 py-2 text-xs font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-pure-ivory hover:shadow-md disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-soft-amethyst/30 px-4 py-2 text-xs font-bold text-primary transition-[background-color,color,box-shadow] duration-300 hover:bg-primary hover:text-pure-ivory hover:shadow-md disabled:opacity-50"
           >
             <MaterialIcon name="done_all" className="text-sm" />
             <span>Đọc tất cả</span>
@@ -158,7 +158,7 @@ export function Notifications() {
             <button
               key={t}
               onClick={() => setFilter(t)}
-              className={`relative rounded-xl px-4 py-2 text-xs font-bold font-home-heading transition-all duration-200 ${
+              className={`relative rounded-xl px-4 py-2 text-xs font-bold font-home-heading transition-[background-color,color,box-shadow] duration-200 ${
                 active 
                   ? "bg-primary text-pure-ivory shadow-sm" 
                   : "text-midnight-purple hover:bg-soft-amethyst/20"
@@ -230,7 +230,7 @@ export function Notifications() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className={`glass-panel group relative rounded-[20px] p-4 transition-all duration-300 border ${
+                  className={`glass-panel group relative rounded-[20px] p-4 transition-[border-color,background-color,box-shadow] duration-300 border ${
                     notif.isRead 
                       ? "border-crystal-border/40 bg-pure-ivory/30 shadow-none hover:bg-pure-ivory/50" 
                       : "border-primary/20 bg-pure-ivory/80 shadow-[0_4px_20px_rgba(168,85,247,0.03)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.06)]"
@@ -272,7 +272,7 @@ export function Notifications() {
                     {!notif.isRead && (
                       <button
                         onClick={() => markAsRead(notif._id)}
-                        className="opacity-0 group-hover:opacity-100 absolute top-4 right-4 flex size-7 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory text-primary shadow-sm transition-all duration-300 hover:bg-primary hover:text-pure-ivory hover:scale-105"
+                        className="opacity-0 group-hover:opacity-100 absolute top-4 right-4 flex size-7 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory text-primary shadow-sm transition-[opacity,background-color,color,transform] duration-300 hover:bg-primary hover:text-pure-ivory hover:scale-105"
                         title="Đánh dấu đã đọc"
                       >
                         <MaterialIcon name="done" className="text-[16px]" />

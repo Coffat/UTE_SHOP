@@ -144,7 +144,7 @@ export function Header() {
 
                   {/* Glassmorphic Dropdown Panel */}
                   <div
-                    className={`absolute top-full left-1/2 -translate-x-1/2 mt-3.5 w-[560px] rounded-3xl glass-panel border border-crystal-border bg-pure-ivory/98 p-5 shadow-2xl backdrop-blur-xl transition-all duration-300 z-[100] ${
+                    className={`absolute top-full left-1/2 -translate-x-1/2 mt-3.5 w-[560px] rounded-3xl glass-panel border border-crystal-border bg-pure-ivory/98 p-5 shadow-2xl backdrop-blur-xl transition-[opacity,transform] duration-300 z-[100] ${
                       isDropdownOpen
                         ? "pointer-events-auto opacity-100 translate-y-0 scale-100"
                         : "pointer-events-none opacity-0 translate-y-2 scale-95"
@@ -167,7 +167,7 @@ export function Header() {
                         <Link
                           key={cat._id}
                           to={`/category/${cat.slug}`}
-                          className="flex items-center gap-3 rounded-2xl p-2 hover:bg-soft-amethyst/30 transition-all duration-300 group"
+                          className="flex items-center gap-3 rounded-2xl p-2 hover:bg-soft-amethyst/30 transition-colors duration-300 group"
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-crystal-border/80 bg-lavender-mist">
@@ -208,7 +208,7 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 md:gap-3">
-          <div className="relative hidden min-w-0 items-center rounded-full border border-crystal-border bg-pure-ivory/70 px-3 py-1.5 transition-all focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/15 sm:flex md:max-w-[200px] lg:max-w-[240px] xl:max-w-[280px]">
+          <div className="relative hidden min-w-0 items-center rounded-full border border-crystal-border bg-pure-ivory/70 px-3 py-1.5 transition-[border-color,box-shadow] focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/15 sm:flex md:max-w-[200px] lg:max-w-[240px] xl:max-w-[280px]">
             <MaterialIcon name="search" className="mr-1.5 shrink-0 text-dusk-gray text-[18px]" />
             <input
               className="min-w-0 flex-1 bg-transparent p-0 font-home-heading text-xs text-midnight-purple placeholder:text-dusk-gray focus:outline-none focus:ring-0 md:text-sm"
@@ -229,7 +229,7 @@ export function Header() {
                   type="button"
                   aria-label="Thông báo"
                   onClick={() => navigate("/user/profile/notifications")}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
                 >
                   <MaterialIcon name="notifications" className="text-[22px]" />
                   {unreadCount > 0 && (
@@ -241,7 +241,7 @@ export function Header() {
 
                 {/* Dropdown Menu */}
                 <div
-                  className={`absolute right-0 top-full mt-3 w-80 rounded-2xl glass-panel border border-crystal-border bg-pure-ivory/98 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 z-[100] ${
+                  className={`absolute right-0 top-full mt-3 w-80 rounded-2xl glass-panel border border-crystal-border bg-pure-ivory/98 p-4 shadow-2xl backdrop-blur-xl transition-[opacity,transform] duration-300 z-[100] ${
                     isNotifDropdownOpen
                       ? "pointer-events-auto opacity-100 translate-y-0 scale-100"
                       : "pointer-events-none opacity-0 translate-y-2 scale-95"
@@ -282,7 +282,7 @@ export function Header() {
                             }
                             navigate("/user/profile/notifications");
                           }}
-                          className={`rounded-xl p-2.5 text-left transition-all duration-200 cursor-pointer border ${
+                          className={`rounded-xl p-2.5 text-left transition-colors duration-200 cursor-pointer border ${
                             notif.isRead
                               ? "border-transparent bg-transparent hover:bg-soft-amethyst/10"
                               : "border-primary/10 bg-soft-amethyst/15 hover:bg-soft-amethyst/25"
@@ -313,7 +313,7 @@ export function Header() {
               <Link
                 to="/user/profile"
                 aria-label="Tài khoản"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
                 title={`Chào ${profile.fullName}`}
               >
                 <MaterialIcon name="person" className="text-[22px]" />
@@ -322,7 +322,7 @@ export function Header() {
               <Link
                 to="/login"
                 aria-label="Đăng nhập"
-                className="flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1.5 text-xs font-bold text-deep-plum backdrop-blur-md hover:bg-primary hover:text-pure-ivory hover:border-primary transition-all duration-300 shadow-sm"
+                className="flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1.5 text-xs font-bold text-deep-plum backdrop-blur-md hover:bg-primary hover:text-pure-ivory hover:border-primary transition-[color,background-color,border-color,transform] duration-300 shadow-sm active-press"
               >
                 <MaterialIcon name="login" className="text-sm shrink-0" />
                 <span className="hidden sm:inline">Đăng nhập</span>
@@ -331,7 +331,7 @@ export function Header() {
             <Link
               to={profile ? (profile.role === "admin" ? "/admin/profile/favorites" : "/user/profile/favorites") : "/login"}
               aria-label="Danh sách yêu thích"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
             >
               <MaterialIcon name="favorite" className="text-[22px]" />
               {wishlistItems.length > 0 && (
@@ -343,7 +343,7 @@ export function Header() {
             <Link
               to="/cart"
               aria-label="Giỏ hàng"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
             >
               <MaterialIcon name="shopping_bag" className="text-[22px]" />
               {totalQuantity > 0 && (
@@ -354,7 +354,7 @@ export function Header() {
             </Link>
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:hidden active-press"
               aria-expanded={mobileOpen}
               aria-controls={sheetId}
               aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
@@ -375,7 +375,7 @@ export function Header() {
       ) : null}
 
       <nav
-        className={`fixed inset-x-4 top-[calc(5rem+env(safe-area-inset-top))] z-[60] max-h-[min(70vh,520px)] overflow-y-auto rounded-3xl border border-crystal-border bg-pure-ivory/98 p-4 shadow-xl backdrop-blur-xl transition-all lg:hidden ${
+        className={`fixed inset-x-4 top-[calc(5rem+env(safe-area-inset-top))] z-[60] max-h-[min(70vh,520px)] overflow-y-auto rounded-3xl border border-crystal-border bg-pure-ivory/98 p-4 shadow-xl backdrop-blur-xl transition-opacity duration-300 lg:hidden ${
           mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!mobileOpen}
@@ -397,7 +397,7 @@ export function Header() {
               return (
                 <li key={item.label} className="flex flex-col">
                   <div
-                    className={`flex items-center justify-between rounded-2xl px-3 py-2.5 font-home-heading text-sm font-medium hover:bg-soft-amethyst/35 hover:text-primary transition-all duration-200 ${
+                    className={`flex items-center justify-between rounded-2xl px-3 py-2.5 font-home-heading text-sm font-medium hover:bg-soft-amethyst/35 hover:text-primary transition-colors duration-200 ${
                       active ? "bg-soft-amethyst/20 text-primary" : "text-midnight-purple"
                     }`}
                   >
@@ -415,7 +415,7 @@ export function Header() {
                         e.stopPropagation();
                         setMobileCategoriesOpen(!mobileCategoriesOpen);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-soft-amethyst/15 text-midnight-purple hover:bg-soft-amethyst/30 transition-all duration-200"
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-soft-amethyst/15 text-midnight-purple hover:bg-soft-amethyst/30 transition-colors duration-200"
                       aria-label="Mở rộng danh mục"
                     >
                       <MaterialIcon
@@ -427,7 +427,7 @@ export function Header() {
                   
                   {/* Collapsible Mobile Accordion Menu */}
                   <div
-                    className={`overflow-hidden transition-all duration-300 ${
+                    className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ${
                       mobileCategoriesOpen ? "max-h-[380px] opacity-100 mt-1 mb-2" : "max-h-0 opacity-0"
                     }`}
                   >

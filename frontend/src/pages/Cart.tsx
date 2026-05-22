@@ -83,7 +83,7 @@ export function Cart() {
     if (recommendedList.length === 0) return null;
 
     return (
-      <div className="mt-16 pt-12 border-t border-crystal-border/60">
+      <div className="mt-16 pt-12 border-t border-crystal-border/60 motion-safe:animate-fade-up" style={{ animationDelay: '200ms' }}>
         <div className="mb-8 text-center sm:text-left">
           <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-soft-amethyst/30 border border-crystal-border/60 px-3.5 py-1 text-[11px] font-bold text-deep-plum">
             ✨ ƯU ĐÃI THỜI THƯỢNG
@@ -100,14 +100,14 @@ export function Cart() {
             return (
               <div
                 key={p._id}
-                className="glass-panel group p-4 rounded-3xl flex flex-col h-full hover:shadow-[0_15px_40px_rgba(123,65,180,0.06)] hover:border-dreamy-purple/30 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
+                className="glass-panel group p-4 rounded-3xl flex flex-col h-full hover-lift hover:border-dreamy-purple/30 relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-soft-amethyst/5 to-transparent opacity-40 -z-10"></div>
                 <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden bg-soft-amethyst/10 mb-4 shrink-0 shadow-sm">
                   <img
                     src={getProductImage(p._id)}
                     alt={p.name}
-                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    className="w-full h-full object-cover image-hover-zoom"
                   />
                   <div className="absolute right-3 top-3 bg-pure-ivory/95 text-primary font-price-display font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm border border-crystal-border">
                     {formatVND(priceVal)}
@@ -131,7 +131,7 @@ export function Cart() {
                     <button
                       type="button"
                       onClick={() => handleAddRecommended(p)}
-                      className="bg-primary hover:bg-deep-plum text-pure-ivory text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm hover:shadow"
+                      className="bg-primary hover:bg-deep-plum text-pure-ivory text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 active-press shadow-sm hover:shadow"
                     >
                       <MaterialIcon name="add_shopping_cart" className="text-[14px]" />
                       Chọn mua
@@ -149,14 +149,14 @@ export function Cart() {
   // Trường hợp giỏ hàng trống
   if (items.length === 0) {
     return (
-      <div className="relative min-h-screen bg-lavender-mist pt-32 pb-20 overflow-hidden flex flex-col justify-center">
+      <div className="relative min-h-screen bg-lavender-mist pt-32 pb-20 overflow-hidden flex flex-col justify-center motion-safe:animate-fade-in">
         {/* Ambient background glows */}
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-dreamy-purple/10 blur-[100px] pointer-events-none animate-pulse"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-petal-pink/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }}></div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
-          <div className="mx-auto max-w-lg text-center mb-16">
-            <div className="glass-panel p-10 rounded-[32px] shadow-[0_20px_50px_rgba(49,27,146,0.06)] border-white/90 relative overflow-hidden group hover:shadow-[0_25px_60px_rgba(49,27,146,0.1)] hover:-translate-y-1 transition-all duration-500">
+          <div className="mx-auto max-w-lg text-center mb-16 motion-safe:animate-fade-up">
+            <div className="glass-panel p-10 rounded-[32px] border-white/90 relative overflow-hidden group hover-lift hover:border-dreamy-purple/20">
               <div className="absolute inset-0 bg-gradient-to-tr from-soft-amethyst/10 via-transparent to-petal-pink/10 opacity-30 -z-10"></div>
               
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-soft-amethyst/20 to-petal-pink/20 text-primary shadow-inner relative">
@@ -171,7 +171,7 @@ export function Cart() {
 
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 btn-hero-cta-gradient px-8 py-4 rounded-full font-bold tracking-wide transition hover:brightness-105 active:scale-98"
+                className="inline-flex items-center gap-2 btn-hero-cta-gradient px-8 py-4 rounded-full font-bold tracking-wide active-press"
               >
                 <MaterialIcon name="explore" />
                 Khám Phá Cửa Hàng
@@ -187,7 +187,7 @@ export function Cart() {
   }
 
   return (
-    <div className="relative min-h-screen bg-lavender-mist pt-28 pb-20 overflow-hidden">
+    <div className="relative min-h-screen bg-lavender-mist pt-28 pb-20 overflow-hidden motion-safe:animate-fade-in">
       {/* Floating glass orb background elements for luxury atmosphere */}
       <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-dreamy-purple/10 blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }}></div>
       <div className="absolute bottom-40 right-10 w-96 h-96 rounded-full bg-petal-pink/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }}></div>
@@ -196,7 +196,7 @@ export function Cart() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Title and Header */}
-        <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 motion-safe:animate-fade-up">
           <div>
             <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1 text-xs font-semibold tracking-wider text-deep-plum backdrop-blur-md">
               <MaterialIcon name="shopping_basket" className="text-sm text-primary" />
@@ -212,7 +212,7 @@ export function Cart() {
           <button
             type="button"
             onClick={() => dispatch(clearCart())}
-            className="flex items-center gap-1.5 self-start text-xs font-semibold text-dusk-gray hover:text-error hover:border-error/30 hover:bg-rose-50/50 transition-all duration-300 bg-white/50 px-4 py-2.5 rounded-full border border-crystal-border shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 self-start text-xs font-semibold text-dusk-gray hover:text-error hover:border-error/30 hover:bg-rose-50/50 transition-[color,background-color,border-color] duration-300 bg-white/50 px-4 py-2.5 rounded-full border border-crystal-border shadow-sm active-press cursor-pointer"
           >
             <MaterialIcon name="delete_sweep" className="text-[16px]" />
             Xóa Toàn Bộ Giỏ Hàng
@@ -221,7 +221,7 @@ export function Cart() {
 
         {/* Progress Dashboard for Free Shipping */}
         {subtotal < SHIPPING_THRESHOLD ? (
-          <div className="glass-panel p-6 rounded-3xl mb-8 flex flex-col gap-4 shadow-[0_10px_30px_rgba(49,27,146,0.03)] border-white/80 relative overflow-hidden group">
+          <div className="glass-panel p-6 rounded-3xl mb-8 flex flex-col gap-4 shadow-[0_10px_30px_rgba(49,27,146,0.03)] border-white/80 relative overflow-hidden group motion-safe:animate-fade-up" style={{ animationDelay: '100ms' }}>
             <div className="absolute inset-0 bg-gradient-to-r from-soft-amethyst/5 to-petal-pink/5 opacity-50 -z-10"></div>
             <div className="flex justify-between items-center text-sm font-bold text-deep-plum">
               <span className="flex items-center gap-2 text-primary font-home-heading">
@@ -236,7 +236,7 @@ export function Cart() {
             {/* Dynamic visual slider */}
             <div className="w-full h-3 bg-pure-ivory/80 rounded-full overflow-hidden border border-crystal-border/40 relative">
               <div
-                className="h-full login-gradient-bg transition-all duration-700 ease-out rounded-full shadow-[0_0_10px_rgba(255,117,140,0.3)]"
+                className="h-full login-gradient-bg transition-[width] duration-700 ease-out rounded-full shadow-[0_0_10px_rgba(255,117,140,0.3)]"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -260,14 +260,14 @@ export function Cart() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start motion-safe:animate-fade-up" style={{ animationDelay: '150ms' }}>
           
           {/* Left Column: Cart items list */}
           <div className="lg:col-span-8 space-y-4">
             {items.map((item) => (
               <div
                 key={`${item.productId}-${item.variantId}`}
-                className="glass-panel p-5 rounded-3xl flex gap-4 sm:gap-6 items-center shadow-[0_5px_25px_rgba(49,27,146,0.02)] border-white/60 hover:shadow-[0_10px_35px_rgba(192,132,252,0.05)] hover:border-dreamy-purple/30 hover:-translate-y-0.5 transition-all duration-300 group"
+                className="glass-panel p-5 rounded-3xl flex gap-4 sm:gap-6 items-center border-white/60 hover-lift hover:border-dreamy-purple/30 group"
               >
                 
                 {/* Product Thumbnail with hover scale effect */}
@@ -275,7 +275,7 @@ export function Cart() {
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover image-hover-zoom"
                   />
                 </div>
 
@@ -295,7 +295,7 @@ export function Cart() {
                     <button
                       type="button"
                       onClick={() => dispatch(removeFromCart({ productId: item.productId, variantId: item.variantId }))}
-                      className="text-dusk-gray hover:text-error hover:bg-rose-50/50 hover:scale-110 active:scale-95 transition-all duration-300 p-2 rounded-full border border-transparent hover:border-rose-100 shadow-none cursor-pointer"
+                      className="text-dusk-gray hover:text-error hover:bg-rose-50/50 hover:scale-110 active-press transition-[color,background-color,border-color,transform] duration-200 p-2 rounded-full border border-transparent hover:border-rose-100 shadow-none cursor-pointer"
                       title="Xóa sản phẩm"
                     >
                       <MaterialIcon name="close" className="text-[18px]" />
@@ -309,7 +309,7 @@ export function Cart() {
                       <button
                         type="button"
                         onClick={() => handleUpdateQty(item.productId, item.variantId, item.quantity, -1, item.stock)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-midnight-purple hover:bg-soft-amethyst/20 disabled:opacity-40 transition-all active:scale-90"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-midnight-purple hover:bg-soft-amethyst/20 disabled:opacity-40 active-press transition-[background-color,transform] duration-200"
                         disabled={item.quantity <= 1}
                       >
                         <MaterialIcon name="remove" className="text-[16px] font-bold" />
@@ -318,7 +318,7 @@ export function Cart() {
                       <button
                         type="button"
                         onClick={() => handleUpdateQty(item.productId, item.variantId, item.quantity, 1, item.stock)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-midnight-purple hover:bg-soft-amethyst/20 disabled:opacity-40 transition-all active:scale-90"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-midnight-purple hover:bg-soft-amethyst/20 disabled:opacity-40 active-press transition-[background-color,transform] duration-200"
                         disabled={item.quantity >= item.stock}
                       >
                         <MaterialIcon name="add" className="text-[16px] font-bold" />
@@ -418,13 +418,13 @@ export function Cart() {
                     <button
                       type="submit"
                       disabled={promoApplied || !promoCode}
-                      className="bg-deep-plum hover:bg-primary disabled:bg-dusk-gray/30 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 cursor-pointer"
+                      className="bg-deep-plum hover:bg-primary disabled:bg-dusk-gray/30 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl active-press disabled:opacity-50 cursor-pointer"
                     >
                       Áp dụng
                     </button>
                   </div>
                 </form>
-
+ 
                 {/* Clickable Quick Coupon Suggestion */}
                 {!promoApplied && (
                   <div className="mt-2.5 flex items-center gap-1.5 text-xs text-dusk-gray font-medium">
@@ -432,13 +432,13 @@ export function Cart() {
                     <button
                       type="button"
                       onClick={() => setPromoCode("UTESHOPNEW")}
-                      className="bg-soft-amethyst/30 hover:bg-soft-amethyst/60 text-deep-plum px-2.5 py-1 rounded-lg border border-crystal-border font-bold text-[10px] transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                      className="bg-soft-amethyst/30 hover:bg-soft-amethyst/60 text-deep-plum px-2.5 py-1 rounded-lg border border-crystal-border font-bold text-[10px] active-press hover:scale-105 transition-[background-color,transform] duration-200 cursor-pointer"
                     >
                       UTESHOPNEW 🎁
                     </button>
                   </div>
                 )}
-
+ 
                 {promoApplied && (
                   <p className="text-xs text-[#059669] mt-2 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
                     <MaterialIcon name="check_circle" className="text-[14px]" />
@@ -452,11 +452,11 @@ export function Cart() {
                   </p>
                 )}
               </div>
-
+ 
               {/* Go to Checkout */}
               <Link
                 to="/checkout"
-                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-center flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:scale-98 text-base"
+                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-center flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active-press text-base"
               >
                 <MaterialIcon name="payment" />
                 Tiến Hành Thanh Toán

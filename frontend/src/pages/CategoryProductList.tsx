@@ -158,7 +158,7 @@ export function CategoryProductList() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               disabled={!pagination.hasPrevPage}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-all duration-300 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-[background-color,color,box-shadow,transform] duration-300 ${
                 !pagination.hasPrevPage
                   ? "opacity-50 cursor-not-allowed text-dusk-gray"
                   : "hover:bg-white/70 hover:shadow-sm text-midnight-purple hover:text-deep-plum hover:-translate-x-0.5"
@@ -178,7 +178,7 @@ export function CategoryProductList() {
                     setPage(pageNum);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                  className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ${
                     pageNum === pagination.page
                       ? "bg-deep-plum text-white shadow-[0_0_0_4px_rgba(230,213,242,0.5)] border border-transparent"
                       : "border border-white/60 bg-white/40 text-midnight-purple backdrop-blur-xl hover:bg-white/70 hover:shadow-sm hover:text-deep-plum"
@@ -196,7 +196,7 @@ export function CategoryProductList() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               disabled={!pagination.hasNextPage}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-all duration-300 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/40 backdrop-blur-xl transition-[background-color,color,box-shadow,transform] duration-300 ${
                 !pagination.hasNextPage
                   ? "opacity-50 cursor-not-allowed text-dusk-gray"
                   : "hover:bg-white/70 hover:shadow-sm text-midnight-purple hover:text-deep-plum hover:translate-x-0.5"

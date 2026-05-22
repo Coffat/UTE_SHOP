@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AppDispatch, RootState } from "@/store";
 import { fetchProducts, BackendProduct } from "@/features/catalog/catalogSlice";
@@ -43,6 +43,28 @@ export const hasTag = (product: BackendProduct, slug: string) => {
   return product.tags.some((t: any) => 
     (typeof t === 'string' ? t === slug : t.slug === slug)
   );
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
 };
 
 export function ProductList() {
@@ -173,7 +195,7 @@ export function ProductList() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Nhập tên hoa..."
-                  className="w-full rounded-2xl border border-crystal-border bg-white/40 py-2.5 pl-10 pr-4 text-xs font-semibold text-midnight-purple placeholder-dusk-gray outline-none transition-all duration-300 focus:border-primary/40 focus:bg-white/70"
+                  className="w-full rounded-2xl border border-crystal-border bg-white/40 py-2.5 pl-10 pr-4 text-xs font-semibold text-midnight-purple placeholder-dusk-gray outline-none transition-colors duration-300 focus:border-primary/40 focus:bg-white/70"
                 />
                 <MaterialIcon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dusk-gray text-[18px]" />
               </div>
@@ -193,7 +215,7 @@ export function ProductList() {
                 <li>
                   <button
                     onClick={() => setCategory("Tất cả")}
-                    className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 ${
+                    className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors duration-200 ${
                       category === "Tất cả"
                         ? "bg-primary text-pure-ivory shadow-sm"
                         : "text-midnight-purple hover:bg-soft-amethyst/30"
@@ -207,7 +229,7 @@ export function ProductList() {
                   <li key={cat._id}>
                     <button
                       onClick={() => setCategory(cat.slug)}
-                      className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 text-left ${
+                      className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors duration-200 text-left ${
                         category === cat.slug
                           ? "bg-primary text-pure-ivory shadow-sm"
                           : "text-midnight-purple hover:bg-soft-amethyst/30"
@@ -287,7 +309,7 @@ export function ProductList() {
               {/* Clear filters trigger */}
               <button
                 onClick={clearAllFilters}
-                className="w-full flex items-center justify-center gap-1.5 rounded-2xl border border-crystal-border bg-white/40 py-2.5 text-xs font-bold text-deep-plum hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300"
+                className="w-full flex items-center justify-center gap-1.5 rounded-2xl border border-crystal-border bg-white/40 py-2.5 text-xs font-bold text-deep-plum hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors duration-300"
               >
                 <MaterialIcon name="filter_alt_off" className="text-[16px]" />
                 <span>Đặt lại bộ lọc</span>
@@ -324,7 +346,7 @@ export function ProductList() {
                 {/* Mobile Filter Button */}
                 <button
                   onClick={() => setIsMobileFilterOpen(true)}
-                  className="flex lg:hidden items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-xs font-extrabold text-pure-ivory shadow-sm hover:bg-primary-dark transition-all duration-200"
+                  className="flex lg:hidden items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-xs font-extrabold text-pure-ivory shadow-sm hover:bg-primary-dark transition-colors duration-200"
                 >
                   <MaterialIcon name="filter_list" className="text-[16px]" />
                   <span>Bộ lọc</span>
@@ -337,7 +359,7 @@ export function ProductList() {
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="appearance-none rounded-2xl border border-crystal-border bg-white/50 pl-4 pr-9 py-2 text-xs font-bold text-midnight-purple outline-none transition-all duration-300 hover:bg-white cursor-pointer shadow-sm"
+                      className="appearance-none rounded-2xl border border-crystal-border bg-white/50 pl-4 pr-9 py-2 text-xs font-bold text-midnight-purple outline-none transition-colors duration-300 hover:bg-white cursor-pointer shadow-sm"
                     >
                       <option value="Mới nhất">Mới nhất</option>
                       <option value="Bán chạy">Bán chạy nhất</option>
@@ -365,23 +387,27 @@ export function ProductList() {
                 <p className="text-xs text-dusk-gray mt-1 max-w-sm">Hãy thử thay đổi từ khóa tìm kiếm hoặc đặt lại các bộ lọc nâng cao.</p>
                 <button
                   onClick={clearAllFilters}
-                  className="mt-5 rounded-full bg-primary px-5 py-2.5 text-xs font-bold text-pure-ivory shadow-md hover:bg-primary-dark transition-all duration-300"
+                  className="mt-5 rounded-full bg-primary px-5 py-2.5 text-xs font-bold text-pure-ivory shadow-md hover:bg-primary-dark transition-colors duration-300"
                 >
                   Xem tất cả sản phẩm
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => {
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {products.map((product, index) => {
                   const primaryVariant = product.minifiedVariants?.[0];
                   const priceStr = primaryVariant ? formatVND(primaryVariant.price) : "Liên hệ";
                   const descShort = product.description.length > 60 
                     ? product.description.substring(0, 60) + "..." 
                     : product.description;
 
-                  return (
+                  const cardElement = (
                     <ProductCard
-                      key={product._id}
                       id={product._id}
                       name={product.name}
                       description={descShort}
@@ -397,8 +423,22 @@ export function ProductList() {
                       }
                     />
                   );
+
+                  if (index < 12) {
+                    return (
+                      <motion.div key={product._id} variants={itemVariants}>
+                        {cardElement}
+                      </motion.div>
+                    );
+                  }
+
+                  return (
+                    <div key={product._id}>
+                      {cardElement}
+                    </div>
+                  );
                 })}
-              </div>
+              </motion.div>
             )}
 
             {/* Pagination Controls */}
@@ -407,7 +447,7 @@ export function ProductList() {
                 <button
                   onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   disabled={!pagination.hasPrevPage}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory/70 transition-all duration-300 ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory/70 transition-colors duration-300 ${
                     !pagination.hasPrevPage 
                       ? "opacity-40 cursor-not-allowed text-dusk-gray" 
                       : "hover:bg-primary hover:text-pure-ivory hover:shadow-md text-midnight-purple"
@@ -421,7 +461,7 @@ export function ProductList() {
                     <button
                       key={pageNum}
                       onClick={() => { setPage(pageNum); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300 ${
                         pageNum === pagination.page
                           ? "bg-primary text-pure-ivory shadow-md border border-transparent"
                           : "border border-crystal-border bg-pure-ivory/70 text-midnight-purple hover:bg-soft-amethyst/30"
@@ -435,7 +475,7 @@ export function ProductList() {
                 <button
                   onClick={() => { setPage(p => Math.min(pagination.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   disabled={!pagination.hasNextPage}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory/70 transition-all duration-300 ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory/70 transition-colors duration-300 ${
                     !pagination.hasNextPage 
                       ? "opacity-40 cursor-not-allowed text-dusk-gray" 
                       : "hover:bg-primary hover:text-pure-ivory hover:shadow-md text-midnight-purple"
@@ -452,177 +492,189 @@ export function ProductList() {
       </div>
 
       {/* 3. Mobile Slide-Up Bottom Sheet Drawer */}
-      {isMobileFilterOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-midnight-purple/40 backdrop-blur-xs transition-opacity duration-300 ease-out"
-          onClick={() => setIsMobileFilterOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      
-      <div
-        className={`fixed inset-x-0 bottom-0 z-55 max-h-[85vh] overflow-y-auto rounded-t-[32px] border-t border-crystal-border bg-pure-ivory/98 p-6 shadow-2xl backdrop-blur-xl transition-transform duration-350 ease-out lg:hidden ${
-          isMobileFilterOpen ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        {/* Bottom Sheet Header */}
-        <div className="flex items-center justify-between border-b border-crystal-border/80 pb-4 mb-5">
-          <div className="flex items-center gap-1.5">
-            <MaterialIcon name="tune" className="text-primary text-[20px]" />
-            <h3 className="font-home-heading text-base font-extrabold text-midnight-purple">Bộ lọc sản phẩm</h3>
-          </div>
-          <button
-            onClick={() => setIsMobileFilterOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-soft-amethyst/30 text-midnight-purple hover:bg-rose-50 hover:text-rose-600 transition-colors"
-          >
-            <MaterialIcon name="close" className="text-[18px]" />
-          </button>
-        </div>
-
-        {/* Bottom Sheet Body */}
-        <div className="space-y-6 pb-20">
-          
-          {/* Mobile Search */}
-          <div>
-            <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Tìm kiếm</h4>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm sản phẩm..."
-                className="w-full rounded-2xl border border-crystal-border bg-white/40 py-2.5 pl-10 pr-4 text-xs font-semibold text-midnight-purple outline-none focus:bg-white"
-              />
-              <MaterialIcon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dusk-gray text-[18px]" />
-            </div>
-          </div>
-
-          {/* Mobile Categories Selector Grid */}
-          <div>
-            <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Danh mục ({categories.length + 1})</h4>
-            <div className="grid grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1">
-              <button
-                onClick={() => setCategory("Tất cả")}
-                className={`rounded-2xl px-3 py-2.5 text-xs font-semibold border transition-all text-left truncate flex items-center justify-between ${
-                  category === "Tất cả"
-                    ? "bg-primary/10 border-primary text-primary font-bold"
-                    : "bg-white/40 border-crystal-border text-midnight-purple"
-                }`}
-              >
-                <span>Tất cả</span>
-                {category === "Tất cả" && <MaterialIcon name="check" className="text-[14px]" />}
-              </button>
-              {categories.map((cat) => (
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed inset-0 z-50 bg-midnight-purple/40 backdrop-blur-xs lg:hidden"
+              onClick={() => setIsMobileFilterOpen(false)}
+              aria-hidden="true"
+            />
+            
+            {/* Bottom Sheet Drawer */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 z-55 max-h-[85vh] overflow-y-auto rounded-t-[32px] border-t border-crystal-border bg-pure-ivory/98 p-6 shadow-2xl backdrop-blur-xl lg:hidden"
+            >
+              {/* Bottom Sheet Header */}
+              <div className="flex items-center justify-between border-b border-crystal-border/80 pb-4 mb-5">
+                <div className="flex items-center gap-1.5">
+                  <MaterialIcon name="tune" className="text-primary text-[20px]" />
+                  <h3 className="font-home-heading text-base font-extrabold text-midnight-purple">Bộ lọc sản phẩm</h3>
+                </div>
                 <button
-                  key={cat._id}
-                  onClick={() => setCategory(cat.slug)}
-                  className={`rounded-2xl px-3 py-2.5 text-xs font-semibold border transition-all text-left truncate flex items-center justify-between ${
-                    category === cat.slug
-                      ? "bg-primary/10 border-primary text-primary font-bold"
-                      : "bg-white/40 border-crystal-border text-midnight-purple"
-                  }`}
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-soft-amethyst/30 text-midnight-purple hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer active-press"
                 >
-                  <span className="truncate pr-1">{cat.name}</span>
-                  {category === cat.slug && <MaterialIcon name="check" className="text-[14px]" />}
+                  <MaterialIcon name="close" className="text-[18px]" />
                 </button>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Mobile Price */}
-          <div>
-            <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Khoảng giá</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {["Mức giá: Tất cả", "Dưới 500k", "500k - 1tr", "Trên 1tr"].map((range) => {
-                const active = priceRange === range;
-                const labelText = range === "Mức giá: Tất cả" ? "Tất cả" : range;
-                return (
-                  <button
-                    key={range}
-                    onClick={() => setPriceRange(range)}
-                    className={`rounded-xl py-2 px-1 text-center text-[10px] font-bold border transition-all truncate ${
-                      active
-                        ? "bg-primary border-primary text-pure-ivory"
-                        : "bg-white/40 border-crystal-border text-midnight-purple"
-                    }`}
-                  >
-                    {labelText}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              {/* Bottom Sheet Body */}
+              <div className="space-y-6 pb-20">
+                
+                {/* Mobile Search */}
+                <div>
+                  <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Tìm kiếm</h4>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Tìm sản phẩm..."
+                      className="w-full rounded-2xl border border-crystal-border bg-white/40 py-2.5 pl-10 pr-4 text-xs font-semibold text-midnight-purple outline-none focus:bg-white"
+                    />
+                    <MaterialIcon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dusk-gray text-[18px]" />
+                  </div>
+                </div>
 
-          {/* Mobile Colors */}
-          <div>
-            <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Tone màu</h4>
-            <div className="flex flex-wrap gap-2">
-              {["Màu sắc: Tất cả", "Đỏ", "Hồng", "Tím", "Trắng", "Vàng"].map((c) => {
-                const active = color === (c === "Màu sắc: Tất cả" ? c : `Tone ${c}`);
-                const labelText = c === "Màu sắc: Tất cả" ? "Tất cả" : c;
-                return (
-                  <button
-                    key={c}
-                    onClick={() => setColor(c === "Màu sắc: Tất cả" ? c : `Tone ${c}`)}
-                    className={`rounded-full py-1.5 px-4 text-xs font-bold border transition-all ${
-                      active
-                        ? "bg-primary border-primary text-pure-ivory"
-                        : "bg-white/40 border-crystal-border text-midnight-purple"
-                    }`}
-                  >
-                    {labelText}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                {/* Mobile Categories Selector Grid */}
+                <div>
+                  <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Danh mục ({categories.length + 1})</h4>
+                  <div className="grid grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1">
+                    <button
+                      onClick={() => setCategory("Tất cả")}
+                      className={`rounded-2xl px-3 py-2.5 text-xs font-semibold border transition-colors text-left truncate flex items-center justify-between cursor-pointer active-press ${
+                        category === "Tất cả"
+                          ? "bg-primary/10 border-primary text-primary font-bold"
+                          : "bg-white/40 border-crystal-border text-midnight-purple"
+                      }`}
+                    >
+                      <span>Tất cả</span>
+                      {category === "Tất cả" && <MaterialIcon name="check" className="text-[14px]" />}
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat._id}
+                        onClick={() => setCategory(cat.slug)}
+                        className={`rounded-2xl px-3 py-2.5 text-xs font-semibold border transition-colors text-left truncate flex items-center justify-between cursor-pointer active-press ${
+                          category === cat.slug
+                            ? "bg-primary/10 border-primary text-primary font-bold"
+                            : "bg-white/40 border-crystal-border text-midnight-purple"
+                        }`}
+                      >
+                        <span className="truncate pr-1">{cat.name}</span>
+                        {category === cat.slug && <MaterialIcon name="check" className="text-[14px]" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-          {/* Mobile Styles */}
-          <div>
-            <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Kiểu dáng</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {["Kiểu dáng: Tất cả", "Bó", "Giỏ", "Bình", "Hộp"].map((s) => {
-                const active = style === s;
-                const labelText = s === "Kiểu dáng: Tất cả" ? "Tất cả" : s === "Bó" ? "Bó hoa" : s === "Giỏ" ? "Giỏ / Lẵng" : s === "Bình" ? "Bình hoa" : "Hộp hoa";
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setStyle(s)}
-                    className={`rounded-xl py-2 px-3 text-center text-xs font-bold border transition-all truncate ${
-                      active
-                        ? "bg-primary border-primary text-pure-ivory"
-                        : "bg-white/40 border-crystal-border text-midnight-purple"
-                    }`}
-                  >
-                    {labelText}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                {/* Mobile Price */}
+                <div>
+                  <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Khoảng giá</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Mức giá: Tất cả", "Dưới 500k", "500k - 1tr", "Trên 1tr"].map((range) => {
+                      const active = priceRange === range;
+                      const labelText = range === "Mức giá: Tất cả" ? "Tất cả" : range;
+                      return (
+                        <button
+                          key={range}
+                          onClick={() => setPriceRange(range)}
+                          className={`rounded-xl py-2 px-1 text-center text-[10px] font-bold border transition-colors truncate cursor-pointer active-press ${
+                            active
+                              ? "bg-primary border-primary text-pure-ivory"
+                              : "bg-white/40 border-crystal-border text-midnight-purple"
+                          }`}
+                        >
+                          {labelText}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-        </div>
+                {/* Mobile Colors */}
+                <div>
+                  <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Tone màu</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {["Màu sắc: Tất cả", "Đỏ", "Hồng", "Tím", "Trắng", "Vàng"].map((c) => {
+                      const active = color === (c === "Màu sắc: Tất cả" ? c : `Tone ${c}`);
+                      const labelText = c === "Màu sắc: Tất cả" ? "Tất cả" : c;
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => setColor(c === "Màu sắc: Tất cả" ? c : `Tone ${c}`)}
+                          className={`rounded-full py-1.5 px-4 text-xs font-bold border transition-colors cursor-pointer active-press ${
+                            active
+                              ? "bg-primary border-primary text-pure-ivory"
+                              : "bg-white/40 border-crystal-border text-midnight-purple"
+                          }`}
+                        >
+                          {labelText}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-        {/* Mobile Sticky Footer inside sheet */}
-        <div className="absolute bottom-0 inset-x-0 bg-pure-ivory/95 p-4 border-t border-crystal-border/80 flex items-center gap-3 backdrop-blur-md">
-          <button
-            onClick={() => {
-              clearAllFilters();
-              setIsMobileFilterOpen(false);
-            }}
-            className="flex-1 rounded-full border border-crystal-border py-3 text-xs font-bold text-deep-plum hover:bg-rose-50 hover:text-rose-600 transition-colors"
-          >
-            Đặt lại
-          </button>
-          <button
-            onClick={() => setIsMobileFilterOpen(false)}
-            className="flex-[2] rounded-full bg-primary py-3 text-xs font-extrabold text-pure-ivory shadow-md hover:bg-primary-dark transition-all"
-          >
-            Áp dụng bộ lọc
-          </button>
-        </div>
+                {/* Mobile Styles */}
+                <div>
+                  <h4 className="font-home-heading text-[11px] font-extrabold uppercase tracking-wider text-deep-plum/70 mb-2">Kiểu dáng</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Kiểu dáng: Tất cả", "Bó", "Giỏ", "Bình", "Hộp"].map((s) => {
+                      const active = style === s;
+                      const labelText = s === "Kiểu dáng: Tất cả" ? "Tất cả" : s === "Bó" ? "Bó hoa" : s === "Giỏ" ? "Giỏ / Lẵng" : s === "Bình" ? "Bình hoa" : "Hộp hoa";
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => setStyle(s)}
+                          className={`rounded-xl py-2 px-3 text-center text-xs font-bold border transition-colors truncate cursor-pointer active-press ${
+                            active
+                              ? "bg-primary border-primary text-pure-ivory"
+                              : "bg-white/40 border-crystal-border text-midnight-purple"
+                          }`}
+                        >
+                          {labelText}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-      </div>
+              </div>
+
+              {/* Mobile Sticky Footer inside sheet */}
+              <div className="absolute bottom-0 inset-x-0 bg-pure-ivory/95 p-4 border-t border-crystal-border/80 flex items-center gap-3 backdrop-blur-md">
+                <button
+                  onClick={() => {
+                    clearAllFilters();
+                    setIsMobileFilterOpen(false);
+                  }}
+                  className="flex-1 rounded-full border border-crystal-border py-3 text-xs font-bold text-deep-plum hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer active-press"
+                >
+                  Đặt lại
+                </button>
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex-[2] rounded-full bg-primary py-3 text-xs font-extrabold text-pure-ivory shadow-md hover:bg-primary-dark transition-colors duration-200 cursor-pointer active-press"
+                >
+                  Áp dụng bộ lọc
+                </button>
+              </div>
+
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </div>
   );

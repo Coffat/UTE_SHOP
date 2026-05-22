@@ -23,6 +23,28 @@ interface BlogPost {
 
 const CATEGORIES = ["Tất cả", "Cẩm nang hoa", "Ý nghĩa hoa", "Sự kiện & Lễ hội", "Phong cách sống"];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
 export function BlogList() {
   const { showToast } = useToast();
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -47,7 +69,7 @@ export function BlogList() {
     const fetchBlogs = async () => {
       setLoading(true);
       try {
-        const params: any = {};
+        const params: Record<string, string> = {};
         if (selectedCategory !== "Tất cả") {
           params.category = selectedCategory;
         }
@@ -60,7 +82,7 @@ export function BlogList() {
         } else {
           showToast(data.message || "Không tải được danh sách bài viết", "error");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
         showToast("Lỗi kết nối máy chủ khi tải bài viết.", "error");
       } finally {
@@ -121,7 +143,7 @@ export function BlogList() {
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`relative rounded-full px-4 py-1.5 text-xs font-bold font-home-heading transition-all duration-300 ${
+                className={`relative rounded-full px-4 py-1.5 text-xs font-bold font-home-heading transition-colors duration-300 ${
                   active 
                     ? "text-pure-ivory" 
                     : "text-midnight-purple hover:bg-soft-amethyst/30"
@@ -141,7 +163,7 @@ export function BlogList() {
         </div>
 
         {/* Search bar */}
-        <div className="relative flex items-center rounded-full border border-crystal-border bg-pure-ivory/60 px-4 py-2 w-full md:max-w-[320px] transition-focus-within focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10">
+        <div className="relative flex items-center rounded-full border border-crystal-border bg-pure-ivory/60 px-4 py-2 w-full md:max-w-[320px] transition-[border-color,background-color,box-shadow] duration-300 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10">
           <MaterialIcon name="search" className="text-dusk-gray mr-2 text-[20px]" />
           <input
             type="search"
@@ -190,76 +212,81 @@ export function BlogList() {
             key="grid"
             initial="hidden"
             animate="show"
-            variants={{
-              hidden: { opacity: 0 },
-              show: {
-                opacity: 1,
-                transition: { staggerChildren: 0.08 }
-              }
-            }}
+            variants={containerVariants}
             className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
           >
-            {posts.map((post) => (
-              <motion.article
-                key={post._id}
-                variants={{
-                  hidden: { opacity: 0, y: 30, filter: "blur(6px)" },
-                  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 200, damping: 20 } }
-                }}
-                className="glass-panel group overflow-hidden rounded-[24px] shadow-[0_10px_40px_rgba(74,59,82,0.02)] transition-all hover:-translate-y-1.5 hover:shadow-[0_15px_45px_rgba(123,65,180,0.06)] flex flex-col h-full"
-              >
-                {/* Cover image wrapper */}
-                <Link to={`/blogs/${post.slug}`} className="relative block h-52 overflow-hidden bg-lavender-mist shrink-0">
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-midnight-purple/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Category pill */}
-                  <span className="absolute top-4 left-4 bg-pure-ivory/90 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider text-primary px-3 py-1.5 rounded-full border border-crystal-border shadow-sm">
-                    {post.category}
-                  </span>
-                </Link>
+            {posts.map((post, index) => {
+              const cardElement = (
+                <article
+                  className="glass-panel group overflow-hidden rounded-[24px] shadow-[0_10px_40px_rgba(74,59,82,0.02)] hover-lift flex flex-col h-full"
+                >
+                  {/* Cover image wrapper */}
+                  <Link to={`/blogs/${post.slug}`} className="relative block h-52 overflow-hidden bg-lavender-mist shrink-0">
+                    <img
+                      src={post.coverImage}
+                      alt={post.title}
+                      className="h-full w-full object-cover image-hover-zoom"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-midnight-purple/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Category pill */}
+                    <span className="absolute top-4 left-4 bg-pure-ivory/90 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider text-primary px-3 py-1.5 rounded-full border border-crystal-border shadow-sm">
+                      {post.category}
+                    </span>
+                  </Link>
 
-                {/* Content section */}
-                <div className="p-6 flex flex-col flex-1">
-                  {/* Excerpt */}
-                  <h3 className="font-home-heading text-lg font-bold text-midnight-purple group-hover:text-primary transition-colors duration-250 mb-2.5 leading-snug">
-                    <Link to={`/blogs/${post.slug}`}>
-                      {post.title}
-                    </Link>
-                  </h3>
-                  
-                  <p className="text-sm text-dusk-gray line-clamp-3 mb-5 leading-relaxed flex-1">
-                    {post.excerpt}
-                  </p>
+                  {/* Content section */}
+                  <div className="p-6 flex flex-col flex-1">
+                    {/* Excerpt */}
+                    <h3 className="font-home-heading text-lg font-bold text-midnight-purple group-hover:text-primary transition-colors duration-250 mb-2.5 leading-snug">
+                      <Link to={`/blogs/${post.slug}`}>
+                        {post.title}
+                      </Link>
+                    </h3>
+                    
+                    <p className="text-sm text-dusk-gray line-clamp-3 mb-5 leading-relaxed flex-1">
+                      {post.excerpt}
+                    </p>
 
-                  {/* Metadata bottom row */}
-                  <div className="flex items-center justify-between border-t border-crystal-border/80 pt-4 text-xs font-semibold text-dusk-gray font-home-heading mt-auto">
-                    <div className="flex items-center gap-2">
-                      <div className="size-6 rounded-full bg-soft-amethyst/40 flex items-center justify-center text-primary border border-crystal-border">
-                        <MaterialIcon name="person" className="text-xs" />
+                    {/* Metadata bottom row */}
+                    <div className="flex items-center justify-between border-t border-crystal-border/80 pt-4 text-xs font-semibold text-dusk-gray font-home-heading mt-auto">
+                      <div className="flex items-center gap-2">
+                        <div className="size-6 rounded-full bg-soft-amethyst/40 flex items-center justify-center text-primary border border-crystal-border">
+                          <MaterialIcon name="person" className="text-xs" />
+                        </div>
+                        <span>{post.author?.fullName || "UTE SHOP"}</span>
                       </div>
-                      <span>{post.author?.fullName || "UTE SHOP"}</span>
-                    </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <MaterialIcon name="calendar_today" className="text-[13px]" />
-                        <span>{formatDate(post.publishedAt)}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1">
-                        <MaterialIcon name="visibility" className="text-[13px]" />
-                        <span>{post.views}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <MaterialIcon name="calendar_today" className="text-[13px]" />
+                          <span>{formatDate(post.publishedAt)}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <MaterialIcon name="visibility" className="text-[13px]" />
+                          <span>{post.views}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </article>
+              );
+
+              if (index < 12) {
+                return (
+                  <motion.div key={post._id} variants={itemVariants} className="h-full">
+                    {cardElement}
+                  </motion.div>
+                );
+              }
+
+              return (
+                <div key={post._id} className="h-full">
+                  {cardElement}
                 </div>
-              </motion.article>
-            ))}
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
