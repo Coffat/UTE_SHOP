@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
+import { api } from "../../lib/api";
 
 interface ExtendedStaffMember {
   id: string;
@@ -14,107 +15,67 @@ interface ExtendedStaffMember {
   avatarText: string;
 }
 
-const INITIAL_STAFF: ExtendedStaffMember[] = [
-  {
-    id: "NV-1001",
-    fullName: "Nguyễn Minh Anh",
-    role: "Admin",
-    email: "minhanh@uteshop.vn",
-    phone: "0987 654 321",
-    status: "Đang hoạt động",
-    performance: 92,
-    avatarBg: "linear-gradient(135deg, #f59e0b, #d97706)",
-    avatarText: "MA",
-  },
-  {
-    id: "NV-1002",
-    fullName: "Trần Quỳnh Hoa",
-    role: "Staff",
-    email: "quynhhoa@uteshop.vn",
-    phone: "0912 345 678",
-    status: "Đang hoạt động",
-    performance: 85,
-    avatarBg: "linear-gradient(135deg, #ec4899, #be185d)",
-    avatarText: "QH",
-  },
-  {
-    id: "NV-1003",
-    fullName: "Lê Hoàng Nam",
-    role: "Staff",
-    email: "hoangnam@uteshop.vn",
-    phone: "0934 567 890",
-    status: "Đang hoạt động",
-    performance: 80,
-    avatarBg: "linear-gradient(135deg, #10b981, #047857)",
-    avatarText: "HN",
-  },
-  {
-    id: "NV-1004",
-    fullName: "Phạm Thu Trang",
-    role: "Staff",
-    email: "thutrang@uteshop.vn",
-    phone: "0976 543 210",
-    status: "Nghỉ phép",
-    performance: 76,
-    avatarBg: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-    avatarText: "TT",
-  },
-  {
-    id: "NV-1005",
-    fullName: "Đỗ Văn Quân",
-    role: "Staff",
-    email: "vanquan@uteshop.vn",
-    phone: "0909 876 543",
-    status: "Đang hoạt động",
-    performance: 90,
-    avatarBg: "linear-gradient(135deg, #6366f1, #4338ca)",
-    avatarText: "VQ",
-  },
-  {
-    id: "NV-1006",
-    fullName: "Nguyễn Thu Hà",
-    role: "Staff",
-    email: "thuha@uteshop.vn",
-    phone: "0938 765 432",
-    status: "Tạm nghỉ",
-    performance: 68,
-    avatarBg: "linear-gradient(135deg, #ef4444, #b91c1c)",
-    avatarText: "TH",
-  },
-];
+const mapBackendUserToStaff = (u: any): ExtendedStaffMember => {
+  const roleMap: Record<string, string> = {
+    ADMIN: "Admin",
+    SALES: "Staff",
+    STORE_STAFF: "Quản lý ca",
+    WAREHOUSE_STAFF: "Kho vận",
+  };
+  const statusMap: Record<string, "Đang hoạt động" | "Nghỉ phép" | "Tạm nghỉ"> = {
+    ACTIVE: "Đang hoạt động",
+    ON_LEAVE: "Nghỉ phép",
+    SUSPENDED: "Tạm nghỉ",
+  };
 
-const SHIFTS = [
-  {
-    id: "s1",
-    title: "Ca sáng",
-    time: "06:00 - 14:00",
-    count: 8,
-    color: "#10b981",
-    bg: "rgba(16,185,129,0.12)",
-    staff: "Nguyễn Minh Anh, Trần Quỳnh Hoa, Lê Hoàng Nam",
-    subtext: "... và 5 nhân viên khác",
-  },
-  {
-    id: "s2",
-    title: "Ca chiều",
-    time: "14:00 - 22:00",
-    count: 6,
-    color: "#3b82f6",
-    bg: "rgba(59,130,246,0.12)",
-    staff: "Phạm Thu Trang, Đỗ Văn Quân",
-    subtext: "... và 4 nhân viên khác",
-  },
-  {
-    id: "s3",
-    title: "Ca tối",
-    time: "22:00 - 06:00",
-    count: 2,
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.12)",
-    staff: "Nguyễn Thu Hà, Phạm Công Dũng",
-    subtext: "",
-  },
-];
+  const initials = (u.fullName || "")
+    .split(" ")
+    .map((n: string) => n[0])
+    .slice(-2)
+    .join("")
+    .toUpperCase() || "NV";
+
+  const gradients = [
+    "linear-gradient(135deg, #f59e0b, #d97706)",
+    "linear-gradient(135deg, #ec4899, #be185d)",
+    "linear-gradient(135deg, #10b981, #047857)",
+    "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+    "linear-gradient(135deg, #6366f1, #4338ca)",
+  ];
+  const charSum = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
+  const avatarBg = gradients[charSum % gradients.length];
+
+  return {
+    id: u._id || u.id,
+    fullName: u.fullName || "",
+    email: u.email || "",
+    phone: u.phone || "",
+    role: roleMap[u.role] || "Staff",
+    status: statusMap[u.status] || "Đang hoạt động",
+    performance: u.performanceScore ?? 100,
+    avatarBg,
+    avatarText: initials,
+  };
+};
+
+const mapFrontendRoleToBackend = (r: string): string => {
+  const map: Record<string, string> = {
+    "Admin": "ADMIN",
+    "Staff": "SALES",
+    "Quản lý ca": "STORE_STAFF",
+    "Kho vận": "WAREHOUSE_STAFF",
+  };
+  return map[r] || "SALES";
+};
+
+const mapFrontendStatusToBackend = (s: string): string => {
+  const map: Record<string, string> = {
+    "Đang hoạt động": "ACTIVE",
+    "Nghỉ phép": "ON_LEAVE",
+    "Tạm nghỉ": "SUSPENDED",
+  };
+  return map[s] || "ACTIVE";
+};
 
 const LOGIN_LOGS = [
   {
@@ -160,11 +121,18 @@ const LOGIN_LOGS = [
 ];
 
 export function StaffPage() {
-  const [staffList, setStaffList] = useState<ExtendedStaffMember[]>(INITIAL_STAFF);
+  const [staffList, setStaffList] = useState<ExtendedStaffMember[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [avgPerformance, setAvgPerformance] = useState(100);
+  const [loading, setLoading] = useState(true);
+  const [shifts, setShifts] = useState<any[]>([]);
+  
   const [slideoverOpen, setSlideoverOpen] = useState(false);
   const [editStaff, setEditStaff] = useState<ExtendedStaffMember | null>(null);
   const { confirm, ModalEl } = useConfirm();
@@ -179,36 +147,176 @@ export function StaffPage() {
 
   const itemsPerPage = 6;
 
-  // Filter logic
-  const filteredList = useMemo(() => {
-    return staffList.filter((s) => {
-      const matchesSearch =
-        search === "" ||
-        s.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        s.email.toLowerCase().includes(search.toLowerCase()) ||
-        s.id.toLowerCase().includes(search.toLowerCase());
-      const matchesRole = roleFilter === "All" || s.role === roleFilter;
-      const matchesStatus = statusFilter === "All" || s.status === statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
+  // Load staff list dynamically
+  const fetchStaffData = async () => {
+    try {
+      setLoading(true);
+      const queryParams: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      };
+
+      if (search.trim()) {
+        queryParams.search = search.trim();
+      }
+      if (roleFilter !== "All") {
+        queryParams.role = mapFrontendRoleToBackend(roleFilter);
+      }
+      if (statusFilter !== "All") {
+        queryParams.status = mapFrontendStatusToBackend(statusFilter);
+      }
+
+      const { data } = await api.get("/api/v1/admin/staff", { params: queryParams });
+      if (data.success && data.data) {
+        setStaffList(data.data.items.map(mapBackendUserToStaff));
+        setTotalPages(data.data.meta.pages);
+      }
+    } catch (error) {
+      console.error("Failed to load staff list:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load stats and shifts dynamically
+  const fetchStatsAndShifts = async () => {
+    try {
+      const [staffRes, shiftRes] = await Promise.all([
+        api.get("/api/v1/admin/staff", { params: { limit: 1000 } }),
+        api.get("/api/v1/admin/shifts"),
+      ]);
+
+      if (staffRes.data.success && staffRes.data.data) {
+        const allStaff = staffRes.data.data.items;
+        const total = allStaff.length;
+        const active = allStaff.filter((s: any) => s.status === "ACTIVE").length;
+        const avg = allStaff.length > 0
+          ? Math.round((allStaff.reduce((sum: number, s: any) => sum + (s.performanceScore ?? 100), 0) / allStaff.length) * 10) / 10
+          : 0;
+
+        setTotalCount(total);
+        setActiveCount(active);
+        setAvgPerformance(avg);
+      }
+
+      if (shiftRes.data.success && shiftRes.data.data) {
+        const mappedShifts = shiftRes.data.data.map((s: any) => {
+          const shiftColor = s.color || "#10b981";
+          const shiftBg = s.bg || "rgba(16,185,129,0.12)";
+
+          return {
+            id: s._id || s.id,
+            title: s.title || "Ca trực",
+            time: `${s.startTime} - ${s.endTime}`,
+            count: s.assignedStaff?.length || 0,
+            color: shiftColor,
+            bg: shiftBg,
+            staff: s.assignedStaff?.map((staff: any) => staff.fullName).join(", ") || "Chưa phân công",
+            subtext: s.assignedStaff?.length > 3 ? `... và ${s.assignedStaff.length - 3} nhân viên khác` : "",
+          };
+        });
+        setShifts(mappedShifts);
+      }
+    } catch (error) {
+      console.error("Failed to load shifts/stats:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffData();
+  }, [currentPage, search, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchStatsAndShifts();
+  }, []);
+
+  // Set local dummy objects for backward compatible UI calculations without rewriting standard JSX
+  const paginatedList = staffList;
+  const filteredList = { length: totalCount };
+
+  const roleDistribution = staffList.reduce((acc, curr) => {
+    const r = curr.role;
+    acc[r] = (acc[r] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const handleOpenAdd = () => {
+    setEditStaff(null);
+    setFormName("");
+    setFormEmail("");
+    setFormPhone("");
+    setFormRole("Staff");
+    setFormStatus("Đang hoạt động");
+    setFormPerformance(85);
+    setSlideoverOpen(true);
+  };
+
+  const handleOpenEdit = (s: ExtendedStaffMember) => {
+    setEditStaff(s);
+    setFormName(s.fullName);
+    setFormEmail(s.email);
+    setFormPhone(s.phone);
+    setFormRole(s.role);
+    setFormStatus(s.status);
+    setFormPerformance(s.performance);
+    setSlideoverOpen(true);
+  };
+
+  const handleDelete = async (s: ExtendedStaffMember) => {
+    const accepted = await confirm({
+      title: "Xóa nhân viên",
+      message: `Bạn có chắc chắn muốn xóa nhân viên "${s.fullName}" (Mã NV: ${s.id}) khỏi hệ thống? Hành động này không thể hoàn tác.`,
+      variant: "danger",
+      confirmLabel: "Xóa nhân viên",
     });
-  }, [staffList, search, roleFilter, statusFilter]);
+    if (accepted) {
+      try {
+        await api.delete(`/api/v1/admin/staff/${s.id}`);
+        fetchStaffData();
+        fetchStatsAndShifts();
+      } catch (error: any) {
+        alert(error.response?.data?.message || "Không thể xóa nhân sự");
+      }
+    }
+  };
 
-  // Paginated List
-  const paginatedList = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredList.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredList, currentPage]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName || !formEmail) return;
 
-  const totalPages = Math.ceil(filteredList.length / itemsPerPage) || 1;
-
-  // Stats calculators
-  const totalCount = staffList.length;
-  const activeCount = staffList.filter((s) => s.status === "Đang hoạt động").length;
-  const avgPerformance = useMemo(() => {
-    if (staffList.length === 0) return 0;
-    const sum = staffList.reduce((acc, s) => acc + s.performance, 0);
-    return Math.round((sum / staffList.length) * 10) / 10;
-  }, [staffList]);
+    try {
+      if (editStaff) {
+        // Edit Staff
+        const payload: any = {
+          fullName: formName,
+          email: formEmail,
+          phone: formPhone || null,
+          status: mapFrontendStatusToBackend(formStatus),
+          performanceScore: Number(formPerformance),
+        };
+        await api.put(`/api/v1/admin/staff/${editStaff.id}`, payload);
+      } else {
+        // Create Staff
+        const payload = {
+          fullName: formName,
+          email: formEmail,
+          phone: formPhone || null,
+          role: mapFrontendRoleToBackend(formRole),
+          status: mapFrontendStatusToBackend(formStatus),
+          performanceScore: Number(formPerformance),
+          password: "Uteshop@123", // default temporary password
+        };
+        await api.post("/api/v1/admin/staff", payload);
+      }
+      setSlideoverOpen(false);
+      fetchStaffData();
+      fetchStatsAndShifts();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Đã xảy ra lỗi khi lưu thông tin");
+    }
+  };
 
   const statCards = [
     {
@@ -242,7 +350,7 @@ export function StaffPage() {
     {
       id: "staff-shifts",
       label: "Ca hôm nay",
-      value: 16,
+      value: shifts.length,
       change: 6.7,
       changeLabel: "so với hôm qua",
       icon: (
@@ -251,9 +359,9 @@ export function StaffPage() {
           <polyline points="12 6 12 12 16 14" />
         </svg>
       ),
-      color: "blue" as const,
-      tooltip: "Tổng số ca làm việc được phân công trong ngày hôm nay",
-      sparklinePoints: "M2 24L12 12L22 24L32 14L44 26L56 16L68 20L76 8",
+      color: "amber" as const,
+      tooltip: "Tổng số ca trực trong ngày",
+      sparklinePoints: "M2 20L12 10L22 24L32 12L44 26L56 16L68 22L76 8",
     },
     {
       id: "staff-perf",
@@ -271,112 +379,6 @@ export function StaffPage() {
       sparklinePoints: "M2 22L12 26L22 14L32 18L44 8L56 24L68 12L76 16",
     },
   ];
-
-  // Donut chart calculations
-  const roleDistribution = useMemo(() => {
-    const counts = { Admin: 0, Staff: 0, "Quản lý ca": 0, "Kho vận": 0 };
-    staffList.forEach((s) => {
-      if (s.role in counts) {
-        counts[s.role as keyof typeof counts]++;
-      } else {
-        counts["Staff"]++; // fallback
-      }
-    });
-    return counts;
-  }, [staffList]);
-
-  const handleOpenAdd = () => {
-    setEditStaff(null);
-    setFormName("");
-    setFormEmail("");
-    setFormPhone("");
-    setFormRole("Staff");
-    setFormStatus("Đang hoạt động");
-    setFormPerformance(85);
-    setSlideoverOpen(true);
-  };
-
-  const handleOpenEdit = (s: ExtendedStaffMember) => {
-    setEditStaff(s);
-    setFormName(s.fullName);
-    setFormEmail(s.email);
-    setFormPhone(s.phone);
-    setFormRole(s.role);
-    setFormStatus(s.status);
-    setFormPerformance(s.performance);
-    setSlideoverOpen(true);
-  };
-
-  const handleDelete = async (s: ExtendedStaffMember) => {
-    const accepted = await confirm({
-      title: "Xóa nhân viên",
-      message: `Bạn có chắc chắn muốn xóa nhân viên "${s.fullName}" (Mã NV: ${s.id}) khỏi hệ thống? Hành động này không thể hoàn tác.`,
-      variant: "danger",
-      confirmLabel: "Xóa nhân viên",
-    });
-    if (accepted) {
-      setStaffList((prev) => prev.filter((item) => item.id !== s.id));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName || !formEmail) return;
-
-    if (editStaff) {
-      // Edit
-      setStaffList((prev) =>
-        prev.map((item) =>
-          item.id === editStaff.id
-            ? {
-                ...item,
-                fullName: formName,
-                email: formEmail,
-                phone: formPhone,
-                role: formRole,
-                status: formStatus,
-                performance: Number(formPerformance),
-              }
-            : item
-        )
-      );
-    } else {
-      // Add
-      const nextIdNum =
-        staffList.length > 0
-          ? Math.max(...staffList.map((s) => parseInt(s.id.split("-")[1]))) + 1
-          : 1001;
-      const initials = formName
-        .split(" ")
-        .map((n) => n[0])
-        .slice(-2)
-        .join("")
-        .toUpperCase();
-
-      const gradients = [
-        "linear-gradient(135deg, #f59e0b, #d97706)",
-        "linear-gradient(135deg, #ec4899, #be185d)",
-        "linear-gradient(135deg, #10b981, #047857)",
-        "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-        "linear-gradient(135deg, #6366f1, #4338ca)",
-      ];
-      const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-
-      const newMember: ExtendedStaffMember = {
-        id: `NV-${nextIdNum}`,
-        fullName: formName,
-        role: formRole,
-        email: formEmail,
-        phone: formPhone || "0987 654 321",
-        status: formStatus,
-        performance: Number(formPerformance),
-        avatarBg: randomGradient,
-        avatarText: initials || "NV",
-      };
-      setStaffList((prev) => [newMember, ...prev]);
-    }
-    setSlideoverOpen(false);
-  };
 
   return (
     <div className="admin-page">
@@ -834,13 +836,25 @@ export function StaffPage() {
                       </td>
                     </tr>
                   ))}
-                  {filteredList.length === 0 && (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} style={{ padding: "40px", textAlign: "center", color: "var(--adm-text-dim)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                          <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }} />
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style={{ opacity: 0.75 }} />
+                          </svg>
+                          <span>Đang tải danh sách nhân viên...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredList.length === 0 ? (
                     <tr>
                       <td colSpan={8} style={{ padding: "30px", textAlign: "center", color: "var(--adm-text-muted)", fontSize: "14px" }}>
                         Không tìm thấy nhân viên nào phù hợp.
                       </td>
                     </tr>
-                  )}
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -1183,10 +1197,10 @@ export function StaffPage() {
 
             {/* Shift lists with left timelines lines */}
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingLeft: "4px" }}>
-              {SHIFTS.map((shift, idx) => (
+              {shifts.map((shift: any, idx: number) => (
                 <div key={shift.id} style={{ display: "flex", gap: "16px", position: "relative" }}>
                   {/* Left line guide */}
-                  {idx !== SHIFTS.length - 1 && (
+                  {idx !== shifts.length - 1 && (
                     <div
                       style={{
                         position: "absolute",
@@ -1303,7 +1317,7 @@ export function StaffPage() {
             />
           </FormField>
           <FormField label="Vai trò" required>
-            <FormSelect value={formRole} onChange={(e) => setFormRole(e.target.value)}>
+            <FormSelect value={formRole} onChange={(e) => setFormRole(e.target.value)} disabled={editStaff !== null}>
               <option value="Admin">Admin (Quản trị viên)</option>
               <option value="Staff">Staff (Nhân viên vận hành)</option>
               <option value="Quản lý ca">Quản lý ca (Shift Manager)</option>

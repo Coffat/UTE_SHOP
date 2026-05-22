@@ -24,3 +24,23 @@ export const validateCustomerId = [
   param('id').isMongoId().withMessage('ID khách hàng không hợp lệ'),
   validateRequest,
 ];
+
+export const validateCreateCustomer = [
+  body('fullName').notEmpty().withMessage('Họ tên là bắt buộc').trim(),
+  body('email')
+    .notEmpty().withMessage('Email là bắt buộc')
+    .isEmail().withMessage('Email không hợp lệ')
+    .normalizeEmail(),
+  body('password')
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ min: 6 }).withMessage('Mật khẩu phải dài ít nhất 6 ký tự'),
+  body('phone')
+    .optional({ nullable: true, checkFalsy: true })
+    .isMobilePhone('any').withMessage('Số điện thoại không hợp lệ'),
+  body('status')
+    .optional()
+    .isIn(['ACTIVE', 'BANNED', 'PENDING', 'SUSPENDED'])
+    .withMessage('Trạng thái không hợp lệ'),
+  validateRequest,
+];
+

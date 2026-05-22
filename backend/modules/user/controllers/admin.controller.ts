@@ -11,6 +11,7 @@ export const listStaff = asyncHandler(async (req: Request, res: Response) => {
   const sortBy = req.query.sortBy as string || 'createdAt';
   const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
   const status = req.query.status as string || undefined;
+  const role = req.query.role as string || undefined;
 
   const result = await adminService.getStaffList({
     page,
@@ -19,6 +20,7 @@ export const listStaff = asyncHandler(async (req: Request, res: Response) => {
     sortBy,
     sortOrder,
     status,
+    role,
   });
 
   return sendSuccess(res, 200, 'Lấy danh sách nhân viên thành công', {
@@ -117,6 +119,20 @@ export const updateCustomerStatus = asyncHandler(async (req: Request, res: Respo
   const updatedCustomer = await adminService.updateCustomerStatus(id as string, status, adminUserId as string);
 
   return sendSuccess(res, 200, 'Cập nhật trạng thái khách hàng thành công', updatedCustomer);
+});
+
+export const createCustomer = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password, phone, fullName, status } = req.body;
+
+  const result = await adminService.createCustomer({
+    email,
+    passwordHash: password || 'Uteshop@123',
+    phone,
+    fullName,
+    status,
+  });
+
+  return sendSuccess(res, 201, 'Tạo tài khoản khách hàng thành công', result);
 });
 
 // ─── Shift Controller Actions ────────────────────────────────────────────────

@@ -10,18 +10,19 @@ export interface IListParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   status?: string;
+  role?: string;
 }
 
 export class UserRepository {
   // ─── Staff Querying ──────────────────────────────────────────────────────────
   async getStaffList(params: IListParams) {
-    const { page, limit, search, sortBy = 'createdAt', sortOrder = 'desc', status } = params;
+    const { page, limit, search, sortBy = 'createdAt', sortOrder = 'desc', status, role } = params;
     const skip = (page - 1) * limit;
 
     // Filter out ADMIN and CUSTOMER, keep only SALES, WAREHOUSE_STAFF, STORE_STAFF
     // And filter out soft-deleted users
     const filter: any = {
-      role: { $in: ['SALES', 'WAREHOUSE_STAFF', 'STORE_STAFF'] },
+      role: role ? role : { $in: ['SALES', 'WAREHOUSE_STAFF', 'STORE_STAFF'] },
       isActive: true,
       deletedAt: null,
     };
@@ -190,9 +191,6 @@ export class UserRepository {
         $facet: {
           metadata: [{ $count: 'total' }],
           data: [
-            sortStage ? { $sort: sortStage } : null,
-            { $skip: skip },
-            { $limit: limit },
             {
               $lookup: {
                 from: 'orders',
@@ -228,6 +226,9 @@ export class UserRepository {
                 },
               },
             },
+            sortStage ? { $sort: sortStage } : null,
+            { $skip: skip },
+            { $limit: limit },
           ].filter(Boolean),
         },
       },
@@ -261,6 +262,25 @@ export class UserRepository {
       { status },
       { new: true }
     ).exec();
+  }
+
+  async createCustomer(data: {
+    email: string;
+    passwordHash: string;
+    phone?: string;
+    fullName: string;
+    status?: string;
+  }) {
+    const newCustomer = new Customer({
+      email: data.email,
+      passwordHash: data.passwordHash,
+      phone: data.phone || null,
+      fullName: data.fullName,
+      status: data.status || 'ACTIVE',
+      isEmailVerified: true,
+      isActive: true,
+    });
+    return newCustomer.save();
   }
 
   // ─── Guard Protections ───────────────────────────────────────────────────────

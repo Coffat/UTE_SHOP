@@ -12,6 +12,7 @@ export class AdminService {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     status?: string;
+    role?: string;
   }) {
     return userRepository.getStaffList(params);
   }
@@ -107,6 +108,27 @@ export class AdminService {
     }
 
     return userRepository.updateCustomerStatus(id, status);
+  }
+
+  async createCustomer(data: {
+    email: string;
+    passwordHash: string;
+    phone?: string;
+    fullName: string;
+    status?: string;
+  }) {
+    const existingUser = await userRepository.findUserByEmail(data.email);
+    if (existingUser) {
+      throw new AppError('Email này đã được sử dụng bởi người dùng khác', 400);
+    }
+
+    const passwordRaw = data.passwordHash || 'Uteshop@123';
+    const hashed = await bcrypt.hash(passwordRaw, 10);
+
+    return userRepository.createCustomer({
+      ...data,
+      passwordHash: hashed,
+    });
   }
 
   // ─── Shift Management ────────────────────────────────────────────────────────

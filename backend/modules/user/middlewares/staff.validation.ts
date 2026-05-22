@@ -68,5 +68,6 @@ export const validateStaffListQuery = [
   query('sortBy').optional().trim(),
   query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('sortOrder phải là asc hoặc desc'),
   query('status').optional().isIn(['ACTIVE', 'ON_LEAVE', 'SUSPENDED']).withMessage('status không hợp lệ'),
+  query('role').optional().isIn(['SALES', 'WAREHOUSE_STAFF', 'STORE_STAFF']).withMessage('role không hợp lệ'),
   validateRequest,
 ];

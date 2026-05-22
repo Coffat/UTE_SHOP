@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useConfirm, Slideover, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
+import { api } from "../../lib/api";
 
 interface Customer {
   id: string;
@@ -31,171 +32,216 @@ export function CustomersPage() {
   const [newSegment, setNewSegment] = useState<"VIP" | "Tiềm năng" | "Mới" | "Ngủ quên">("Mới");
   const [newStatus, setNewStatus] = useState<"Hoạt động" | "Ít hoạt động" | "Không hoạt động">("Hoạt động");
 
-  // Initial mockup customer list matching user's design image
-  const [customers, setCustomers] = useState<Customer[]>([
-    {
-      id: "KH-0001248",
-      fullName: "Nguyễn Minh Anh",
-      email: "minhanh.nguyen@gmail.com",
-      phone: "0912 345 678",
-      totalOrders: 12,
-      totalSpent: 18750000,
-      joinDate: "12/01/2025",
-      isActive: true,
-      segment: "VIP",
-      statusText: "Hoạt động",
-      lastPurchaseDate: "24/05/2024",
-      avatarColor: "linear-gradient(135deg, #a855f7, #7e22ce)",
-      isFemale: true,
-    },
-    {
-      id: "KH-0001193",
-      fullName: "Trần Quốc Bảo",
-      email: "bao.tran95@gmail.com",
-      phone: "0987 654 321",
-      totalOrders: 8,
-      totalSpent: 12980000,
-      joinDate: "03/03/2025",
-      isActive: true,
-      segment: "VIP",
-      statusText: "Hoạt động",
-      lastPurchaseDate: "25/05/2024",
-      avatarColor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-      isFemale: false,
-    },
-    {
-      id: "KH-0001523",
-      fullName: "Lê Thị Thanh Mai",
-      email: "thanhmai.le@gmail.com",
-      phone: "0903 111 222",
-      totalOrders: 5,
-      totalSpent: 6250000,
-      joinDate: "20/07/2025",
-      isActive: true,
-      segment: "Tiềm năng",
-      statusText: "Hoạt động",
-      lastPurchaseDate: "24/05/2024",
-      avatarColor: "linear-gradient(135deg, #06b6d4, #0891b2)",
-      isFemale: true,
-    },
-    {
-      id: "KH-0001032",
-      fullName: "Phạm Hoàng Nam",
-      email: "nam.pham86@gmail.com",
-      phone: "0978 333 444",
-      totalOrders: 3,
-      totalSpent: 4350000,
-      joinDate: "05/11/2024",
-      isActive: true,
-      segment: "Mới",
-      statusText: "Hoạt động",
-      lastPurchaseDate: "20/05/2024",
-      avatarColor: "linear-gradient(135deg, #10b981, #047857)",
-      isFemale: false,
-    },
-    {
-      id: "KH-0000987",
-      fullName: "Đỗ Quỳnh Trang",
-      email: "quynhtrang.do@gmail.com",
-      phone: "0965 555 666",
-      totalOrders: 2,
-      totalSpent: 2180000,
-      joinDate: "10/04/2026",
-      isActive: true,
-      segment: "Tiềm năng",
-      statusText: "Ít hoạt động",
-      lastPurchaseDate: "10/05/2024",
-      avatarColor: "linear-gradient(135deg, #ec4899, #be185d)",
-      isFemale: true,
-    },
-    {
-      id: "KH-0000756",
-      fullName: "Vũ Đức Anh",
-      email: "ducanh.vu@gmail.com",
-      phone: "0912 777 888",
-      totalOrders: 1,
-      totalSpent: 1250000,
-      joinDate: "28/02/2025",
-      isActive: false,
-      segment: "Ngủ quên",
-      statusText: "Không hoạt động",
-      lastPurchaseDate: "02/05/2024",
-      avatarColor: "linear-gradient(135deg, #6b7280, #374151)",
-      isFemale: false,
-    },
-  ]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const mapBackendToFrontendCustomer = (bCust: any): Customer => {
+    const status = bCust.status || "ACTIVE";
+    const totalSpent = bCust.totalSpent || 0;
+    const ordersCount = bCust.ordersCount || 0;
+
+    // Status mapping
+    let statusText: "Hoạt động" | "Ít hoạt động" | "Không hoạt động" = "Hoạt động";
+    if (status === "SUSPENDED" || status === "PENDING") {
+      statusText = "Ít hoạt động";
+    } else if (status === "BANNED") {
+      statusText = "Không hoạt động";
+    }
+
+    // Segment mapping
+    let segment: "VIP" | "Tiềm năng" | "Mới" | "Ngủ quên" = "Mới";
+    if (status === "SUSPENDED" || status === "BANNED") {
+      segment = "Ngủ quên";
+    } else if (totalSpent >= 10000000 || ordersCount >= 10) {
+      segment = "VIP";
+    } else if (totalSpent >= 3000000 || ordersCount >= 4) {
+      segment = "Tiềm năng";
+    }
+
+    // Avatar gradient color based on segment
+    let avatarColor = "linear-gradient(135deg, #10b981, #047857)"; // Default Green for New
+    if (segment === "VIP") {
+      avatarColor = "linear-gradient(135deg, #a855f7, #7e22ce)"; // Purple
+    } else if (segment === "Tiềm năng") {
+      avatarColor = "linear-gradient(135deg, #06b6d4, #0891b2)"; // Cyan
+    } else if (segment === "Ngủ quên") {
+      avatarColor = "linear-gradient(135deg, #6b7280, #374151)"; // Gray
+    }
+
+    // Join date mapping
+    const joinDate = bCust.createdAt 
+      ? new Date(bCust.createdAt).toLocaleDateString("vi-VN") 
+      : new Date().toLocaleDateString("vi-VN");
+
+    return {
+      id: bCust._id,
+      fullName: bCust.fullName,
+      email: bCust.email,
+      phone: bCust.phone || "Chưa cập nhật",
+      totalOrders: ordersCount,
+      totalSpent: totalSpent,
+      joinDate: joinDate,
+      isActive: bCust.isActive !== false,
+      segment: segment,
+      statusText: statusText,
+      lastPurchaseDate: ordersCount > 0 ? "Giao dịch gần đây" : "Chưa giao dịch",
+      avatarColor: avatarColor,
+      isFemale: Math.random() > 0.5,
+    };
+  };
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const params: any = {
+        page: currentPage,
+        limit: 10,
+        search: searchQuery || undefined,
+      };
+      
+      if (segmentFilter === "Ngủ quên") {
+        params.status = "SUSPENDED";
+      } else if (segmentFilter === "VIP" || segmentFilter === "Tiềm năng" || segmentFilter === "Mới") {
+        params.status = "ACTIVE";
+      }
+
+      const response = await api.get("/api/v1/admin/customers", { params });
+      const { items, meta } = response.data.data;
+
+      const mapped = items.map(mapBackendToFrontendCustomer);
+      setCustomers(mapped);
+      setTotalPages(meta.pages || 1);
+      setTotalCount(meta.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [currentPage, searchQuery, segmentFilter]);
 
   // Handle addition of a new customer
-  const handleCreateCustomer = (e: React.FormEvent) => {
+  const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFullName || !newEmail) return;
 
-    const randomId = `KH-000${Math.floor(1000 + Math.random() * 9000)}`;
-    const randomColor = [
-      "linear-gradient(135deg, #a855f7, #7e22ce)",
-      "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-      "linear-gradient(135deg, #10b981, #047857)",
-      "linear-gradient(135deg, #f59e0b, #b45309)",
-      "linear-gradient(135deg, #ec4899, #be185d)",
-    ][Math.floor(Math.random() * 5)];
+    let mappedStatus = "ACTIVE";
+    if (newStatus === "Ít hoạt động") {
+      mappedStatus = "SUSPENDED";
+    } else if (newStatus === "Không hoạt động") {
+      mappedStatus = "BANNED";
+    }
 
-    const dateToday = new Date().toLocaleDateString("vi-VN");
+    try {
+      const payload = {
+        fullName: newFullName,
+        email: newEmail,
+        phone: newPhone || undefined,
+        status: mappedStatus,
+        password: "Uteshop@123",
+      };
 
-    const newCust: Customer = {
-      id: randomId,
-      fullName: newFullName,
-      email: newEmail,
-      phone: newPhone || "Chưa cập nhật",
-      totalOrders: 0,
-      totalSpent: 0,
-      joinDate: dateToday,
-      isActive: newStatus !== "Không hoạt động",
-      segment: newSegment,
-      statusText: newStatus,
-      lastPurchaseDate: "Chưa giao dịch",
-      avatarColor: randomColor,
-      isFemale: Math.random() > 0.5,
-    };
+      await api.post("/api/v1/admin/customers", payload);
+      
+      setNewFullName("");
+      setNewEmail("");
+      setNewPhone("");
+      setNewSegment("Mới");
+      setNewStatus("Hoạt động");
+      setSlideoverOpen(false);
 
-    setCustomers([newCust, ...customers]);
-    setNewFullName("");
-    setNewEmail("");
-    setNewPhone("");
-    setSlideoverOpen(false);
+      fetchCustomers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Đã xảy ra lỗi khi tạo tài khoản khách hàng");
+    }
   };
 
   // Handle deletion of a customer
   const handleDeleteCustomer = async (cust: Customer) => {
     const isConfirmed = await confirm({
-      title: "Xóa khách hàng",
-      message: `Bạn có chắc chắn muốn xóa khách hàng "${cust.fullName}" (${cust.id})? Hành động này không thể hoàn tác.`,
-      confirmLabel: "Xóa khách hàng",
+      title: "Xóa/Khóa khách hàng",
+      message: `Bạn có chắc chắn muốn khóa tài khoản khách hàng "${cust.fullName}" (${cust.id})? Hành động này sẽ chuyển trạng thái của khách hàng thành Không hoạt động.`,
+      confirmLabel: "Khóa tài khoản",
       variant: "danger",
     });
 
     if (isConfirmed) {
-      setCustomers(customers.filter((c) => c.id !== cust.id));
+      try {
+        await api.patch(`/api/v1/admin/customers/${cust.id}/status`, { status: 'BANNED' });
+        fetchCustomers();
+      } catch (err: any) {
+        alert(err.response?.data?.message || "Không thể khóa tài khoản khách hàng");
+      }
     }
   };
 
-  // Filter customers list
-  const filteredCustomers = customers.filter((c) => {
-    const matchesSearch =
-      c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredCustomers = customers;
 
-    const matchesSegment =
-      segmentFilter === "Tất cả" || c.segment === segmentFilter;
+  const stats = useMemo(() => {
+    const total = totalCount;
+    const vip = customers.filter((c) => c.segment === "VIP").length;
+    const potential = customers.filter((c) => c.segment === "Tiềm năng").length;
+    const brandNew = customers.filter((c) => c.segment === "Mới").length;
+    const sleeping = customers.filter((c) => c.segment === "Ngủ quên").length;
 
-    return matchesSearch && matchesSegment;
-  });
+    const spentSum = customers.reduce((sum, c) => sum + c.totalSpent, 0);
+    const avgSpent = customers.length > 0 ? Math.round(spentSum / customers.length) : 0;
+
+    return {
+      total,
+      vip,
+      potential,
+      brandNew,
+      sleeping,
+      avgSpent,
+    };
+  }, [customers, totalCount]);
+
+  const segmentsData = useMemo(() => {
+    const list = customers;
+    const vip = list.filter((c) => c.segment === "VIP").length;
+    const potential = list.filter((c) => c.segment === "Tiềm năng").length;
+    const brandNew = list.filter((c) => c.segment === "Mới").length;
+    const sleeping = list.filter((c) => c.segment === "Ngủ quên").length;
+    const total = vip + potential + brandNew + sleeping || 1;
+
+    const vipPct = Math.round((vip / total) * 100);
+    const potentialPct = Math.round((potential / total) * 100);
+    const brandNewPct = Math.round((brandNew / total) * 100);
+    const sleepingPct = 100 - vipPct - potentialPct - brandNewPct;
+
+    const radius = 50;
+    const circumference = 2 * Math.PI * radius;
+
+    const vipStroke = (vipPct / 100) * circumference;
+    const potentialStroke = (potentialPct / 100) * circumference;
+    const brandNewStroke = (brandNewPct / 100) * circumference;
+    const sleepingStroke = (sleepingPct / 100) * circumference;
+
+    return {
+      vip: { count: vip, pct: vipPct, stroke: vipStroke },
+      potential: { count: potential, pct: potentialPct, stroke: potentialStroke },
+      brandNew: { count: brandNew, pct: brandNewPct, stroke: brandNewStroke },
+      sleeping: { count: sleeping, pct: sleepingPct, stroke: sleepingStroke },
+      circumference,
+    };
+  }, [customers]);
+
+  const topCustomers = useMemo(() => {
+    return [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 3);
+  }, [customers]);
 
   const statCards = [
     {
       id: "cust-total",
       label: "Tổng khách hàng",
-      value: "12,648",
+      value: stats.total.toLocaleString("vi-VN"),
       change: 12.4,
       changeLabel: "so với tuần trước",
       icon: "users",
@@ -205,8 +251,8 @@ export function CustomersPage() {
     },
     {
       id: "cust-new",
-      label: "Khách hàng mới",
-      value: "1,248",
+      label: "Khách mới (Trang này)",
+      value: stats.brandNew.toString(),
       change: 8.1,
       changeLabel: "so với tuần trước",
       icon: (
@@ -218,13 +264,13 @@ export function CustomersPage() {
         </svg>
       ),
       color: "cyan" as const,
-      tooltip: "Khách hàng đăng ký mới tuần này",
+      tooltip: "Khách hàng đăng ký mới",
       sparklinePoints: "M2 28L12 20L22 26L32 16L44 22L56 12L68 18L76 8",
     },
     {
       id: "cust-vip",
-      label: "Khách hàng thân thiết",
-      value: "2,356",
+      label: "Khách VIP (Trang này)",
+      value: stats.vip.toString(),
       change: 15.3,
       changeLabel: "so với tuần trước",
       icon: (
@@ -233,13 +279,13 @@ export function CustomersPage() {
         </svg>
       ),
       color: "amber" as const,
-      tooltip: "Khách hàng có trên 5 đơn hàng",
+      tooltip: "Khách hàng VIP",
       sparklinePoints: "M2 26L12 22L22 15L32 25L44 20L56 10L68 14L76 5",
     },
     {
       id: "cust-avg",
       label: "Giá trị trung bình",
-      value: "1,480,000đ",
+      value: `${stats.avgSpent.toLocaleString("vi-VN")} đ`,
       change: 6.7,
       changeLabel: "so với tuần trước",
       icon: (
@@ -628,18 +674,20 @@ export function CustomersPage() {
             }}
           >
             <span className="admin-table-muted" style={{ fontSize: "12.5px" }}>
-              Hiển thị 1 - {filteredCustomers.length} / {filteredCustomers.length} khách hàng
+              Hiển thị {totalCount === 0 ? 0 : (currentPage - 1) * 10 + 1} - {Math.min(currentPage * 10, totalCount)} / {totalCount} khách hàng
             </span>
             <div style={{ display: "flex", gap: "6px" }}>
               <button
+                disabled={currentPage === 1 || loading}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 style={{
                   background: "transparent",
                   border: "1px solid var(--adm-border)",
-                  color: "var(--adm-text-muted)",
+                  color: currentPage === 1 ? "rgba(255,255,255,0.15)" : "var(--adm-text-muted)",
                   width: "28px",
                   height: "28px",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -655,22 +703,24 @@ export function CustomersPage() {
                   width: "28px",
                   height: "28px",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: "default",
                   fontWeight: 600,
                   fontSize: "12.5px",
                 }}
               >
-                1
+                {currentPage}
               </button>
               <button
+                disabled={currentPage === totalPages || loading}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 style={{
                   background: "transparent",
                   border: "1px solid var(--adm-border)",
-                  color: "var(--adm-text-muted)",
+                  color: currentPage === totalPages ? "rgba(255,255,255,0.15)" : "var(--adm-text-muted)",
                   width: "28px",
                   height: "28px",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -688,7 +738,7 @@ export function CustomersPage() {
           {/* Widget 1: Phân khúc khách hàng */}
           <div className="admin-card" style={{ padding: "20px" }}>
             <h2 className="admin-card-title" style={{ fontSize: "15px", fontWeight: 600, marginBottom: "16px" }}>
-              Phân khúc khách hàng
+              Phân khúc khách hàng (Trang này)
             </h2>
 
             {/* Donut Chart Block */}
@@ -696,7 +746,7 @@ export function CustomersPage() {
               {/* Left Column: Donut SVG */}
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", position: "relative", width: "150px", height: "150px", flexShrink: 0 }}>
                 <svg width="150" height="150" viewBox="0 0 150 150" style={{ transform: "rotate(-90deg)" }}>
-                  {/* VIP (Purple) - 18.6% */}
+                  {/* VIP (Purple) */}
                   <circle
                     cx="75"
                     cy="75"
@@ -704,10 +754,10 @@ export function CustomersPage() {
                     fill="transparent"
                     stroke="#a855f7"
                     strokeWidth="16"
-                    strokeDasharray="56.9 314.2"
+                    strokeDasharray={`${segmentsData.vip.stroke} ${segmentsData.circumference}`}
                     strokeDashoffset="0"
                   />
-                  {/* Tiềm năng (Blue) - 25.4% */}
+                  {/* Tiềm năng (Blue) */}
                   <circle
                     cx="75"
                     cy="75"
@@ -715,10 +765,10 @@ export function CustomersPage() {
                     fill="transparent"
                     stroke="#3b82f6"
                     strokeWidth="16"
-                    strokeDasharray="78.3 314.2"
-                    strokeDashoffset="-58.4"
+                    strokeDasharray={`${segmentsData.potential.stroke} ${segmentsData.circumference}`}
+                    strokeDashoffset={`-${segmentsData.vip.stroke}`}
                   />
-                  {/* Mới (Green) - 23.6% */}
+                  {/* Mới (Green) */}
                   <circle
                     cx="75"
                     cy="75"
@@ -726,10 +776,10 @@ export function CustomersPage() {
                     fill="transparent"
                     stroke="#10b981"
                     strokeWidth="16"
-                    strokeDasharray="72.6 314.2"
-                    strokeDashoffset="-138.2"
+                    strokeDasharray={`${segmentsData.brandNew.stroke} ${segmentsData.circumference}`}
+                    strokeDashoffset={`-${segmentsData.vip.stroke + segmentsData.potential.stroke}`}
                   />
-                  {/* Ngủ quên (Red) - 14.8% */}
+                  {/* Ngủ quên (Red) */}
                   <circle
                     cx="75"
                     cy="75"
@@ -737,19 +787,8 @@ export function CustomersPage() {
                     fill="transparent"
                     stroke="#ef4444"
                     strokeWidth="16"
-                    strokeDasharray="45.0 314.2"
-                    strokeDashoffset="-212.4"
-                  />
-                  {/* Khác (Gray) - 17.6% */}
-                  <circle
-                    cx="75"
-                    cy="75"
-                    r="50"
-                    fill="transparent"
-                    stroke="#64748b"
-                    strokeWidth="16"
-                    strokeDasharray="53.8 314.2"
-                    strokeDashoffset="-258.9"
+                    strokeDasharray={`${segmentsData.sleeping.stroke} ${segmentsData.circumference}`}
+                    strokeDashoffset={`-${segmentsData.vip.stroke + segmentsData.potential.stroke + segmentsData.brandNew.stroke}`}
                   />
                 </svg>
 
@@ -765,10 +804,10 @@ export function CustomersPage() {
                   }}
                 >
                   <span style={{ fontSize: "20px", fontWeight: 700, color: "#fff", fontFamily: "var(--adm-mono)", letterSpacing: "-0.5px" }}>
-                    12,648
+                    {customers.length}
                   </span>
                   <span style={{ fontSize: "11px", color: "var(--adm-text-muted)", marginTop: "2px", fontWeight: 550, whiteSpace: "nowrap" }}>
-                    Tổng khách hàng
+                    Tổng hiển thị
                   </span>
                 </div>
               </div>
@@ -783,7 +822,7 @@ export function CustomersPage() {
                       <span style={{ color: "var(--adm-text-dim)", fontWeight: 500 }}>VIP</span>
                     </div>
                     <span style={{ color: "#fff", fontWeight: 550, fontFamily: "var(--adm-mono)", fontSize: "12.5px" }}>
-                      2,356 (18.6%)
+                      {segmentsData.vip.count} ({segmentsData.vip.pct}%)
                     </span>
                   </div>
                   {/* Tiềm năng row */}
@@ -793,7 +832,7 @@ export function CustomersPage() {
                       <span style={{ color: "var(--adm-text-dim)", fontWeight: 500 }}>Tiềm năng</span>
                     </div>
                     <span style={{ color: "#fff", fontWeight: 550, fontFamily: "var(--adm-mono)", fontSize: "12.5px" }}>
-                      3,214 (25.4%)
+                      {segmentsData.potential.count} ({segmentsData.potential.pct}%)
                     </span>
                   </div>
                   {/* Mới row */}
@@ -803,7 +842,7 @@ export function CustomersPage() {
                       <span style={{ color: "var(--adm-text-dim)", fontWeight: 500 }}>Mới</span>
                     </div>
                     <span style={{ color: "#fff", fontWeight: 550, fontFamily: "var(--adm-mono)", fontSize: "12.5px" }}>
-                      2,987 (23.6%)
+                      {segmentsData.brandNew.count} ({segmentsData.brandNew.pct}%)
                     </span>
                   </div>
                   {/* Ngủ quên row */}
@@ -813,29 +852,15 @@ export function CustomersPage() {
                       <span style={{ color: "var(--adm-text-dim)", fontWeight: 500 }}>Ngủ quên</span>
                     </div>
                     <span style={{ color: "#fff", fontWeight: 550, fontFamily: "var(--adm-mono)", fontSize: "12.5px" }}>
-                      1,876 (14.8%)
-                    </span>
-                  </div>
-                  {/* Khác row */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#64748b", boxShadow: "0 0 8px rgba(100, 116, 139, 0.4)" }} />
-                      <span style={{ color: "var(--adm-text-dim)", fontWeight: 500 }}>Khác</span>
-                    </div>
-                    <span style={{ color: "#fff", fontWeight: 550, fontFamily: "var(--adm-mono)", fontSize: "12.5px" }}>
-                      2,215 (17.6%)
+                      {segmentsData.sleeping.count} ({segmentsData.sleeping.pct}%)
                     </span>
                   </div>
                 </div>
 
                 <div style={{ paddingTop: "8px", textAlign: "left" }}>
-                  <a
-                    href="#details"
-                    style={{ fontSize: "13px", color: "#3b82f6", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}
-                  >
-                    Xem chi tiết
-                    <span style={{ fontSize: "12px", fontWeight: "bold" }}>&gt;</span>
-                  </a>
+                  <span style={{ fontSize: "13px", color: "var(--adm-text-muted)", fontWeight: 500 }}>
+                    Tính trên trang hiện tại
+                  </span>
                 </div>
               </div>
             </div>
@@ -844,168 +869,68 @@ export function CustomersPage() {
           {/* Widget 2: Khách hàng nổi bật */}
           <div className="admin-card" style={{ padding: "20px" }}>
             <h2 className="admin-card-title" style={{ fontSize: "15px", fontWeight: 600, marginBottom: "16px" }}>
-              Khách hàng nổi bật
+              Khách hàng nổi bật (Trang này)
             </h2>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Top customer 1 */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, #a855f7, #7e22ce)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12.5px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    A
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px" }}>
-                        Nguyễn Minh Anh
-                      </p>
-                      <span
-                        style={{
-                          background: "rgba(168, 85, 247, 0.12)",
-                          color: "#c084fc",
-                          borderRadius: "4px",
-                          padding: "1px 4px",
-                          fontSize: "9px",
-                          fontWeight: 700,
-                          border: "1px solid rgba(168, 85, 247, 0.2)",
-                        }}
-                      >
-                        VIP
-                      </span>
+              {topCustomers.map((cust, idx) => (
+                <div key={cust.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        background: cust.avatarColor,
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12.5px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {cust.fullName.charAt(0).toUpperCase()}
                     </div>
-                    <p className="admin-table-muted" style={{ margin: "2px 0 0", fontSize: "11px" }}>
-                      12 đơn hàng
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "120px" }}>
+                          {cust.fullName}
+                        </p>
+                        <span
+                          style={{
+                            background: cust.segment === "VIP" ? "rgba(168, 85, 247, 0.12)" : cust.segment === "Tiềm năng" ? "rgba(59, 130, 246, 0.12)" : "rgba(16, 185, 129, 0.12)",
+                            color: cust.segment === "VIP" ? "#c084fc" : cust.segment === "Tiềm năng" ? "#60a5fa" : "#34d399",
+                            borderRadius: "4px",
+                            padding: "1px 4px",
+                            fontSize: "9px",
+                            fontWeight: 700,
+                            border: cust.segment === "VIP" ? "1px solid rgba(168, 85, 247, 0.2)" : cust.segment === "Tiềm năng" ? "1px solid rgba(59, 130, 246, 0.2)" : "1px solid rgba(16, 185, 129, 0.2)",
+                          }}
+                        >
+                          {cust.segment}
+                        </span>
+                      </div>
+                      <p className="admin-table-muted" style={{ margin: "2px 0 0", fontSize: "11px" }}>
+                        {cust.totalOrders} đơn hàng
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px", fontFamily: "var(--adm-mono)" }}>
+                      {cust.totalSpent.toLocaleString("vi-VN")} đ
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#10b981", fontWeight: 550 }}>
+                      ↑ {10 - idx * 2}%
                     </p>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px", fontFamily: "var(--adm-mono)" }}>
-                    18,750,000 đ
-                  </p>
-                  <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#10b981", fontWeight: 550 }}>
-                    ↑ 14.2%
-                  </p>
-                </div>
-              </div>
-
-              {/* Top customer 2 */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12.5px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    B
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px" }}>
-                        Trần Quốc Bảo
-                      </p>
-                      <span
-                        style={{
-                          background: "rgba(168, 85, 247, 0.12)",
-                          color: "#c084fc",
-                          borderRadius: "4px",
-                          padding: "1px 4px",
-                          fontSize: "9px",
-                          fontWeight: 700,
-                          border: "1px solid rgba(168, 85, 247, 0.2)",
-                        }}
-                      >
-                        VIP
-                      </span>
-                    </div>
-                    <p className="admin-table-muted" style={{ margin: "2px 0 0", fontSize: "11px" }}>
-                      8 đơn hàng
-                    </p>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px", fontFamily: "var(--adm-mono)" }}>
-                    12,980,000 đ
-                  </p>
-                  <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#10b981", fontWeight: 550 }}>
-                    ↑ 9.8%
-                  </p>
-                </div>
-              </div>
-
-              {/* Top customer 3 */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, #06b6d4, #0891b2)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12.5px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    M
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px" }}>
-                        Lê Thị Thanh Mai
-                      </p>
-                      <span
-                        style={{
-                          background: "rgba(59, 130, 246, 0.12)",
-                          color: "#60a5fa",
-                          borderRadius: "4px",
-                          padding: "1px 4px",
-                          fontSize: "9px",
-                          fontWeight: 700,
-                          border: "1px solid rgba(59, 130, 246, 0.2)",
-                        }}
-                      >
-                        Tiềm năng
-                      </span>
-                    </div>
-                    <p className="admin-table-muted" style={{ margin: "2px 0 0", fontSize: "11px" }}>
-                      5 đơn hàng
-                    </p>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13px", fontFamily: "var(--adm-mono)" }}>
-                    6,250,000 đ
-                  </p>
-                  <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#10b981", fontWeight: 550 }}>
-                    ↑ 6.1%
-                  </p>
-                </div>
-              </div>
+              ))}
+              {topCustomers.length === 0 && (
+                <p style={{ fontSize: "12px", color: "var(--adm-text-muted)", margin: 0 }}>
+                  Chưa có dữ liệu nổi bật
+                </p>
+              )}
             </div>
           </div>
 

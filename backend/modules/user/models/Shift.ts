@@ -37,6 +37,7 @@ const shiftSchema = new Schema<IShift>(
 shiftSchema.index({ date: 1 });
 shiftSchema.index({ assignedStaff: 1 });
 shiftSchema.index({ isCancelled: 1 });
+shiftSchema.index({ isCancelled: 1, date: 1 });
 
 const Shift = mongoose.model<IShift>('Shift', shiftSchema);
 export default Shift;

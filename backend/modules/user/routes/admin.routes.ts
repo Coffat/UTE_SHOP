@@ -9,6 +9,7 @@ import {
 import {
   validateCustomerListQuery,
   validateUpdateCustomerStatus,
+  validateCreateCustomer,
 } from '../middlewares/customer.validation.js';
 import {
   validateCreateShift,
@@ -23,6 +24,7 @@ import {
   deleteStaff,
   listCustomers,
   updateCustomerStatus,
+  createCustomer,
   listShifts,
   createShift,
   updateShift,
@@ -43,6 +45,7 @@ router.delete('/staff/:id', validateStaffId, deleteStaff);
 
 // ─── Customer Management Routes ──────────────────────────────────────────────
 router.get('/customers', validateCustomerListQuery, listCustomers);
+router.post('/customers', validateCreateCustomer, createCustomer);
 router.patch('/customers/:id/status', validateUpdateCustomerStatus, updateCustomerStatus);
 
 // ─── Shift Management Routes ─────────────────────────────────────────────────
