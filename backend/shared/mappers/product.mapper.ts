@@ -59,3 +59,107 @@ export const mapProductToAdminListItem = (
     stockStatus: null,
   };
 };
+
+export interface StaffProductListItemDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  sku: string;
+  price: number;
+  stock: number;
+  status: string;
+  soldCount: number;
+  mainImageUrl: string;
+  primaryVariantId: string | null;
+  stockStatus: string | null;
+}
+
+export interface StaffProductSummaryDto {
+  total: number;
+  active: number;
+  lowStock: number;
+  categories: number;
+  topCategories: Array<{
+    categoryId: string;
+    categoryName: string;
+    productCount: number;
+    percentage: number;
+  }>;
+  lowStockAlerts: Array<{
+    id: string;
+    name: string;
+    description: string;
+    stock: number;
+    mainImageUrl: string;
+  }>;
+}
+
+export interface AdminProductSummary {
+  total: number;
+  active: number;
+  lowStock: number;
+  discontinued: number;
+  categories: number;
+  topCategories: Array<{
+    categoryId: string;
+    categoryName: string;
+    productCount: number;
+    percentage: number;
+  }>;
+  lowStockAlerts: Array<{
+    id: string;
+    name: string;
+    description: string;
+    stock: number;
+    mainImageUrl: string;
+  }>;
+}
+
+export const mapAdminProductToStaffListItem = (
+  item: AdminProductListItemDto
+): StaffProductListItemDto => {
+  return {
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    description: item.description,
+    categoryId: item.categoryId,
+    categoryName: item.categoryName,
+    sku: item.sku,
+    price: item.price,
+    stock: item.stock,
+    status: item.status,
+    soldCount: item.soldCount,
+    mainImageUrl: item.mainImageUrl,
+    primaryVariantId: item.primaryVariantId,
+    stockStatus: item.stockStatus,
+  };
+};
+
+export const mapAdminSummaryToStaffSummary = (
+  summary: AdminProductSummary
+): StaffProductSummaryDto => {
+  return {
+    total: summary.total,
+    active: summary.active,
+    lowStock: summary.lowStock,
+    categories: summary.categories,
+    topCategories: summary.topCategories.map((c) => ({
+      categoryId: c.categoryId,
+      categoryName: c.categoryName,
+      productCount: c.productCount,
+      percentage: c.percentage,
+    })),
+    lowStockAlerts: summary.lowStockAlerts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      stock: a.stock,
+      mainImageUrl: a.mainImageUrl,
+    })),
+  };
+};
+

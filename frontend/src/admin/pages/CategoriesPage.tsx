@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAdminAuth } from "../context/AdminAuthContext";
 import { useConfirm, CrudModal, FormField, FormInput } from "../components/AdminUI";
 import { AdminPagination } from "../components/AdminPagination";
 import { StatCardWidget } from "../components/StatCard";
@@ -11,9 +12,17 @@ import {
   slugifyCategoryName,
   type AdminCategoryRow,
 } from "../services/adminCategories.api";
+import {
+  fetchStaffCategories,
+  createStaffCategory,
+  updateStaffCategory,
+  toggleStaffCategory,
+} from "../services/staffCategories.api";
 import { uploadAdminImage, resolveAssetUrl } from "../services/adminUpload.api";
 
 export function CategoriesPage() {
+  const { role } = useAdminAuth();
+  const isAdmin = role === "ADMIN";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [categories, setCategories] = useState<AdminCategoryRow[]>([]);
@@ -47,7 +56,7 @@ export function CategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchAdminCategories({
+      const query = {
         page: currentPage,
         limit: 10,
         search: search.trim() || undefined,
@@ -55,7 +64,10 @@ export function CategoriesPage() {
           statusFilter === "all"
             ? undefined
             : statusFilter === "active",
-      });
+      };
+      const result = isAdmin
+        ? await fetchAdminCategories(query)
+        : await fetchStaffCategories(query);
       setCategories(result.items);
       setMeta(result.meta);
     } catch (err) {
@@ -179,9 +191,17 @@ export function CategoriesPage() {
         imageUrl: formImageUrl,
       };
       if (editCategory) {
-        await updateAdminCategory(editCategory.id, payload);
+        if (isAdmin) {
+          await updateAdminCategory(editCategory.id, payload);
+        } else {
+          await updateStaffCategory(editCategory.id, payload);
+        }
       } else {
-        await createAdminCategory(payload);
+        if (isAdmin) {
+          await createAdminCategory(payload);
+        } else {
+          await createStaffCategory(payload);
+        }
       }
       setSlideoverOpen(false);
       setEditCategory(null);
@@ -196,7 +216,11 @@ export function CategoriesPage() {
 
   async function handleToggle(category: AdminCategoryRow) {
     try {
-      await toggleAdminCategory(category.id, !category.isActive);
+      if (isAdmin) {
+        await toggleAdminCategory(category.id, !category.isActive);
+      } else {
+        await toggleStaffCategory(category.id, !category.isActive);
+      }
       await loadCategories();
     } catch (err) {
       console.error("Failed to toggle category:", err);
@@ -205,6 +229,7 @@ export function CategoriesPage() {
   }
 
   async function handleDelete(category: AdminCategoryRow) {
+    if (!isAdmin) return;
     if (category.productCount > 0) return;
     const ok = await confirm({
       title: "Xóa danh mục",
@@ -368,25 +393,27 @@ export function CategoriesPage() {
                         <button className="admin-btn admin-btn-ghost" onClick={() => openEdit(category)}>
                           Sửa
                         </button>
-                        <button className="admin-btn admin-btn-ghost" onClick={() => handleToggle(category)}>
+                         <button className="admin-btn admin-btn-ghost" onClick={() => handleToggle(category)}>
                           {category.isActive ? "Ẩn" : "Hiện"}
                         </button>
-                        <button
-                          className="admin-btn admin-btn-ghost"
-                          disabled={category.productCount > 0}
-                          title={
-                            category.productCount > 0
-                              ? "Không thể xóa danh mục đang có sản phẩm"
-                              : "Xóa danh mục"
-                          }
-                          onClick={() => handleDelete(category)}
-                          style={{
-                            color: category.productCount > 0 ? "#64748b" : "#f87171",
-                            cursor: category.productCount > 0 ? "not-allowed" : "pointer",
-                          }}
-                        >
-                          Xóa
-                        </button>
+                        {isAdmin && (
+                          <button
+                            className="admin-btn admin-btn-ghost"
+                            disabled={category.productCount > 0}
+                            title={
+                              category.productCount > 0
+                                ? "Không thể xóa danh mục đang có sản phẩm"
+                                : "Xóa danh mục"
+                            }
+                            onClick={() => handleDelete(category)}
+                            style={{
+                              color: category.productCount > 0 ? "#64748b" : "#f87171",
+                              cursor: category.productCount > 0 ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            Xóa
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -105,7 +105,7 @@ export class OrderRepository {
     dateFrom,
     dateTo,
   }: Omit<GetOrdersParams, 'page' | 'limit' | 'includeSummary' | 'paymentStatus'>): Record<string, unknown> {
-    const filter: Record<string, unknown> = {};
+    const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
     if (customerId) filter.customer = customerId;
 
     if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {

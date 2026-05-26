@@ -59,15 +59,28 @@ export interface ProductsListResult {
   };
 }
 
-export async function fetchProductSummary(): Promise<ProductSummary> {
-  const response = await api.get("/api/v1/admin/products/summary");
+export function getProductManagementBasePath(role: string): string {
+  if (role === "ADMIN") {
+    return "/api/v1/admin";
+  }
+  if (["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(role)) {
+    return "/api/v1/staff";
+  }
+  throw new Error(`Unauthorized role for product management: ${role}`);
+}
+
+export async function fetchProductManagementSummary(role: string): Promise<ProductSummary> {
+  const basePath = getProductManagementBasePath(role);
+  const response = await api.get(`${basePath}/products/summary`);
   return response.data.data as ProductSummary;
 }
 
-export async function fetchAdminProducts(
-  params: ProductsListParams = {}
+export async function fetchManagedProducts(
+  params: ProductsListParams = {},
+  role: string
 ): Promise<ProductsListResult> {
-  const response = await api.get("/api/v1/admin/products", { params });
+  const basePath = getProductManagementBasePath(role);
+  const response = await api.get(`${basePath}/products`, { params });
   // New endpoint: data is top-level array, meta is top-level object
   const items = response.data.data as BackendAdminProduct[];
   const rawMeta = response.data.meta as {

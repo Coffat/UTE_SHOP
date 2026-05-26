@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import { useAdminAuth } from "../context/AdminAuthContext";
 import {
   fetchAdminOrders,
   changeOrderStatus,
   type OrdersSummary,
 } from "../services/adminOrders.api";
+import {
+  fetchStaffOrders,
+  changeStaffOrderStatus,
+} from "../services/staffOrders.api";
 import {
   getNextBackendStatus,
   uiStatusToStatusGroup,
@@ -76,6 +81,8 @@ function IconCancelled() {
 }
 
 export function OrdersPage() {
+  const { role } = useAdminAuth();
+  const isAdmin = role === "ADMIN";
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff") ? "/staff" : "/admin";
   const [search, setSearch] = useState("");
@@ -93,18 +100,29 @@ export function OrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchAdminOrders({
+      const params = {
         page: currentPage,
         limit: 10,
         search: search.trim() || undefined,
         statusGroup:
           statusFilter !== "all" ? uiStatusToStatusGroup(statusFilter) : undefined,
-        includeSummary: true,
-      });
-      setOrders(result.items);
-      setTotalPages(result.meta.pages);
-      setTotalCount(result.meta.total);
-      if (result.meta.summary) setSummary(result.meta.summary);
+      };
+      if (isAdmin) {
+        const result = await fetchAdminOrders({
+          ...params,
+          includeSummary: true,
+        });
+        setOrders(result.items);
+        setTotalPages(result.meta.pages);
+        setTotalCount(result.meta.total);
+        if (result.meta.summary) setSummary(result.meta.summary);
+      } else {
+        const result = await fetchStaffOrders(params);
+        setOrders(result.items);
+        setTotalPages(result.meta.pages);
+        setTotalCount(result.meta.total);
+        setSummary(null);
+      }
     } catch (err) {
       console.error("Failed to fetch orders:", err);
       setError("Không thể tải danh sách đơn hàng. Vui lòng thử lại.");
@@ -113,7 +131,7 @@ export function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, search, statusFilter, isAdmin]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -127,7 +145,11 @@ export function OrdersPage() {
     if (!next) return;
     setStatusUpdatingId(order.id);
     try {
-      await changeOrderStatus(order.id, next);
+      if (isAdmin) {
+        await changeOrderStatus(order.id, next);
+      } else {
+        await changeStaffOrderStatus(order.id, next);
+      }
       await loadOrders();
     } catch (err) {
       console.error("Failed to update order status:", err);

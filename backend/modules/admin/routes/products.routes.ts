@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-const ADMIN_READ_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'] as const;
+const ADMIN_READ_ROLES = ['ADMIN'] as const;
 
 // GET /admin/products/summary — must be before /:id
 router.get(

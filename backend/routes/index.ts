@@ -46,6 +46,13 @@ import notificationRoutes from '../modules/notification/routes/notification.rout
 import blogRoutes from '../modules/system/routes/blog.routes.js';
 import supportRoutes from '../modules/system/routes/support.routes.js';
 import adminBlogRoutes from '../modules/system/routes/blog.routes.js';
+import staffProductRoutes from '../modules/staff/routes/products.routes.js';
+import staffCategoryRoutes from '../modules/staff/routes/categories.routes.js';
+import staffOrderRoutes from '../modules/staff/routes/orders.routes.js';
+import staffBlogRoutes from '../modules/staff/routes/blogs.routes.js';
+import staffReviewRoutes from '../modules/staff/routes/reviews.routes.js';
+import adminOrderRoutes from '../modules/admin/routes/orders.routes.js';
+import adminReviewRoutes from '../modules/admin/routes/reviews.routes.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -54,17 +61,30 @@ const router = express.Router();
 // Auth & Users
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
-router.use('/admin', adminRoutes);
+
+// Specific admin routes first
 router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/reports', reportsRoutes);
 router.use('/admin/settings', settingsRoutes);
 router.use('/admin/upload', uploadRoutes);
-// New namespaced admin routes (Phase 1B)
 router.use('/admin/products', adminProductRoutes);
 router.use('/admin/categories', adminCategoryRoutes);
-// Admin namespace aliases for inventory and vouchers (Phase 3)
+router.use('/admin/orders', adminOrderRoutes);
+router.use('/admin/reviews', adminReviewRoutes);
 router.use('/admin/stock', stockRoutes);
 router.use('/admin/vouchers', voucherRoutes);
+router.use('/admin/blogs', adminBlogRoutes); // Admin namespace alias (Phase 5)
+
+// Specific staff routes
+router.use('/staff/products', staffProductRoutes);
+router.use('/staff/categories', staffCategoryRoutes);
+router.use('/staff/orders', staffOrderRoutes);
+router.use('/staff/blogs', staffBlogRoutes);
+router.use('/staff/reviews', staffReviewRoutes);
+
+// General catch-all admin route last
+router.use('/admin', adminRoutes);
+
 
 // Catalog
 router.use('/storefront', storefrontRoutes);

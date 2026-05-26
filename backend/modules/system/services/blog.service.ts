@@ -112,3 +112,7 @@ export const deleteBlogPost = async (id: string): Promise<boolean> => {
   const result = await BlogPost.findByIdAndDelete(id);
   return result !== null;
 };
+
+export const getBlogPostById = async (id: string): Promise<IBlogPost | null> => {
+  return BlogPost.findById(id).populate('author', 'fullName email role');
+};

@@ -556,3 +556,122 @@ export const getOrders = async ({
 
 export const getOrderById = (orderId: string): Promise<IOrder | null> =>
   orderRepository.findById(orderId);
+
+const decimalToNumber = (value: any): number => {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return parseFloat(value) || 0;
+  if (typeof value === 'object' && value !== null && '$numberDecimal' in value) {
+    return parseFloat((value as { $numberDecimal: string }).$numberDecimal) || 0;
+  }
+  return parseFloat(String(value)) || 0;
+};
+
+export const canTransitionOrderStatus = (role: string, current: OrderStatus, next: OrderStatus): boolean => {
+  if (role === 'ADMIN') return true;
+  if (role === 'SALES') {
+    if (current === OrderStatus.PENDING && (next === OrderStatus.CONFIRMED || next === OrderStatus.CANCELLED)) return true;
+    if (current === OrderStatus.CONFIRMED && next === OrderStatus.CANCELLED) return true;
+    return false;
+  }
+  if (role === 'STORE_STAFF') {
+    if (current === OrderStatus.CONFIRMED && next === OrderStatus.READY) return true;
+    if (current === OrderStatus.READY && next === OrderStatus.DELIVERING) return true;
+    if (current === OrderStatus.DELIVERING && next === OrderStatus.COMPLETED) return true;
+    return false;
+  }
+  return false;
+};
+
+export const toStaffOrderDto = (order: any, role: string) => {
+  const orderObj = typeof order.toObject === 'function' ? order.toObject() : order;
+  const id = String(orderObj._id || orderObj.id);
+
+  const statusHistory = (orderObj.statusHistory || []).map((h: any) => ({
+    status: h.status,
+    note: h.note,
+    timestamp: h.timestamp,
+    changedBy: h.changedBy ? {
+      id: String(h.changedBy._id || h.changedBy),
+      fullName: h.changedBy.fullName || undefined
+    } : null
+  }));
+
+  const customer = orderObj.customer ? {
+    id: String(orderObj.customer._id || orderObj.customer),
+    email: orderObj.customer.email,
+    fullName: orderObj.customer.fullName,
+  } : null;
+
+  if (role === 'STORE_STAFF') {
+    return {
+      id,
+      orderCode: orderObj.orderCode,
+      status: orderObj.status,
+      orderType: orderObj.orderType,
+      customer,
+      recipient: {
+        fullName: orderObj.recipient?.fullName,
+        phone: orderObj.recipient?.phone,
+        deliveryNote: orderObj.recipient?.deliveryNote,
+      },
+      deliveryAddress: orderObj.deliveryAddress,
+      items: (orderObj.items || []).map((item: any) => ({
+        productVariant: item.productVariant ? {
+          id: String(item.productVariant._id || item.productVariant),
+          sku: item.productVariant.sku,
+          sizeName: item.productVariant.sizeName,
+        } : null,
+        quantity: item.quantity,
+        snapshotName: item.snapshotName,
+      })),
+      statusHistory,
+      createdAt: orderObj.createdAt,
+      updatedAt: orderObj.updatedAt,
+    };
+  }
+
+  const items = (orderObj.items || []).map((item: any) => ({
+    productVariant: item.productVariant ? {
+      id: String(item.productVariant._id || item.productVariant),
+      sku: item.productVariant.sku,
+      sizeName: item.productVariant.sizeName,
+      price: decimalToNumber(item.productVariant.price),
+    } : null,
+    quantity: item.quantity,
+    snapshotName: item.snapshotName,
+    unitPrice: decimalToNumber(item.unitPrice),
+    subtotal: decimalToNumber(item.subtotal),
+  }));
+
+  return {
+    id,
+    orderCode: orderObj.orderCode,
+    status: orderObj.status,
+    orderType: orderObj.orderType,
+    customer,
+    recipient: {
+      fullName: orderObj.recipient?.fullName,
+      phone: orderObj.recipient?.phone,
+      deliveryNote: orderObj.recipient?.deliveryNote,
+    },
+    deliveryAddress: orderObj.deliveryAddress,
+    items,
+    statusHistory,
+    subtotal: decimalToNumber(orderObj.subtotal),
+    shippingFee: decimalToNumber(orderObj.shippingFee),
+    discountAmount: decimalToNumber(orderObj.discountAmount),
+    totalAmount: decimalToNumber(orderObj.totalAmount),
+    note: orderObj.note,
+    createdAt: orderObj.createdAt,
+    updatedAt: orderObj.updatedAt,
+  };
+};
+
+export const softDeleteOrder = async (orderId: string): Promise<IOrder | null> => {
+  return Order.findByIdAndUpdate(
+    orderId,
+    { isDeleted: true, deletedAt: new Date() },
+    { new: true }
+  );
+};

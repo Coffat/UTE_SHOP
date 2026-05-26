@@ -4,8 +4,8 @@ import { useAdminAuth } from "../context/AdminAuthContext";
 import { useConfirm, CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
 import {
-  fetchAdminProducts,
-  fetchProductSummary,
+  fetchManagedProducts,
+  fetchProductManagementSummary,
   fetchCategories,
   createAdminProduct,
   updateAdminProduct,
@@ -14,7 +14,7 @@ import {
   buildUpdatePayloadFromForm,
   type ProductSummary,
   type CategoryOption,
-} from "../services/adminProducts.api";
+} from "../services/productManagement.api";
 import type { AdminProductRow } from "../services/mappers/product.mapper";
 
 function ProductThumbnail({
@@ -149,7 +149,7 @@ function getProductStatusLabel(stock: number, status: string) {
 
 export function ProductsPage() {
   const navigate = useNavigate();
-  const { isAdmin } = useAdminAuth();
+  const { role, isAdmin } = useAdminAuth();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
@@ -169,17 +169,20 @@ export function ProductsPage() {
     setError(null);
     try {
       const [listResult, summaryResult] = await Promise.all([
-        fetchAdminProducts({
-          page: currentPage,
-          limit: 10,
-          search: search.trim() || undefined,
-          categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
-          stockFilter:
-            stockFilter === "all"
-              ? undefined
-              : (stockFilter as "in_stock" | "low_stock" | "out_of_stock"),
-        }),
-        fetchProductSummary(),
+        fetchManagedProducts(
+          {
+            page: currentPage,
+            limit: 10,
+            search: search.trim() || undefined,
+            categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+            stockFilter:
+              stockFilter === "all"
+                ? undefined
+                : (stockFilter as "in_stock" | "low_stock" | "out_of_stock"),
+          },
+          role
+        ),
+        fetchProductManagementSummary(role),
       ]);
       setProducts(listResult.items);
       setSummary({
@@ -195,7 +198,7 @@ export function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search, categoryFilter, stockFilter]);
+  }, [currentPage, search, categoryFilter, stockFilter, role]);
 
   useEffect(() => {
     fetchCategories()
@@ -831,13 +834,15 @@ export function ProductsPage() {
                 textAlign: "center",
               }}
             >
-              <button
-                type="button"
-                style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}
-                onClick={() => navigate("/admin/categories")}
-              >
-                Xem tất cả danh mục &gt;
-              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}
+                  onClick={() => navigate("/admin/categories")}
+                >
+                  Xem tất cả danh mục &gt;
+                </button>
+              )}
             </div>
           </div>
 

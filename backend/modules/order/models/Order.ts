@@ -39,6 +39,8 @@ export interface IOrder extends Document {
   voucher: Types.ObjectId | null;
   handledBy: Types.ObjectId | null;
   statusHistory: IOrderStatusHistory[];
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +83,8 @@ const orderSchema = new Schema<IOrder>(
     voucher: { type: Schema.Types.ObjectId, ref: 'Voucher', default: null },
     handledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     statusHistory: [orderStatusHistorySchema],
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

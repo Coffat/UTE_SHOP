@@ -9,7 +9,7 @@ import { BLOG_STAFF_ROLES } from '../constants/blogRoles.js';
 const router = express.Router();
 
 // --- Quy tắc Validation ---
-const createBlogValidators = [
+export const createBlogValidators = [
   body('title').notEmpty().withMessage('Tiêu đề không được trống.').trim(),
   body('slug').notEmpty().withMessage('Slug không được trống.').isSlug().withMessage('Slug không hợp lệ (ví dụ: y-nghia-hoa-hong).').trim(),
   body('content').notEmpty().withMessage('Nội dung không được trống.'),
@@ -21,7 +21,7 @@ const createBlogValidators = [
   handleValidationErrors,
 ];
 
-const updateBlogValidators = [
+export const updateBlogValidators = [
   param('id').isMongoId().withMessage('ID bài viết không hợp lệ.'),
   body('title').optional().notEmpty().withMessage('Tiêu đề không được trống.').trim(),
   body('slug').optional().notEmpty().withMessage('Slug không được trống.').isSlug().withMessage('Slug không hợp lệ.').trim(),
