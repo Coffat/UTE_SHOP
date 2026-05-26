@@ -579,6 +579,29 @@
     .endpoint-summary-table .path-cell { font-family: var(--font-mono); font-size: 12px; }
     .compact-card .endpoint-body { grid-template-columns: 1fr; min-height: auto; }
     .compact-card .endpoint-details { border-right: none; }
+    .endpoint-summary-table tr.deprecated-row td {
+      opacity: 0.65;
+    }
+    .endpoint-summary-table tr.deprecated-row .path-cell::after {
+      content: ' (deprecated)';
+      font-size: 10px;
+      color: hsl(var(--color-warning));
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    .endpoint-summary-table tr.recommended-row .path-cell {
+      color: hsl(var(--color-success));
+    }
+    .subsection-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: hsl(var(--text-muted));
+      margin: 20px 0 10px;
+    }
+    .subsection-label.recommended { color: hsl(142 70% 55%); }
+    .subsection-label.deprecated { color: hsl(var(--color-warning)); }
 </style>
 </head>
 <body>
@@ -631,7 +654,8 @@
 <ul class="menu-list">
 <li class="menu-item"><a href="#cat-list"><span>Danh sách (public)</span><span class="method-tag get">GET</span></a></li>
 <li class="menu-item"><a href="#cat-detail"><span>Chi tiết</span><span class="method-tag get">GET</span></a></li>
-<li class="menu-item"><a href="#admin-categories-table"><span>Admin CRUD</span></a></li>
+<li class="menu-item"><a href="#admin-categories-recommended"><span>Admin danh mục</span></a></li>
+<li class="menu-item"><a href="#admin-categories-deprecated"><span>Legacy categories</span></a></li>
 </ul>
 <div class="menu-section-title">Users</div>
 <ul class="menu-list">
@@ -672,6 +696,8 @@
 </ul>
 <div class="menu-section-title">Admin Portal</div>
 <ul class="menu-list">
+<li class="menu-item"><a href="#admin-products-recommended"><span>Sản phẩm (mới)</span></a></li>
+<li class="menu-item"><a href="#admin-categories-recommended"><span>Danh mục (mới)</span></a></li>
 <li class="menu-item"><a href="#admin-staff-table"><span>Nhân viên</span></a></li>
 <li class="menu-item"><a href="#admin-customers-table"><span>Khách hàng</span></a></li>
 <li class="menu-item"><a href="#admin-shifts-table"><span>Ca làm</span></a></li>
@@ -679,14 +705,17 @@
 <li class="menu-item"><a href="#admin-reports"><span>Báo cáo</span><span class="method-tag get">GET</span></a></li>
 <li class="menu-item"><a href="#admin-settings"><span>Cài đặt</span><span class="method-tag get">GET</span></a></li>
 <li class="menu-item"><a href="#admin-upload"><span>Upload ảnh</span><span class="method-tag post">POST</span></a></li>
+<li class="menu-item"><a href="#admin-stock-alias"><span>Kho (alias)</span></a></li>
+<li class="menu-item"><a href="#admin-vouchers-alias"><span>Voucher (alias)</span></a></li>
 </ul>
-<div class="menu-section-title">Products (Admin)</div>
+<div class="menu-section-title">Products (Legacy)</div>
 <ul class="menu-list">
-<li class="menu-item"><a href="#admin-products-table"><span>Quản lý SP</span></a></li>
+<li class="menu-item"><a href="#admin-products-deprecated"><span>Legacy /products/admin</span></a></li>
 </ul>
 <div class="menu-section-title">Blogs</div>
 <ul class="menu-list">
 <li class="menu-item"><a href="#blogs-table"><span>Blog</span></a></li>
+<li class="menu-item"><a href="#admin-blogs-alias"><span>Admin alias</span></a></li>
 </ul>
 <div class="menu-section-title">Support</div>
 <ul class="menu-list">
@@ -711,12 +740,14 @@
 <li><strong>Base URL:</strong> <code>http://localhost:3000</code> — prefix API: <code>/api/v1</code></li>
 <li><strong>Health check:</strong> <code>GET /</code> → <code>{ "status": "ok", "message": "UTESHOP API is running 🚀" }</code></li>
 <li><strong>Static files:</strong> <code>GET /uploads/{filename}</code> — ảnh đã upload</li>
-<li><strong>Response envelope:</strong> <code>{ success, message, data?, errors? }</code></li>
+<li><strong>Response envelope (chuẩn):</strong> <code>{ success, message, data?, errors? }</code></li>
+<li><strong>Danh sách phân trang mới</strong> (<code>GET /admin/products</code>, <code>GET /admin/categories</code>): <code>{ success, message, data: Item[], meta: { page, limit, total, totalPages, ... } }</code> — <code>meta</code> ở top-level, không bọc trong <code>data</code>.</li>
 <li><strong>Xác thực:</strong> HttpOnly cookies <code>accessToken</code> (15 phút) + <code>refreshToken</code> (7 ngày). Client gọi <code>withCredentials: true</code> / <code>credentials: 'include'</code>.</li>
 <li><strong>Refresh:</strong> <code>POST /api/v1/auth/refresh</code> khi access token hết hạn.</li>
 <li><strong>Rate limits:</strong> API chung 200 req/phút; login 5/15 phút; forgot-password 3/15 phút.</li>
 <li><strong>Roles:</strong> CUSTOMER, ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</li>
-<li><strong>Mã lỗi thường gặp:</strong> 401 (chưa đăng nhập), 403 (không đủ quyền), 404 (không tìm thấy), 422 (validation), 429 (rate limit)</li>
+<li><strong>Mã lỗi:</strong> <strong>401</strong> — thiếu token / token invalid hoặc expired; <strong>403</strong> — đã đăng nhập nhưng không đủ quyền; <strong>404</strong> — không tìm thấy; <strong>422</strong> — lỗi validation (express-validator); <strong>429</strong> — rate limit</li>
+<li><strong>Namespace Admin:</strong> Ưu tiên <code>/api/v1/admin/products</code>, <code>/api/v1/admin/categories</code>, <code>/api/v1/admin/stock</code>, <code>/api/v1/admin/vouchers</code>, <code>/api/v1/admin/blogs</code>. Route cũ vẫn hoạt động (backward compat) nhưng đánh dấu deprecated.</li>
 </ul>
 </div>
       <h3 class="section-heading" id="section-auth">Authentication</h3>
@@ -1133,8 +1164,21 @@
 </div></div>
 </div></div>
       <h3 class="section-heading" id="section-categories-admin">Categories (Admin)</h3>
-      <table class="endpoint-summary-table" id="admin-categories-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
-<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/categories/admin/list</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách admin (page, limit, search, isActive)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/categories/admin</td><td>ADMIN</td><td>Tạo: name, slug?, description?, imageUrl?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>Cập nhật danh mục</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/categories/admin/:id/toggle</td><td>ADMIN</td><td>Body: { isActive: boolean }</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>Xóa danh mục</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/categories/</td><td>ADMIN</td><td>Legacy create</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/categories/:id</td><td>ADMIN</td><td>Legacy update</td></tr>
+      <p class="endpoint-description" style="margin-bottom:12px;">Ưu tiên <code>/api/v1/admin/categories</code>. Danh sách trả về <code>sendPaginated</code>: <code>data</code> là mảng, <code>meta</code> gồm <code>page</code>, <code>limit</code>, <code>total</code>, <code>totalPages</code>, <code>activeCount</code>, <code>inactiveCount</code>, <code>totalProducts</code>.</p>
+      <p class="subsection-label recommended" id="admin-categories-recommended">Khuyến nghị — /admin/categories</p>
+      <table class="endpoint-summary-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr class="recommended-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/categories</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách (query: page, limit, search, isActive) — paginated</td></tr>
+<tr class="recommended-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/categories</td><td>ADMIN</td><td>Tạo: name, slug?, description?, imageUrl?</td></tr>
+<tr class="recommended-row"><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/admin/categories/:id</td><td>ADMIN</td><td>Cập nhật một phần: name, slug, description, imageUrl, <strong>isActive</strong> (thay toggle riêng)</td></tr>
+<tr class="recommended-row"><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/categories/:id</td><td>ADMIN</td><td>Xóa danh mục</td></tr>
+</tbody></table>
+      <p class="subsection-label deprecated" id="admin-categories-deprecated">Legacy (deprecated)</p>
+      <table class="endpoint-summary-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr class="deprecated-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/categories/admin/list</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>→ dùng GET /admin/categories</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/categories/admin</td><td>ADMIN</td><td>→ dùng POST /admin/categories</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>→ dùng PATCH /admin/categories/:id</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/categories/admin/:id/toggle</td><td>ADMIN</td><td>→ dùng PATCH /admin/categories/:id { isActive }</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/categories/admin/:id</td><td>ADMIN</td><td>→ dùng DELETE /admin/categories/:id</td></tr>
 </tbody></table>
       <h3 class="section-heading" id="section-users">Users</h3>
       <div class="endpoint-card" id="user-get-profile">
@@ -1388,15 +1432,26 @@
       <h3 class="section-heading" id="section-stock">Inventory</h3>
       <table class="endpoint-summary-table" id="stock-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
 <tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/stock?warehouseId=</td><td>ADMIN, WAREHOUSE_STAFF</td><td>Mức tồn kho</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/stock/import</td><td>ADMIN, WAREHOUSE_STAFF</td><td>Nhập kho: warehouseId, quantity, variantId|materialId, reason?</td></tr>
+<tr class="recommended-row" id="admin-stock-alias"><td colspan="4" style="font-size:12px;color:hsl(var(--text-muted));padding-top:8px;"><strong>Alias admin:</strong> <code>/api/v1/admin/stock</code> — cùng handler với <code>/stock</code></td></tr>
 </tbody></table>
       <h3 class="section-heading" id="section-vouchers">Marketing (Vouchers)</h3>
       <table class="endpoint-summary-table" id="vouchers-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
 <tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/vouchers</td><td>ADMIN</td><td>Danh sách voucher</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/vouchers</td><td>ADMIN</td><td>Tạo: code, discountType, discountValue, validUntil, ...</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/vouchers/:id/toggle</td><td>ADMIN</td><td>Body: { isActive: boolean }</td></tr>
+<tr class="recommended-row" id="admin-vouchers-alias"><td colspan="4" style="font-size:12px;color:hsl(var(--text-muted));padding-top:8px;"><strong>Alias admin:</strong> <code>/api/v1/admin/vouchers</code> — cùng handler với <code>/vouchers</code></td></tr>
 </tbody></table>
       <h3 class="section-heading" id="section-admin">Admin Portal</h3>
+      <p class="subsection-label recommended" id="admin-products-recommended">Sản phẩm — /admin/products</p>
+      <table class="endpoint-summary-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr class="recommended-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/products/summary</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Thống kê sản phẩm</td></tr>
+<tr class="recommended-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/products</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách paginated (status, stockFilter, categoryId, search)</td></tr>
+<tr class="recommended-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/products</td><td>ADMIN</td><td>Tạo: name, categoryId, sku, price, stock, status?, mainImageUrl?</td></tr>
+<tr class="recommended-row"><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/admin/products/:id</td><td>ADMIN</td><td>Cập nhật một phần (name, price, status, stock, ...)</td></tr>
+<tr class="recommended-row"><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/products/:id</td><td>ADMIN</td><td>Ngừng kinh doanh (soft: status=DISCONTINUED)</td></tr>
+<tr class="recommended-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/products/:id/variants</td><td>ADMIN</td><td>Tạo biến thể: sku, price, sizeName</td></tr>
+</tbody></table>
       <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Staff</h4>
       <table class="endpoint-summary-table" id="admin-staff-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
-<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Danh sách nhân viên (query: page, limit, search, role)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Tạo nhân viên</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Cập nhật nhân viên</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Xóa nhân viên</td></tr>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Danh sách nhân viên (query: page, limit, search, role)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/staff</td><td>ADMIN</td><td>Tạo nhân viên (password bắt buộc — 422 nếu thiếu)</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Cập nhật một phần nhân viên</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/staff/:id</td><td>ADMIN</td><td>Xóa nhân viên</td></tr>
 </tbody></table>
       <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Customers</h4>
       <table class="endpoint-summary-table" id="admin-customers-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
@@ -1404,7 +1459,7 @@
 </tbody></table>
       <h4 style="margin-bottom:16px;color:hsl(var(--text-secondary));font-size:14px;">Shifts</h4>
       <table class="endpoint-summary-table" id="admin-shifts-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
-<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Danh sách ca làm</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Tạo ca</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Cập nhật ca</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Hủy ca</td></tr>
+<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Danh sách ca làm</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/admin/shifts</td><td>ADMIN</td><td>Tạo ca</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Cập nhật một phần ca làm</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/admin/shifts/:id</td><td>ADMIN</td><td>Hủy ca</td></tr>
 </tbody></table>
       <div class="endpoint-card compact-card" id="admin-dashboard">
 <div class="endpoint-header">
@@ -1452,7 +1507,7 @@
 <div class="endpoint-meta"><span class="meta-badge auth-required">AUTH</span> <span class="meta-badge role">ADMIN</span></div></div>
 <div class="endpoint-body">
 <div class="endpoint-details">
-<p class="endpoint-description">GET cài đặt cửa hàng. PUT cập nhật (storeName, supportEmail, phone, address, vnpayActive, codActive, momoActive, vat, currency, notifyEmail, webhookUrl, logoUrl, defaultShippingFee, freeShippingThreshold, ...). POST <code>/api/v1/admin/settings/rotate-api-key</code> — xoay API key (ADMIN).</p>
+<p class="endpoint-description"><strong>GET</strong> cài đặt cửa hàng. <strong>PATCH</strong> <code>/api/v1/admin/settings</code> — cập nhật một phần (storeName, supportEmail, phone, address, vnpayActive, codActive, momoActive, vat, currency, notifyEmail, webhookUrl, logoUrl, defaultShippingFee, freeShippingThreshold, ...). <strong>POST</strong> <code>/api/v1/admin/settings/rotate-api-key</code> — xoay API key (ADMIN).</p>
 
 </div>
 <div class="endpoint-code-preview">
@@ -1491,13 +1546,23 @@ api.post('/api/v1/admin/upload/image', fd, { withCredentials: true });" data-cur
 api.post('/api/v1/admin/upload/image', fd, { withCredentials: true });</pre>
 </div></div>
 </div></div>
-      <h3 class="section-heading" id="section-products-admin">Products (Admin)</h3>
-      <table class="endpoint-summary-table" id="admin-products-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
-<tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/summary</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Thống kê sản phẩm</td></tr><tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/list</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Danh sách admin (status, stockFilter, categoryId, search)</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/admin</td><td>ADMIN</td><td>Tạo SP: name, categoryId, sku, price, stock, status?, mainImageUrl?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/admin/:id</td><td>ADMIN</td><td>Cập nhật SP admin</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/</td><td>ADMIN</td><td>Legacy tạo SP</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/:id</td><td>ADMIN</td><td>Legacy cập nhật</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/publish</td><td>ADMIN</td><td>Xuất bản</td></tr><tr><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/discontinue</td><td>ADMIN</td><td>Ngừng kinh doanh</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/:id/variants</td><td>ADMIN</td><td>Tạo biến thể: sku, price, sizeName</td></tr>
+      <h3 class="section-heading" id="section-products-admin">Products (Legacy)</h3>
+      <p class="subsection-label deprecated" id="admin-products-deprecated">Deprecated — /products/admin/*</p>
+      <table class="endpoint-summary-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
+<tr class="deprecated-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/summary</td><td>ADMIN, SALES, ...</td><td>→ GET /admin/products/summary</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/products/admin/list</td><td>ADMIN, SALES, ...</td><td>→ GET /admin/products</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/admin</td><td>ADMIN</td><td>→ POST /admin/products</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/admin/:id</td><td>ADMIN</td><td>→ PATCH /admin/products/:id</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/</td><td>ADMIN</td><td>Legacy tạo SP</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/products/:id</td><td>ADMIN</td><td>Legacy cập nhật</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/publish</td><td>ADMIN</td><td>Xuất bản (catalog)</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag patch">PATCH</span></td><td class="path-cell">/api/v1/products/:id/discontinue</td><td>ADMIN</td><td>→ DELETE /admin/products/:id</td></tr>
+<tr class="deprecated-row"><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/products/:id/variants</td><td>ADMIN</td><td>→ POST /admin/products/:id/variants</td></tr>
 </tbody></table>
       <h3 class="section-heading" id="section-blogs">Blogs</h3>
       <table class="endpoint-summary-table" id="blogs-table"><thead><tr><th>Method</th><th>Path</th><th>Auth / Role</th><th>Mô tả</th></tr></thead><tbody>
 <tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/blogs</td><td>PUBLIC</td><td>Danh sách bài viết</td></tr><tr><td><span class="method-tag get">GET</span></td><td class="path-cell">/api/v1/blogs/:slug</td><td>PUBLIC</td><td>Chi tiết theo slug</td></tr><tr><td><span class="method-tag post">POST</span></td><td class="path-cell">/api/v1/blogs</td><td>ADMIN, SALES, STORE_STAFF, WAREHOUSE_STAFF</td><td>Tạo bài: title, slug, content, excerpt, coverImage, category, tags?, isPublished?</td></tr><tr><td><span class="method-tag put">PUT</span></td><td class="path-cell">/api/v1/blogs/:id</td><td>ADMIN, blog staff</td><td>Cập nhật</td></tr><tr><td><span class="method-tag delete">DELETE</span></td><td class="path-cell">/api/v1/blogs/:id</td><td>ADMIN, blog staff</td><td>Xóa bài</td></tr>
+<tr class="recommended-row" id="admin-blogs-alias"><td colspan="4" style="font-size:12px;color:hsl(var(--text-muted));padding-top:8px;"><strong>Alias admin:</strong> <code>/api/v1/admin/blogs</code> — cùng handler CRUD với <code>/blogs</code> (POST/PUT/DELETE yêu cầu staff roles)</td></tr>
 </tbody></table>
       <h3 class="section-heading" id="section-support">Support</h3>
       <div class="endpoint-card" id="support-ticket">
@@ -1544,7 +1609,7 @@ api.post('/api/v1/admin/upload/image', fd, { withCredentials: true });</pre>
 </div></div>
     </div>
     <footer class="docs-footer">
-      <p>&copy; 2026 UTESHOP Premium E-Commerce System. Đồng bộ với backend /api/v1.</p>
+      <p>&copy; 2026 UTESHOP Premium E-Commerce System. Đồng bộ backend refactor (admin namespace, PATCH partial updates, sendPaginated, 401/403/422). Cập nhật: 22/05/2026.</p>
     </footer>
   </main>
   <script>
