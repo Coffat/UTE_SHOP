@@ -24,12 +24,14 @@ import { BlogDetail } from "./pages/BlogDetail";
 import { Notifications } from "./pages/Notifications";
 import { Support } from "./pages/Support";
 
-// Admin Imports
-import { AdminLayout } from "./admin/layouts/AdminLayout";
+// Admin & Shared Dashboard Imports
+import { DashboardLayout } from "./admin/layouts/DashboardLayout";
 import { AdminAuthProvider } from "./admin/context/AdminAuthContext";
+import { RoleGuard } from "./admin/components/RoleGuard";
 import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
 import { OrdersPage } from "./admin/pages/OrdersPage";
 import { ProductsPage } from "./admin/pages/ProductsPage";
+import { CategoriesPage } from "./admin/pages/CategoriesPage";
 import { CustomersPage } from "./admin/pages/CustomersPage";
 import { StaffPage } from "./admin/pages/StaffPage";
 import { ReportsPage } from "./admin/pages/ReportsPage";
@@ -61,20 +63,45 @@ export const router = createBrowserRouter([
         path: "/admin",
         element: (
           <AdminAuthProvider>
-            <AdminLayout />
+            <RoleGuard allowedRoles={["ADMIN"]}>
+              <DashboardLayout />
+            </RoleGuard>
           </AdminAuthProvider>
         ),
         children: [
-          { index: true, element: <AdminDashboardPage /> },
+          { index: true, element: <Navigate to="dashboard" replace /> },
           { path: "dashboard", element: <AdminDashboardPage /> },
           { path: "orders", element: <OrdersPage /> },
           { path: "products", element: <ProductsPage /> },
+          { path: "categories", element: <CategoriesPage /> },
           { path: "customers", element: <CustomersPage /> },
           { path: "staff", element: <StaffPage /> },
           { path: "reports", element: <ReportsPage /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],
+      },
+      // --- Staff Routes ---
+      {
+        path: "/staff",
+        element: (
+          <AdminAuthProvider>
+            <RoleGuard allowedRoles={["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"]}>
+              <DashboardLayout />
+            </RoleGuard>
+          </AdminAuthProvider>
+        ),
+        children: [
+          { index: true, element: <Navigate to="orders" replace /> },
+          { path: "orders", element: <OrdersPage /> },
+          { path: "products", element: <ProductsPage /> },
+          { path: "profile", element: <AdminProfilePage /> },
+        ],
+      },
+      // --- Unauthorized Route ───
+      {
+        path: "/unauthorized",
+        element: <Forbidden />,
       },
       // --- Customer/Storefront Routes ---
       {

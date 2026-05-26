@@ -153,3 +153,8 @@ export const confirmPayment = async (paymentId: string, transactionId: string): 
 export const getPaymentsByOrder = async (orderId: string): Promise<IPayment[]> => {
   return Payment.find({ order: orderId });
 };
+
+export const getPaymentsByOrderIds = async (orderIds: string[]): Promise<IPayment[]> => {
+  if (orderIds.length === 0) return [];
+  return Payment.find({ order: { $in: orderIds } }).sort({ createdAt: -1 });
+};

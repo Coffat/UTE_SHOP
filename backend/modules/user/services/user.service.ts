@@ -1,5 +1,7 @@
+import bcrypt from 'bcryptjs';
 import User, { IUser } from '../models/User.js';
 import Customer from '../models/Customer.js';
+import { AppError } from '../../../shared/utils/AppError.js';
 
 /**
  * Lấy profile của user đang đăng nhập.
@@ -31,6 +33,25 @@ export const updateUserProfile = async (userId: string, updateData: Record<strin
   ).select('-passwordHash -otpCode -otpExpires');
 
   return updated;
+};
+
+export const changeUserPassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> => {
+  const user = await User.findById(userId);
+  if (!user?.passwordHash) {
+    throw new AppError('Không tìm thấy người dùng', 404);
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    throw new AppError('Mật khẩu hiện tại không đúng', 400);
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  await user.save();
 };
 
 /**

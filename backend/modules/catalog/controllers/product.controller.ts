@@ -81,3 +81,34 @@ export const listVariants = asyncHandler(async (req: Request, res: Response) => 
   const variants = await productService.getVariantsByProduct(id);
   sendSuccess(res, 200, 'OK', variants);
 });
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export const adminProductSummary = asyncHandler(async (_req: Request, res: Response) => {
+  const summary = await productService.getAdminProductSummary();
+  sendSuccess(res, 200, 'OK', summary);
+});
+
+export const adminListProducts = asyncHandler(async (req: Request, res: Response) => {
+  const { status, categoryId, search, stockFilter, page, limit } = req.query;
+  const result = await productService.getAdminProducts({
+    status: status as string,
+    categoryId: categoryId as string,
+    search: search as string,
+    stockFilter: stockFilter as 'in_stock' | 'low_stock' | 'out_of_stock',
+    page: page ? parseInt(page as string, 10) : 1,
+    limit: limit ? parseInt(limit as string, 10) : 20,
+  });
+  sendSuccess(res, 200, 'OK', result);
+});
+
+export const adminCreateProduct = asyncHandler(async (req: Request, res: Response) => {
+  const product = await productService.createAdminProduct(req.body);
+  sendSuccess(res, 201, 'Tạo sản phẩm thành công', product);
+});
+
+export const adminUpdateProduct = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const product = await productService.updateAdminProduct(id, req.body);
+  sendSuccess(res, 200, 'Cập nhật sản phẩm thành công', product);
+});

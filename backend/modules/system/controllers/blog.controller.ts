@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import * as blogService from '../services/blog.service.js';
 import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
+import { isBlogStaffRole } from '../constants/blogRoles.js';
 
 export const getBlogPosts = async (req: Request, res: Response) => {
   const { category, tag, search, page, limit } = req.query;
-  const isAdmin = req.user ? ['ADMIN', 'STAFF'].includes(req.user.role) : false;
+  const isAdmin = req.user ? isBlogStaffRole(req.user.role) : false;
 
   const result = await blogService.getBlogPosts({
     category: category ? String(category) : undefined,
@@ -20,7 +21,7 @@ export const getBlogPosts = async (req: Request, res: Response) => {
 
 export const getBlogPostBySlug = async (req: Request, res: Response) => {
   const { slug } = req.params;
-  const isAdmin = req.user ? ['ADMIN', 'STAFF'].includes(req.user.role) : false;
+  const isAdmin = req.user ? isBlogStaffRole(req.user.role) : false;
 
   const post = await blogService.getBlogPostBySlug(slug as string, isAdmin);
   if (!post) {

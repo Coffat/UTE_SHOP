@@ -1,26 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  fetchAdminOrders,
+  changeOrderStatus,
+  type OrdersSummary,
+} from "../services/adminOrders.api";
+import {
+  getNextBackendStatus,
+  uiStatusToStatusGroup,
+  type AdminOrderRow,
+  type UiOrderStatus,
+} from "../services/mappers/order.mapper";
 
-interface CustomOrder {
-  id: string;
-  customerName: string;
-  customerPhone: string;
-  date: string;
-  payment: "paid" | "cod";
-  amount: number;
-  status: "pending" | "shipping" | "completed" | "cancelled";
-}
-
-const ORDER_DATASETS: CustomOrder[] = [
-  { id: "#ORD-1082", customerName: "Nguyễn Minh Anh", customerPhone: "0901 234 567", date: "25/05/2024 09:43", payment: "paid", amount: 1250000, status: "pending" },
-  { id: "#ORD-1081", customerName: "Trần Quốc Bảo",    customerPhone: "0902 345 678", date: "25/05/2024 08:15", payment: "cod",  amount: 850000,  status: "shipping" },
-  { id: "#ORD-1080", customerName: "Lê Thị Thanh Mai", customerPhone: "0903 456 789", date: "24/05/2024 22:10", payment: "paid", amount: 2190000, status: "completed" },
-  { id: "#ORD-1079", customerName: "Phạm Hoàng Nam",   customerPhone: "0904 567 890", date: "24/05/2024 19:32", payment: "cod",  amount: 640000,  status: "cancelled" },
-  { id: "#ORD-1078", customerName: "Đỗ Quỳnh Trang",   customerPhone: "0905 678 901", date: "24/05/2024 17:05", payment: "paid", amount: 1450000, status: "completed" },
-  { id: "#ORD-1077", customerName: "Võ Thành Đạt",     customerPhone: "0906 789 012", date: "24/05/2024 15:21", payment: "cod",  amount: 980000,  status: "shipping" },
-  { id: "#ORD-1076", customerName: "Nguyễn Thu Hà",    customerPhone: "0907 890 123", date: "24/05/2024 13:08", payment: "paid", amount: 320000,  status: "pending" },
-];
-
-function getStatusStyle(status: CustomOrder["status"]) {
+function getStatusStyle(status: UiOrderStatus) {
   switch (status) {
     case "pending":
       return { background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.25)" };
@@ -33,7 +25,7 @@ function getStatusStyle(status: CustomOrder["status"]) {
   }
 }
 
-function getStatusLabel(status: CustomOrder["status"]) {
+function getStatusLabel(status: UiOrderStatus) {
   switch (status) {
     case "pending":
       return "Chờ xử lý";
@@ -84,15 +76,93 @@ function IconCancelled() {
 }
 
 export function OrdersPage() {
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff") ? "/staff" : "/admin";
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | UiOrderStatus>("all");
+  const [orders, setOrders] = useState<AdminOrderRow[]>([]);
+  const [summary, setSummary] = useState<OrdersSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
-  const filteredOrders = ORDER_DATASETS.filter((order) => {
-    return (
-      order.id.toLowerCase().includes(search.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      order.customerPhone.includes(search)
-    );
-  });
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchAdminOrders({
+        page: currentPage,
+        limit: 10,
+        search: search.trim() || undefined,
+        statusGroup:
+          statusFilter !== "all" ? uiStatusToStatusGroup(statusFilter) : undefined,
+        includeSummary: true,
+      });
+      setOrders(result.items);
+      setTotalPages(result.meta.pages);
+      setTotalCount(result.meta.total);
+      if (result.meta.summary) setSummary(result.meta.summary);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      setError("Không thể tải danh sách đơn hàng. Vui lòng thử lại.");
+      setOrders([]);
+      setSummary(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, search, statusFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadOrders();
+    }, search ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [loadOrders]);
+
+  const handleAdvanceStatus = async (order: AdminOrderRow) => {
+    const next = getNextBackendStatus(order.backendStatus);
+    if (!next) return;
+    setStatusUpdatingId(order.id);
+    try {
+      await changeOrderStatus(order.id, next);
+      await loadOrders();
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      setError("Không thể cập nhật trạng thái đơn hàng.");
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
+  const displayOrders = orders;
+  const stats = summary ?? {
+    total: displayOrders.length,
+    pending: displayOrders.filter((o) => o.status === "pending").length,
+    shipping: displayOrders.filter((o) => o.status === "shipping").length,
+    completed: displayOrders.filter((o) => o.status === "completed").length,
+    cancelled: displayOrders.filter((o) => o.status === "cancelled").length,
+    attentionCount: 0,
+    attentionOrders: [],
+  };
+  const attentionOrders = stats.attentionOrders ?? [];
+  const attentionCount = stats.attentionCount ?? 0;
+  const pct = (n: number) =>
+    stats.total > 0 ? ((n / stats.total) * 100).toFixed(1) : "0.0";
+
+  const formatAttentionDate = (iso: string) =>
+    new Date(iso).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const attentionLabelColor = (label: string) =>
+    label === "Đã hủy" ? "#f43f5e" : "#f59e0b";
 
   return (
     <div className="admin-page">
@@ -144,7 +214,30 @@ export function OrdersPage() {
 
         {/* Status Filter */}
         <div className="admin-filter-select-wrapper">
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as "all" | UiOrderStatus);
+              setCurrentPage(1);
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#e2e8f0",
+              fontSize: "13.5px",
+              fontWeight: 500,
+              outline: "none",
+              width: "100%",
+              cursor: "pointer",
+            }}
+          >
+            <option value="all">Tất cả</option>
+            <option value="pending">Chờ xử lý</option>
+            <option value="shipping">Đang giao</option>
+            <option value="completed">Hoàn tất</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+          <div style={{ display: "none", flexDirection: "column" }}>
             <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.02em" }}>Trạng thái</span>
             <span style={{ fontSize: "13.5px", color: "#e2e8f0", marginTop: "2px", fontWeight: 500 }}>Tất cả</span>
           </div>
@@ -192,7 +285,10 @@ export function OrdersPage() {
               transition: "all 0.2s"
             }}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
       </div>
@@ -230,7 +326,7 @@ export function OrdersPage() {
                   <span style={{ fontSize: "13.5px", color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>Tổng đơn</span>
                   <span style={{ color: "#64748b", fontSize: "11px", cursor: "pointer", display: "flex", alignItems: "center" }} title="Tổng số lượng đơn hàng">ⓘ</span>
                 </div>
-                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>1,248</p>
+                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{stats.total.toLocaleString("vi-VN")}</p>
               </div>
             </div>
 
@@ -294,7 +390,7 @@ export function OrdersPage() {
                   <span style={{ fontSize: "13.5px", color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>Chờ xử lý</span>
                   <span style={{ color: "#64748b", fontSize: "11px", cursor: "pointer", display: "flex", alignItems: "center" }} title="Đơn hàng đang chờ duyệt">ⓘ</span>
                 </div>
-                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>312</p>
+                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{stats.pending.toLocaleString("vi-VN")}</p>
               </div>
             </div>
 
@@ -360,7 +456,7 @@ export function OrdersPage() {
                   <span style={{ fontSize: "13.5px", color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>Đang giao</span>
                   <span style={{ color: "#64748b", fontSize: "11px", cursor: "pointer", display: "flex", alignItems: "center" }} title="Đơn hàng đang vận chuyển">ⓘ</span>
                 </div>
-                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>518</p>
+                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{stats.shipping.toLocaleString("vi-VN")}</p>
               </div>
             </div>
 
@@ -424,7 +520,7 @@ export function OrdersPage() {
                   <span style={{ fontSize: "13.5px", color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>Hoàn tất</span>
                   <span style={{ color: "#64748b", fontSize: "11px", cursor: "pointer", display: "flex", alignItems: "center" }} title="Đơn hàng giao thành công">ⓘ</span>
                 </div>
-                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>892</p>
+                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{stats.completed.toLocaleString("vi-VN")}</p>
               </div>
             </div>
 
@@ -534,7 +630,10 @@ export function OrdersPage() {
                     transition: "all 0.2s"
                   }}
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
             </div>
@@ -559,10 +658,31 @@ export function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
+                      Đang tải đơn hàng...
+                    </td>
+                  </tr>
+                )}
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#f43f5e" }}>
+                      {error}
+                    </td>
+                  </tr>
+                )}
+                {!loading && !error && displayOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
+                      Không có đơn hàng phù hợp.
+                    </td>
+                  </tr>
+                )}
+                {!loading && displayOrders.map((order) => (
                   <tr key={order.id} className="admin-table-row">
                     <td style={{ padding: "14px 20px" }}>
-                      <span style={{ fontFamily: "var(--adm-mono)", color: "#fff", fontWeight: 600 }}>{order.id}</span>
+                      <span style={{ fontFamily: "var(--adm-mono)", color: "#fff", fontWeight: 600 }}>{order.orderCode}</span>
                     </td>
                     <td style={{ padding: "14px 20px" }}>
                       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -632,12 +752,11 @@ export function OrdersPage() {
                           alignItems: "center",
                           justifyContent: "center",
                           transition: "all 0.2s"
-                        }} title="Thao tác khác" className="admin-action-glass-btn">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                            <circle cx="12" cy="5" r="1.2" />
-                            <circle cx="12" cy="12" r="1.2" />
-                            <circle cx="12" cy="19" r="1.2" />
-                          </svg>
+                        }} title="Cập nhật trạng thái" className="admin-action-glass-btn"
+                          disabled={statusUpdatingId === order.id || !getNextBackendStatus(order.backendStatus)}
+                          onClick={() => handleAdvanceStatus(order)}
+                        >
+                          {statusUpdatingId === order.id ? "..." : "▶"}
                         </button>
                       </div>
                     </td>
@@ -656,25 +775,27 @@ export function OrdersPage() {
             borderTop: "1px solid var(--adm-border)",
             marginTop: "auto"
           }}>
-            <span style={{ color: "#64748b", fontSize: "13px" }}>Hiển thị 1 đến 7 trong tổng số 1,248 đơn</span>
+            <span style={{ color: "#64748b", fontSize: "13px" }}>
+              Trang {currentPage} / {totalPages} — Tổng {totalCount.toLocaleString("vi-VN")} đơn
+            </span>
             <div className="admin-pagination-btns" style={{ display: "flex", gap: "6px" }}>
-              <button className="admin-pagination-btn" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: "#64748b", cursor: "not-allowed" }} disabled>
+              <button
+                className="admin-pagination-btn"
+                style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage <= 1 ? "#64748b" : "#94a3b8", cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
+                disabled={currentPage <= 1 || loading}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
                 &lt;
               </button>
-              <button className="admin-pagination-btn active" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "#6366f1", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
-                1
+              <button className="admin-pagination-btn active" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "#6366f1", color: "#fff", fontWeight: 600, cursor: "default" }}>
+                {currentPage}
               </button>
-              <button className="admin-pagination-btn" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "pointer" }}>
-                2
-              </button>
-              <button className="admin-pagination-btn" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "pointer" }}>
-                3
-              </button>
-              <span style={{ color: "#64748b", alignSelf: "center", padding: "0 4px" }}>...</span>
-              <button className="admin-pagination-btn" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "pointer" }}>
-                178
-              </button>
-              <button className="admin-pagination-btn" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "pointer" }}>
+              <button
+                className="admin-pagination-btn"
+                style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage >= totalPages ? "#64748b" : "#94a3b8", cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
+                disabled={currentPage >= totalPages || loading}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              >
                 &gt;
               </button>
             </div>
@@ -714,11 +835,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Chờ xử lý</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    312 <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>(25.0%)</span>
+                    {stats.pending} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.pending)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "25%", background: "#f59e0b", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${pct(stats.pending)}%`, background: "#f59e0b", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -730,11 +851,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Đang giao</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    518 <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>(41.5%)</span>
+                    {stats.shipping} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.shipping)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "41.5%", background: "#3b82f6", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${pct(stats.shipping)}%`, background: "#3b82f6", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -746,11 +867,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Hoàn tất</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    356 <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>(28.5%)</span>
+                    {stats.completed} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.completed)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "28.5%", background: "#10b981", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${pct(stats.completed)}%`, background: "#10b981", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -762,11 +883,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Đã hủy</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    62 <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>(5.0%)</span>
+                    {stats.cancelled} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.cancelled)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "5%", background: "#f43f5e", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${pct(stats.cancelled)}%`, background: "#f43f5e", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -780,7 +901,7 @@ export function OrdersPage() {
                 alignItems: "center"
               }}>
                 <span style={{ fontSize: "13px", color: "#64748b" }}>Tổng cộng</span>
-                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>1,248 đơn</span>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{stats.total.toLocaleString("vi-VN")} đơn</span>
               </div>
             </div>
           </div>
@@ -789,93 +910,62 @@ export function OrdersPage() {
           <div className="admin-card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Đơn cần chú ý</h4>
-              <a href="/admin/orders?attention=true" style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}>Xem tất cả</a>
+              <a href={`${basePath}/orders?statusGroup=pending`} style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}>Xem tất cả</a>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {/* Attention Item 1 */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid var(--adm-border)",
-                borderRadius: "8px",
-                padding: "12px 14px",
-                gap: "6px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fff" }}>#ORD-1079</span>
-                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>Phạm Hoàng Nam</span>
+              {attentionOrders.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Không có đơn cần chú ý.</p>
+              ) : (
+                attentionOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid var(--adm-border)",
+                      borderRadius: "8px",
+                      padding: "12px 14px",
+                      gap: "6px",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fff" }}>
+                          {order.orderCode.startsWith("#") ? order.orderCode : `#${order.orderCode}`}
+                        </span>
+                        <span style={{ color: "#94a3b8", fontSize: "13px" }}>{order.customerName}</span>
+                      </div>
+                      <span style={{ fontSize: "11.5px", fontWeight: 600, color: attentionLabelColor(order.attentionLabel) }}>
+                        {order.attentionLabel}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <span style={{ color: "#64748b", fontSize: "12px" }}>{formatAttentionDate(order.createdAt)}</span>
+                    </div>
                   </div>
-                  <span style={{ fontSize: "11.5px", fontWeight: 600, color: "#f43f5e" }}>Đã hủy</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ color: "#64748b", fontSize: "12px" }}>24/05/2024 19:32</span>
-                </div>
-              </div>
+                ))
+              )}
 
-              {/* Attention Item 2 */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid var(--adm-border)",
-                borderRadius: "8px",
-                padding: "12px 14px",
-                gap: "6px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fff" }}>#ORD-1065</span>
-                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>Lê Văn Hùng</span>
-                  </div>
-                  <span style={{ fontSize: "11.5px", fontWeight: 600, color: "#f59e0b" }}>Quá hạn giao</span>
+              {attentionCount > 0 && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#f43f5e",
+                  fontSize: "12.5px",
+                  marginTop: "6px",
+                  fontWeight: 500,
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span>Tổng cộng {attentionCount.toLocaleString("vi-VN")} đơn cần chú ý</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ color: "#64748b", fontSize: "12px" }}>22/05/2024 11:20</span>
-                </div>
-              </div>
-
-              {/* Attention Item 3 */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid var(--adm-border)",
-                borderRadius: "8px",
-                padding: "12px 14px",
-                gap: "6px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fff" }}>#ORD-1057</span>
-                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>Trần Thị Kim Oanh</span>
-                  </div>
-                  <span style={{ fontSize: "11.5px", fontWeight: 600, color: "#f59e0b" }}>Quá hạn giao</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ color: "#64748b", fontSize: "12px" }}>21/05/2024 09:15</span>
-                </div>
-              </div>
-
-              {/* Alert Footer */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                color: "#f43f5e",
-                fontSize: "12.5px",
-                marginTop: "6px",
-                fontWeight: 500
-              }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-                <span>Tổng cộng 8 đơn cần chú ý</span>
-              </div>
+              )}
             </div>
           </div>
         </div>

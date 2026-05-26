@@ -39,10 +39,24 @@ export function Login() {
               e.preventDefault();
               const result = await dispatch(login({ email: email.trim(), password }));
               if (login.fulfilled.match(result)) {
-                await dispatch(fetchProfile());
-                const redirectParam = searchParams.get("redirect");
-                const to = redirectParam || result.payload.redirectUrl || "/";
-                navigate(to, { replace: true });
+                const profileResult = await dispatch(fetchProfile());
+                if (fetchProfile.fulfilled.match(profileResult)) {
+                  const userRole = profileResult.payload.role?.toUpperCase();
+                  
+                  if (userRole === "ADMIN") {
+                    navigate("/admin", { replace: true });
+                  } else if (["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(userRole || "")) {
+                    navigate("/staff/orders", { replace: true });
+                  } else {
+                    const redirectParam = searchParams.get("redirect");
+                    const to = redirectParam || result.payload.redirectUrl || "/";
+                    navigate(to, { replace: true });
+                  }
+                } else {
+                  const redirectParam = searchParams.get("redirect");
+                  const to = redirectParam || result.payload.redirectUrl || "/";
+                  navigate(to, { replace: true });
+                }
               }
             }}
           >

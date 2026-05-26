@@ -2,7 +2,7 @@
 // Admin Template – Core Types & Role Definitions
 // ─────────────────────────────────────────────
 
-export type AdminRole = "admin" | "staff";
+export type AdminRole = string;
 
 export interface AdminUser {
   id: string;
@@ -88,26 +88,36 @@ export interface ActivityItem {
   type: "order" | "product" | "user" | "system";
 }
 
-// Permission matrix per role
-export const PERMISSIONS: Record<AdminRole, string[]> = {
-  admin: [
-    "dashboard.full",
-    "users.view", "users.create", "users.edit", "users.delete",
-    "staff.view", "staff.create", "staff.edit", "staff.delete",
-    "products.view", "products.create", "products.edit", "products.delete",
-    "orders.view", "orders.edit", "orders.delete",
-    "reports.view",
-    "settings.view", "settings.edit",
-    "profile.view", "profile.edit",
-  ],
-  staff: [
-    "dashboard.limited",
-    "products.view", "products.edit",
-    "orders.view", "orders.edit",
-    "profile.view", "profile.edit",
-  ],
+export const STAFF_ROLES = ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"] as const;
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+const ADMIN_PERMISSIONS = [
+  "dashboard.full",
+  "users.view", "users.create", "users.edit", "users.delete",
+  "staff.view", "staff.create", "staff.edit", "staff.delete",
+  "products.view", "products.create", "products.edit", "products.delete",
+  "orders.view", "orders.edit", "orders.delete",
+  "reports.view",
+  "settings.view", "settings.edit",
+  "profile.view", "profile.edit",
+] as const;
+
+const STAFF_PERMISSIONS = [
+  "dashboard.limited",
+  "products.view", "products.edit",
+  "orders.view", "orders.edit",
+  "profile.view", "profile.edit",
+] as const;
+
+// Permission matrix per real DB role
+export const PERMISSIONS: Record<string, readonly string[]> = {
+  ADMIN: ADMIN_PERMISSIONS,
+  SALES: STAFF_PERMISSIONS,
+  STORE_STAFF: STAFF_PERMISSIONS,
+  WAREHOUSE_STAFF: STAFF_PERMISSIONS,
 };
 
 export function hasPermission(role: AdminRole, permission: string): boolean {
-  return PERMISSIONS[role]?.includes(permission) ?? false;
+  const normalized = role?.toUpperCase();
+  return PERMISSIONS[normalized]?.includes(permission) ?? false;
 }

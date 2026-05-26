@@ -2,6 +2,10 @@ import mongoose, { ClientSession } from 'mongoose';
 import Order, { IOrder } from '../models/Order.js';
 import Cart, { ICart } from '../models/Cart.js';
 import Product from '../../catalog/models/Product.js';
+import { orderRepository } from '../repositories/order.repository.js';
+import { cartRepository } from '../repositories/cart.repository.js';
+export type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.repository.js';
+import type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.repository.js';
 
 // ─── Cross-module imports (gọi SERVICE, không import MODEL) ───────────────────
 import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
@@ -11,18 +15,31 @@ import { createPaymentRecord } from '../../finance/services/payment.service.js';
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import OrderType from '../../../shared/enums/OrderType.js';
+import { AppError } from '../../../shared/utils/AppError.js';
+import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
+import {
+  mapOrderToAdminListItem,
+  type AdminOrderListItemDto,
+  type AttentionOrderDto,
+} from '../../../shared/mappers/order.mapper.js';
+import {
+  isValidOrderStatusTransition,
+} from '../constants/orderStatusGroups.js';
 
 const generateOrderCode = () => `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
 export const getOrCreateCart = async (customerId?: string, sessionId?: string): Promise<ICart> => {
-  const filter = customerId ? { customer: customerId } : { sessionId };
-  let cart = await Cart.findOne({ ...filter, status: 'ACTIVE' }).populate('items.productVariant');
-  if (!cart) {
-    cart = await Cart.create({ ...filter, items: [] });
-  }
-  return cart;
+  const existing = customerId
+    ? await cartRepository.findActiveByCustomer(customerId)
+    : sessionId
+      ? await cartRepository.findActiveBySession(sessionId)
+      : null;
+  if (existing) return existing;
+  return cartRepository.create(
+    customerId ? { customer: customerId as any, items: [] } : { sessionId, items: [] }
+  );
 };
 
 export const syncCart = async (customerId: string, items: { variantId: string; quantity: number }[] = []): Promise<ICart> => {
@@ -38,7 +55,7 @@ export const syncCart = async (customerId: string, items: { variantId: string; q
 };
 
 export const addToCart = async (cartId: string, variantId: string, quantity: number): Promise<ICart> => {
-  const cart = await Cart.findById(cartId);
+  const cart = await cartRepository.findById(cartId);
   if (!cart) throw new Error('Không tìm thấy giỏ hàng');
   const existingItem = cart.items.find((i) => i.productVariant.toString() === variantId);
   if (existingItem) {
@@ -50,7 +67,7 @@ export const addToCart = async (cartId: string, variantId: string, quantity: num
 };
 
 export const removeFromCart = async (cartId: string, variantId: string): Promise<ICart | null> => {
-  return Cart.findByIdAndUpdate(cartId, { $pull: { items: { productVariant: variantId } } }, { new: true });
+  return cartRepository.removeItem(cartId, variantId);
 };
 
 // ─── Place Order (ACID Transaction with Standalone Fallback) ──────────────────
@@ -306,11 +323,38 @@ export const updateOrderStatus = async (
   changedById?: string
 ): Promise<IOrder> => {
   const order = await Order.findById(orderId);
-  if (!order) throw new Error('Không tìm thấy đơn hàng');
+  if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+  const currentStatus = order.status as OrderStatus;
+  if (!Object.values(OrderStatus).includes(newStatus)) {
+    throw new AppError('Trạng thái đơn hàng không hợp lệ', 400);
+  }
+  if (currentStatus === newStatus) {
+    throw new AppError('Đơn hàng đã ở trạng thái này', 400);
+  }
+  if (!isValidOrderStatusTransition(currentStatus, newStatus)) {
+    throw new AppError(
+      `Không thể chuyển từ ${currentStatus} sang ${newStatus}`,
+      400
+    );
+  }
 
   order.status = newStatus;
-  order.statusHistory.push({ status: newStatus, note, changedBy: changedById as any });
+  order.statusHistory.push({ status: newStatus, note: note ?? '', changedBy: changedById as any });
   return order.save();
+};
+
+export const assertOrderAccess = (
+  order: IOrder,
+  userId: string,
+  role: string
+): void => {
+  if (role === 'CUSTOMER') {
+    const customerId = order.customer?.toString();
+    if (!customerId || customerId !== userId) {
+      throw new AppError('Bạn không có quyền xem đơn hàng này', 403);
+    }
+  }
 };
 
 /**
@@ -321,7 +365,7 @@ export const cancelOrderWithoutTransaction = async (
   reason: string,
   cancelledById: string
 ): Promise<IOrder> => {
-  const order = await Order.findById(orderId).populate('items.productVariant');
+  const order = await orderRepository.findByIdWithVariants(orderId);
   if (!order) throw new Error('Không tìm thấy đơn hàng');
 
   if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -330,7 +374,7 @@ export const cancelOrderWithoutTransaction = async (
 
   order.status = OrderStatus.CANCELLED;
   order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById as any });
-  await order.save();
+  await (order as any).save();
 
   // Hoàn trả kho
   for (const item of order.items) {
@@ -367,7 +411,7 @@ export const cancelOrder = async (
   session?: ClientSession
 ): Promise<IOrder> => {
   if (session) {
-    const order = await Order.findById(orderId).populate('items.productVariant').session(session);
+    const order = await orderRepository.findByIdWithSession(orderId, session);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -396,7 +440,7 @@ export const cancelOrder = async (
   }
 
   try {
-    const order = await Order.findById(orderId).populate('items.productVariant').session(newSession);
+    const order = await orderRepository.findByIdWithSession(orderId, newSession);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
@@ -434,43 +478,81 @@ export const cancelOrder = async (
   }
 };
 
-interface GetOrdersParams {
-  customerId?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}
+export const getAttentionOrders = (limit = 5) => orderRepository.getAttentionOrders(limit);
+
+export const getAttentionOrdersCount = () => orderRepository.getAttentionOrdersCount();
 
 export interface PaginatedOrders {
-  items: IOrder[];
+  items: IOrder[] | AdminOrderListItemDto[];
   total: number;
   page: number;
   limit: number;
+  pages: number;
+  summary?: OrdersSummaryDto;
 }
 
 export const getOrders = async ({
   customerId,
   status,
+  statusGroup,
+  orderType,
+  search,
+  dateFrom,
+  dateTo,
   page = 1,
-  limit = 20
+  limit = 20,
+  paymentStatus,
+  includeSummary = false,
 }: GetOrdersParams = {}): Promise<PaginatedOrders> => {
-  const filter: Record<string, any> = {};
-  if (customerId) filter.customer = customerId;
-  if (status) filter.status = status;
+  const filter = orderRepository.buildOrdersFilter({
+    customerId,
+    status,
+    statusGroup,
+    orderType,
+    search,
+    dateFrom,
+    dateTo,
+  });
 
-  const [items, total] = await Promise.all([
-    Order.find(filter)
-      .populate('customer', 'email fullName')
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
-    Order.countDocuments(filter),
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(Math.max(1, limit), 100);
+
+  const [rawItems, total, summary] = await Promise.all([
+    orderRepository.findOrders(filter, safePage, safeLimit),
+    orderRepository.countOrders(filter),
+    includeSummary ? orderRepository.computeOrdersSummary(filter) : Promise.resolve(undefined),
   ]);
-  return { items, total, page, limit };
+
+  const orderIds = (rawItems as IOrder[]).map((o) => String((o as any)._id));
+  const payments = await getPaymentsByOrderIds(orderIds);
+  const paymentByOrderId = new Map<string, Record<string, unknown>>();
+  for (const payment of payments) {
+    const oid = payment.order?.toString();
+    if (oid && !paymentByOrderId.has(oid)) {
+      paymentByOrderId.set(oid, payment.toObject() as Record<string, unknown>);
+    }
+  }
+
+  let items = (rawItems as IOrder[]).map((order) =>
+    mapOrderToAdminListItem(
+      order as unknown as Record<string, unknown>,
+      paymentByOrderId.get(String((order as any)._id)) ?? null
+    )
+  );
+
+  if (paymentStatus) {
+    items = items.filter((item) => item.payment?.status === paymentStatus);
+  }
+
+  return {
+    items,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    pages: Math.ceil(total / safeLimit) || 1,
+    ...(summary ? { summary } : {}),
+  };
 };
 
-export const getOrderById = async (orderId: string): Promise<IOrder | null> => {
-  return Order.findById(orderId)
-    .populate('items.productVariant', 'sku sizeName price')
-    .populate('customer', 'email fullName');
-};
+export const getOrderById = (orderId: string): Promise<IOrder | null> =>
+  orderRepository.findById(orderId);

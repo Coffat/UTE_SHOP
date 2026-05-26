@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { isAxiosError } from "axios";
 import { api } from "@/lib/api";
+import { setAuthSessionFlag } from "@/lib/authSession";
 
 export type AuthStatus = "idle" | "loading" | "succeeded" | "failed";
 
@@ -189,6 +190,7 @@ const authSlice = createSlice({
         state.login.status = "succeeded";
         state.login.error = null;
         state.login.redirectUrl = action.payload.redirectUrl ?? null;
+        setAuthSessionFlag();
       })
       .addCase(login.rejected, (state, action) => {
         state.login.status = "failed";

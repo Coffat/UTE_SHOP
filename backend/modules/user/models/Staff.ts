@@ -1,16 +1,19 @@
 import mongoose, { Schema } from 'mongoose';
 import User, { IUser } from './User.js';
+import UserStatus from '../../../shared/enums/UserStatus.js';
 
 export interface IStaff extends IUser {
   fullName: string;
-  isActive: boolean;
   hiredAt: Date;
+  status: UserStatus;
+  performanceScore: number;
 }
 
 export const staffBaseFields = {
-  fullName: { type: String, required: true, trim: true },
-  isActive: { type: Boolean, default: true },
+  fullName: { type: String, required: true, trim: true, index: true },
   hiredAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['ACTIVE', 'ON_LEAVE', 'SUSPENDED'], default: 'ACTIVE', index: true },
+  performanceScore: { type: Number, default: 100 },
 };
 
 // ─── Sales ────────────────────────────────────────────────────────────────────

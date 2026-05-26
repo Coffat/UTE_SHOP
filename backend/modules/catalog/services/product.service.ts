@@ -2,7 +2,18 @@ import Product, { IProduct } from '../models/Product.js';
 import ProductVariant, { IProductVariant } from '../models/ProductVariant.js';
 import Category from '../models/Category.js';
 import ProductStatus from '../../../shared/enums/ProductStatus.js';
+import StockStatus from '../../../shared/enums/StockStatus.js';
 import mongoose from 'mongoose';
+import StockLevel from '../../inventory/models/StockLevel.js';
+import Warehouse from '../../inventory/models/Warehouse.js';
+import { AppError } from '../../../shared/utils/AppError.js';
+import {
+  productRepository,
+  type AdminTopCategory,
+  type AdminLowStockAlert,
+  type PaginatedAdminProducts,
+  type GetAdminProductsParams,
+} from '../repositories/product.repository.js';
 
 // ─── Product CRUD ─────────────────────────────────────────────────────────────
 
@@ -185,4 +196,289 @@ export const getVariantsByProduct = async (idOrSlug: string): Promise<IProductVa
 
 export const updateVariant = async (variantId: string, data: Partial<IProductVariant>): Promise<IProductVariant | null> => {
   return ProductVariant.findByIdAndUpdate(variantId, data, { new: true, runValidators: true });
+};
+
+export const deactivateVariant = async (variantId: string): Promise<IProductVariant | null> => {
+  return ProductVariant.findByIdAndUpdate(
+    variantId,
+    { isActive: false, stockStatus: StockStatus.OUT_OF_STOCK },
+    { new: true }
+  );
+};
+
+// ─── Admin helpers ────────────────────────────────────────────────────────────
+
+export const generateProductSlug = (name: string): string =>
+  name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+
+const ensureUniqueSlug = async (baseSlug: string): Promise<string> => {
+  let slug = baseSlug;
+  let suffix = 0;
+  while (await Product.exists({ slug })) {
+    suffix += 1;
+    slug = `${baseSlug}-${suffix}`;
+  }
+  return slug;
+};
+
+const getDefaultWarehouse = async () => {
+  const warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
+  if (!warehouse) {
+    throw new AppError('Chưa cấu hình kho hàng. Vui lòng tạo warehouse trước khi nhập tồn.', 400);
+  }
+  return warehouse;
+};
+
+export interface AdminProductSummary {
+  total: number;
+  active: number;
+  lowStock: number;
+  discontinued: number;
+  categories: number;
+  topCategories: AdminTopCategory[];
+  lowStockAlerts: AdminLowStockAlert[];
+}
+
+export const getAdminTopCategories = (limit = 6): Promise<AdminTopCategory[]> =>
+  productRepository.getAdminTopCategories(limit);
+
+export const getAdminLowStockAlerts = (limit = 5): Promise<AdminLowStockAlert[]> =>
+  productRepository.getAdminLowStockAlerts(limit);
+
+export const getAdminProductSummary = async (): Promise<AdminProductSummary> => {
+  const [total, active, discontinued, categoryIds, lowStockProducts, topCategories, lowStockAlerts] =
+    await Promise.all([
+      productRepository.countAll(),
+      productRepository.countByStatus(ProductStatus.ACTIVE),
+      productRepository.countByStatus(ProductStatus.DISCONTINUED),
+      productRepository.distinctCategories(),
+      Product.find({ status: { $ne: ProductStatus.DISCONTINUED } })
+        .select('_id minifiedVariants')
+        .lean(),
+      productRepository.getAdminTopCategories(6),
+      productRepository.getAdminLowStockAlerts(5),
+    ]);
+
+  const productIds = lowStockProducts.map((p) => p._id.toString());
+  const { stockByProductId } = await productRepository.buildStockMaps(productIds);
+  const LOW_STOCK_THRESHOLD = 50;
+  const lowStock =
+    productIds.filter((id) => {
+      const stock = stockByProductId.get(id) ?? 0;
+      return stock > 0 && stock <= LOW_STOCK_THRESHOLD;
+    }).length + productIds.filter((id) => (stockByProductId.get(id) ?? 0) === 0).length;
+
+  return {
+    total,
+    active,
+    lowStock,
+    discontinued,
+    categories: categoryIds.length,
+    topCategories,
+    lowStockAlerts,
+  };
+};
+
+export const getAdminProducts = (
+  params: GetAdminProductsParams = {}
+): Promise<PaginatedAdminProducts> => productRepository.getAdminProducts(params);
+
+export interface CreateAdminProductInput {
+  name: string;
+  description?: string;
+  categoryId: string;
+  sku: string;
+  price: number;
+  stock: number;
+  status?: ProductStatus;
+  mainImageUrl?: string;
+}
+
+export const createAdminProduct = async (input: CreateAdminProductInput): Promise<IProduct> => {
+  const category = await Category.findById(input.categoryId);
+  if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+
+  const slug = await ensureUniqueSlug(generateProductSlug(input.name));
+  const variantId = new mongoose.Types.ObjectId();
+  const priceDecimal = mongoose.Types.Decimal128.fromString(String(input.price));
+  const productStatus = input.status ?? ProductStatus.DRAFT;
+
+  const product = await Product.create({
+    name: input.name.trim(),
+    slug,
+    description: input.description?.trim() ?? '',
+    mainImageUrl: input.mainImageUrl ?? '',
+    status: productStatus,
+    category: input.categoryId,
+    tags: [],
+    minifiedVariants: [
+      {
+        variantId,
+        sizeName: 'Mặc định',
+        price: priceDecimal,
+        inStock: input.stock > 0,
+      },
+    ],
+    soldCount: 0,
+  });
+
+  await ProductVariant.create({
+    _id: variantId,
+    product: product._id,
+    sku: input.sku.trim(),
+    sizeName: 'Mặc định',
+    price: priceDecimal,
+    stockStatus:
+      input.stock <= 0
+        ? StockStatus.OUT_OF_STOCK
+        : input.stock <= 5
+          ? StockStatus.LOW
+          : StockStatus.IN_STOCK,
+    isActive: true,
+    imageUrls: [],
+  });
+
+  if (input.stock > 0) {
+    try {
+      const warehouse = await getDefaultWarehouse();
+      await StockLevel.create({
+        warehouse: warehouse._id,
+        productVariant: variantId,
+        quantity: mongoose.Types.Decimal128.fromString(String(input.stock)),
+        minThreshold: mongoose.Types.Decimal128.fromString('5'),
+      });
+    } catch (err) {
+      if (err instanceof AppError && err.statusCode === 400) {
+        // Allow product creation without warehouse; stock remains 0 in admin view
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  return product;
+};
+
+export interface UpdateAdminProductInput {
+  name?: string;
+  description?: string;
+  categoryId?: string;
+  sku?: string;
+  price?: number;
+  stock?: number;
+  status?: ProductStatus;
+}
+
+const resolvePrimaryVariant = async (productId: string) => {
+  const product = await Product.findById(productId);
+  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  const variantId = product.minifiedVariants[0]?.variantId?.toString();
+  if (!variantId) throw new AppError('Sản phẩm chưa có biến thể', 400);
+
+  const variant = await ProductVariant.findById(variantId);
+  if (!variant) throw new AppError('Không tìm thấy biến thể sản phẩm', 404);
+
+  return { product, variant };
+};
+
+export const updateAdminProduct = async (
+  productId: string,
+  input: UpdateAdminProductInput
+): Promise<IProduct> => {
+  const { product, variant } = await resolvePrimaryVariant(productId);
+
+  if (input.categoryId) {
+    const category = await Category.findById(input.categoryId);
+    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    product.category = category._id as mongoose.Types.ObjectId;
+  }
+
+  if (input.name) {
+    product.name = input.name.trim();
+    product.slug = await ensureUniqueSlug(generateProductSlug(input.name));
+  }
+  if (input.description !== undefined) product.description = input.description.trim();
+  if (input.status && Object.values(ProductStatus).includes(input.status)) {
+    product.status = input.status;
+  }
+
+  if (input.sku) variant.sku = input.sku.trim();
+  if (input.price !== undefined) {
+    const priceDecimal = mongoose.Types.Decimal128.fromString(String(input.price));
+    variant.price = priceDecimal as mongoose.Types.Decimal128;
+    if (product.minifiedVariants[0]) {
+      product.minifiedVariants[0].price = priceDecimal as mongoose.Types.Decimal128;
+    }
+  }
+
+  if (input.stock !== undefined) {
+    const stockQty = Math.max(0, input.stock);
+    const inStock = stockQty > 0;
+    if (product.minifiedVariants[0]) {
+      product.minifiedVariants[0].inStock = inStock;
+    }
+    variant.stockStatus =
+      stockQty <= 0
+        ? StockStatus.OUT_OF_STOCK
+        : stockQty <= 5
+          ? StockStatus.LOW
+          : StockStatus.IN_STOCK;
+
+    try {
+      const warehouse = await getDefaultWarehouse();
+      let stockLevel = await StockLevel.findOne({
+        warehouse: warehouse._id,
+        productVariant: variant._id,
+      });
+      if (!stockLevel) {
+        await StockLevel.create({
+          warehouse: warehouse._id,
+          productVariant: variant._id,
+          quantity: mongoose.Types.Decimal128.fromString(String(stockQty)),
+          minThreshold: mongoose.Types.Decimal128.fromString('5'),
+        });
+      } else {
+        stockLevel.quantity = mongoose.Types.Decimal128.fromString(String(stockQty)) as mongoose.Types.Decimal128;
+        await stockLevel.save();
+      }
+    } catch (err) {
+      if (!(err instanceof AppError && err.statusCode === 400)) throw err;
+    }
+  }
+
+  await variant.save();
+  return product.save();
+};
+
+export const discontinueAdminProduct = async (productId: string): Promise<IProduct | null> => {
+  const product = await Product.findById(productId);
+  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  if (product.status === ProductStatus.DISCONTINUED) {
+    throw new AppError('Sản phẩm đã ngừng kinh doanh', 400);
+  }
+
+  const variants = await ProductVariant.find({ product: productId, isActive: true });
+  await Promise.all(
+    variants.map((v) =>
+      ProductVariant.findByIdAndUpdate(v._id, {
+        isActive: false,
+        stockStatus: StockStatus.OUT_OF_STOCK,
+      })
+    )
+  );
+
+  product.status = ProductStatus.DISCONTINUED;
+  product.minifiedVariants = product.minifiedVariants.map((mv) => ({
+    ...mv,
+    inStock: false,
+  }));
+  return product.save();
 };

@@ -1,36 +1,121 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
 import { FormField, FormInput, FormTextarea } from "../components/AdminUI";
+import {
+  fetchUserProfile,
+  updateUserProfile,
+  changeUserPassword,
+} from "../services/adminProfile.api";
 
 export function ProfilePage() {
   const { user, role } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences">("profile");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave(e: React.FormEvent) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchUserProfile()
+      .then((profile) => {
+        if (cancelled) return;
+        setFullName(profile.fullName ?? user?.fullName ?? "");
+        setEmail(profile.email ?? user?.email ?? "");
+        setPhone(profile.phone ?? "");
+      })
+      .catch((err) => {
+        console.error("Failed to load profile:", err);
+        if (!cancelled) {
+          setFullName(user?.fullName ?? "");
+          setEmail(user?.email ?? "");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.email, user?.fullName]);
+
+  async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    setError(null);
+    try {
+      await updateUserProfile({
+        fullName: fullName.trim(),
+        phone: phone.trim() || undefined,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Không thể lưu thông tin cá nhân.";
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePasswordSave(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await changeUserPassword({ currentPassword, newPassword });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Không thể đổi mật khẩu.";
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!user) return null;
 
+  const displayName = fullName || getDisplayName(user);
+
   return (
     <div className="admin-profile-layout">
-      {/* Profile card */}
       <div className="admin-profile-card">
         <div className="admin-profile-avatar-wrap">
           <div className="admin-profile-avatar-lg">
-            {user.fullName.charAt(0)}
+            {getAvatarInitial(displayName)}
           </div>
-          <button className="admin-profile-avatar-change">Đổi ảnh</button>
+          <button type="button" className="admin-profile-avatar-change" disabled>
+            Đổi ảnh
+          </button>
         </div>
         <div className="admin-profile-info">
-          <h2 className="admin-profile-name">{user.fullName}</h2>
-          <p className="admin-profile-email">{user.email}</p>
+          <h2 className="admin-profile-name">{displayName}</h2>
+          <p className="admin-profile-email">{email || user.email}</p>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <span className={`admin-role-badge ${role}`}>
-              {role === "admin" ? "Quản trị viên" : "Nhân viên"}
+            <span className={`admin-role-badge ${role === "ADMIN" ? "admin" : "staff"}`}>
+              {role === "ADMIN" ? "Quản trị viên" : "Nhân viên"}
             </span>
             {user.department && (
               <span className="admin-category-tag">{user.department}</span>
@@ -39,78 +124,120 @@ export function ProfilePage() {
         </div>
         <div className="admin-profile-meta">
           <div className="admin-profile-meta-item">
-            <p className="admin-profile-meta-val">6</p>
-            <p className="admin-profile-meta-lbl">Tháng làm việc</p>
+            <p className="admin-profile-meta-val">—</p>
+            <p className="admin-profile-meta-lbl">Thống kê</p>
           </div>
           <div className="admin-profile-meta-item">
-            <p className="admin-profile-meta-val">147</p>
+            <p className="admin-profile-meta-val">—</p>
             <p className="admin-profile-meta-lbl">Đơn xử lý</p>
           </div>
           <div className="admin-profile-meta-item">
-            <p className="admin-profile-meta-val">98%</p>
+            <p className="admin-profile-meta-val">—</p>
             <p className="admin-profile-meta-lbl">Hiệu suất</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs + Form */}
       <div className="admin-card">
         <div className="admin-tabs" style={{ marginBottom: "24px" }}>
-          <button className={`admin-tab ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
+          <button
+            type="button"
+            className={`admin-tab ${activeTab === "profile" ? "active" : ""}`}
+            onClick={() => setActiveTab("profile")}
+          >
             Thông tin cá nhân
           </button>
-          <button className={`admin-tab ${activeTab === "password" ? "active" : ""}`} onClick={() => setActiveTab("password")}>
+          <button
+            type="button"
+            className={`admin-tab ${activeTab === "password" ? "active" : ""}`}
+            onClick={() => setActiveTab("password")}
+          >
             Đổi mật khẩu
           </button>
-          <button className={`admin-tab ${activeTab === "preferences" ? "active" : ""}`} onClick={() => setActiveTab("preferences")}>
+          <button
+            type="button"
+            className={`admin-tab ${activeTab === "preferences" ? "active" : ""}`}
+            onClick={() => setActiveTab("preferences")}
+          >
             Tùy chỉnh
           </button>
         </div>
 
-        {/* Toast */}
         {saved && (
           <div className="admin-toast admin-toast-success">
             ✓ Đã lưu thay đổi thành công!
           </div>
         )}
+        {error && (
+          <div className="admin-toast" style={{ background: "rgba(244,63,94,0.15)", color: "#f43f5e" }}>
+            {error}
+          </div>
+        )}
 
         {activeTab === "profile" && (
-          <form className="admin-form" onSubmit={handleSave}>
-            <div className="admin-form-row">
-              <FormField label="Họ và tên" required>
-                <FormInput defaultValue={user.fullName} />
-              </FormField>
-              <FormField label="Email" required>
-                <FormInput type="email" defaultValue={user.email} />
-              </FormField>
-            </div>
-            <div className="admin-form-row">
-              <FormField label="Số điện thoại">
-                <FormInput defaultValue="0912 345 678" />
-              </FormField>
-              <FormField label="Phòng ban">
-                <FormInput defaultValue={user.department} disabled={role === "staff"} />
-              </FormField>
-            </div>
-            <FormField label="Giới thiệu bản thân">
-              <FormTextarea placeholder="Nhập thông tin giới thiệu..." />
-            </FormField>
-            <div className="admin-form-actions">
-              <button type="submit" className="admin-btn admin-btn-primary">Lưu thay đổi</button>
-            </div>
+          <form className="admin-form" onSubmit={handleProfileSave}>
+            {loading ? (
+              <p style={{ color: "#94a3b8" }}>Đang tải thông tin...</p>
+            ) : (
+              <>
+                <div className="admin-form-row">
+                  <FormField label="Họ và tên" required>
+                    <FormInput value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  </FormField>
+                  <FormField label="Email" required>
+                    <FormInput type="email" value={email} disabled />
+                  </FormField>
+                </div>
+                <div className="admin-form-row">
+                  <FormField label="Số điện thoại">
+                    <FormInput value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </FormField>
+                  <FormField label="Phòng ban">
+                    <FormInput defaultValue={user.department} disabled={role !== "ADMIN"} />
+                  </FormField>
+                </div>
+                <FormField label="Giới thiệu bản thân">
+                  <FormTextarea placeholder="Nhập thông tin giới thiệu..." disabled />
+                </FormField>
+                <div className="admin-form-actions">
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn-primary"
+                    disabled={saving}
+                  >
+                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         )}
 
         {activeTab === "password" && (
-          <form className="admin-form" onSubmit={handleSave}>
+          <form className="admin-form" onSubmit={handlePasswordSave}>
             <FormField label="Mật khẩu hiện tại" required>
-              <FormInput type="password" placeholder="••••••••" />
+              <FormInput
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+              />
             </FormField>
             <FormField label="Mật khẩu mới" required>
-              <FormInput type="password" placeholder="••••••••" />
+              <FormInput
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+              />
             </FormField>
             <FormField label="Xác nhận mật khẩu mới" required>
-              <FormInput type="password" placeholder="••••••••" />
+              <FormInput
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+              />
             </FormField>
             <div className="admin-password-requirements">
               <p className="admin-password-req-title">Yêu cầu mật khẩu:</p>
@@ -118,11 +245,16 @@ export function ProfilePage() {
                 <li>✓ Tối thiểu 8 ký tự</li>
                 <li>✓ Có ít nhất 1 chữ hoa</li>
                 <li>✓ Có ít nhất 1 số</li>
-                <li>✗ Có ký tự đặc biệt (!@#$%)</li>
               </ul>
             </div>
             <div className="admin-form-actions">
-              <button type="submit" className="admin-btn admin-btn-primary">Cập nhật mật khẩu</button>
+              <button
+                type="submit"
+                className="admin-btn admin-btn-primary"
+                disabled={saving}
+              >
+                {saving ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+              </button>
             </div>
           </form>
         )}

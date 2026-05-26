@@ -1,48 +1,87 @@
-import express, { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import * as categoryService from '../services/category.service.js';
-import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
-import asyncHandler from '../../../shared/utils/asyncHandler.js';
+import express from 'express';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
+import * as categoryController from '../controllers/category.controller.js';
 import {
   validateCreateCategory,
   validateUpdateCategory,
+  validateAdminCategoryList,
+  validateAdminCreateCategory,
+  validateAdminUpdateCategory,
+  validateCategoryId,
+  validateToggleCategory,
 } from '../middlewares/catalog.validator.js';
 
 const router = express.Router();
 
-// Public
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
-  sendSuccess(res, 200, 'OK', await categoryService.getCategories());
-}));
+const ADMIN_STAFF_READ_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'] as const;
 
-router.get('/:idOrSlug', asyncHandler(async (req: Request, res: Response) => {
-  const idOrSlug = req.params.idOrSlug as string;
-  const category = mongoose.Types.ObjectId.isValid(idOrSlug)
-    ? await categoryService.getCategoryById(idOrSlug)
-    : await categoryService.getCategoryBySlug(idOrSlug);
-  if (!category) return sendError(res, 404, 'Không tìm thấy danh mục');
-  sendSuccess(res, 200, 'OK', category);
-}));
-
-// ADMIN only
-router.post(
-  '/',
-  authenticate, authorize('ADMIN'),
-  validateCreateCategory,
-  asyncHandler(async (req: Request, res: Response) => {
-    sendSuccess(res, 201, 'Tạo danh mục thành công', await categoryService.createCategory(req.body));
-  })
+// ─── Admin (must be before /:idOrSlug) ───────────────────────────────────────
+// @deprecated Use GET /api/v1/admin/categories instead. Kept for backward compatibility.
+router.get(
+  '/admin/list',
+  authenticate,
+  authorize(...ADMIN_STAFF_READ_ROLES),
+  validateAdminCategoryList,
+  categoryController.adminListCategories
 );
 
+// @deprecated Use POST /api/v1/admin/categories instead. Kept for backward compatibility.
+router.post(
+  '/admin',
+  authenticate,
+  authorize('ADMIN'),
+  validateAdminCreateCategory,
+  categoryController.adminCreateCategory
+);
+
+// @deprecated Use PATCH /api/v1/admin/categories/:id instead. Kept for backward compatibility.
+router.put(
+  '/admin/:id',
+  authenticate,
+  authorize('ADMIN'),
+  validateAdminUpdateCategory,
+  categoryController.adminUpdateCategory
+);
+
+// @deprecated Use PATCH /api/v1/admin/categories/:id with body { isActive } instead.
+router.patch(
+  '/admin/:id/toggle',
+  authenticate,
+  authorize('ADMIN'),
+  validateCategoryId,
+  validateToggleCategory,
+  categoryController.adminToggleCategory
+);
+
+// @deprecated Use DELETE /api/v1/admin/categories/:id instead. Kept for backward compatibility.
+router.delete(
+  '/admin/:id',
+  authenticate,
+  authorize('ADMIN'),
+  validateCategoryId,
+  categoryController.adminDeleteCategory
+);
+
+// ─── Public ───────────────────────────────────────────────────────────────────
+router.get('/', categoryController.listCategories);
+router.get('/:idOrSlug', categoryController.getCategory);
+
+// @deprecated (legacy) Use POST /api/v1/admin/categories instead.
+router.post(
+  '/',
+  authenticate,
+  authorize('ADMIN'),
+  validateCreateCategory,
+  categoryController.createCategory
+);
+
+// @deprecated (legacy) Use PATCH /api/v1/admin/categories/:id instead.
 router.put(
   '/:id',
-  authenticate, authorize('ADMIN'),
+  authenticate,
+  authorize('ADMIN'),
   validateUpdateCategory,
-  asyncHandler(async (req: Request, res: Response) => {
-    const id = req.params.id as string;
-    sendSuccess(res, 200, 'OK', await categoryService.updateCategory(id, req.body));
-  })
+  categoryController.updateCategory
 );
 
 export default router;

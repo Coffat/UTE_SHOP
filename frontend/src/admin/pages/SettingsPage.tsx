@@ -1,4 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  fetchAdminSettings,
+  updateAdminSettings,
+  rotateAdminApiKey,
+  type StoreSettings,
+} from "../services/adminSettings.api";
+import { uploadAdminImage, resolveAssetUrl } from "../services/adminUpload.api";
 
 const SETTING_SECTIONS = [
   { key: "general",   label: "Thông tin cửa hàng",   icon: "🏪" },
@@ -9,51 +16,252 @@ const SETTING_SECTIONS = [
   { key: "backup",    label: "Tích hợp",             icon: "🧩" },
 ];
 
+function applySettingsToForm(settings: StoreSettings, setters: {
+  setStoreName: (v: string) => void;
+  setSupportEmail: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAddress: (v: string) => void;
+  setTimezone: (v: string) => void;
+  setVnpayActive: (v: boolean) => void;
+  setCodActive: (v: boolean) => void;
+  setMomoActive: (v: boolean) => void;
+  setVat: (v: string) => void;
+  setRoundPrice: (v: string) => void;
+  setCurrency: (v: string) => void;
+  setNotifyEmail: (v: boolean) => void;
+  setNotifySMS: (v: boolean) => void;
+  setLowStock: (v: boolean) => void;
+  setNewOrder: (v: boolean) => void;
+  setTfaActive: (v: boolean) => void;
+  setSessionTimeout: (v: string) => void;
+  setApiKeyMasked: (v: string) => void;
+  setDefaultShippingFee: (v: number) => void;
+  setFreeShippingThreshold: (v: number) => void;
+  setWebhookUrl: (v: string) => void;
+  setWebhookEnabled: (v: boolean) => void;
+  setLogoUrl: (v: string) => void;
+}) {
+  setters.setStoreName(settings.storeName);
+  setters.setSupportEmail(settings.supportEmail);
+  setters.setPhone(settings.phone);
+  setters.setAddress(settings.address);
+  setters.setTimezone(settings.timezone);
+  setters.setVnpayActive(settings.vnpayActive);
+  setters.setCodActive(settings.codActive);
+  setters.setMomoActive(settings.momoActive);
+  setters.setVat(settings.vat);
+  setters.setRoundPrice(settings.roundPrice);
+  setters.setCurrency(settings.currency);
+  setters.setNotifyEmail(settings.notifyEmail);
+  setters.setNotifySMS(settings.notifySMS);
+  setters.setLowStock(settings.lowStock);
+  setters.setNewOrder(settings.newOrder);
+  setters.setTfaActive(settings.tfaActive);
+  setters.setSessionTimeout(settings.sessionTimeout);
+  setters.setApiKeyMasked(settings.apiKeyMasked);
+  setters.setDefaultShippingFee(settings.defaultShippingFee);
+  setters.setFreeShippingThreshold(settings.freeShippingThreshold);
+  setters.setWebhookUrl(settings.webhookUrl);
+  setters.setWebhookEnabled(settings.webhookEnabled);
+  setters.setLogoUrl(settings.logoUrl);
+}
+
 export function SettingsPage() {
   const [activeNav, setActiveNav] = useState("general");
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revealedApiKey, setRevealedApiKey] = useState<string | null>(null);
 
-  // Form states
   const [storeName, setStoreName] = useState("UTESHOP");
   const [supportEmail, setSupportEmail] = useState("support@uteshop.vn");
-  const [phone, setPhone] = useState("1900 1234");
-  const [address, setAddress] = useState("123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh, Việt Nam");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [timezone, setTimezone] = useState("(GMT+07:00) Bangkok, Hanoi, Jakarta");
 
-  // Payment states
   const [vnpayActive, setVnpayActive] = useState(true);
   const [codActive, setCodActive] = useState(true);
   const [momoActive, setMomoActive] = useState(true);
 
-  // Tax states
   const [vat, setVat] = useState("10");
   const [roundPrice, setRoundPrice] = useState("Làm tròn .000đ");
   const [currency, setCurrency] = useState("VND (Việt Nam Đồng)");
 
-  // Notification states
   const [notifyEmail, setNotifyEmail] = useState(true);
-  const [notifySMS, setNotifySMS] = useState(true);
+  const [notifySMS, setNotifySMS] = useState(false);
   const [lowStock, setLowStock] = useState(true);
   const [newOrder, setNewOrder] = useState(true);
 
-  // Security states
-  const [tfaActive, setTfaActive] = useState(true);
+  const [tfaActive, setTfaActive] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("30 phút");
-  const [apiKey, setApiKey] = useState("ute_shop_live_89f8d3f3fa2847a6b772d84f79a33578");
+  const [apiKeyMasked, setApiKeyMasked] = useState("ute_shop_live_****");
+  const [defaultShippingFee, setDefaultShippingFee] = useState(30000);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEnabled, setWebhookEnabled] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 3000);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchAdminSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        applySettingsToForm(settings, {
+          setStoreName,
+          setSupportEmail,
+          setPhone,
+          setAddress,
+          setTimezone,
+          setVnpayActive,
+          setCodActive,
+          setMomoActive,
+          setVat,
+          setRoundPrice,
+          setCurrency,
+          setNotifyEmail,
+          setNotifySMS,
+          setLowStock,
+          setNewOrder,
+          setTfaActive,
+          setSessionTimeout,
+          setApiKeyMasked,
+          setDefaultShippingFee,
+          setFreeShippingThreshold,
+          setWebhookUrl,
+          setWebhookEnabled,
+          setLogoUrl,
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to load settings:", err);
+        if (!cancelled) setError("Không thể tải cấu hình. Vui lòng thử lại.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const buildPayload = (): Partial<StoreSettings> => ({
+    storeName,
+    supportEmail,
+    phone,
+    address,
+    timezone,
+    vnpayActive,
+    codActive,
+    momoActive,
+    vat,
+    roundPrice,
+    currency,
+    notifyEmail,
+    notifySMS,
+    lowStock,
+    newOrder,
+    tfaActive,
+    sessionTimeout,
+    defaultShippingFee,
+    freeShippingThreshold,
+    webhookUrl,
+    webhookEnabled,
+    logoUrl,
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateAdminSettings(buildPayload());
+      applySettingsToForm(updated, {
+        setStoreName,
+        setSupportEmail,
+        setPhone,
+        setAddress,
+        setTimezone,
+        setVnpayActive,
+        setCodActive,
+        setMomoActive,
+        setVat,
+        setRoundPrice,
+        setCurrency,
+        setNotifyEmail,
+        setNotifySMS,
+        setLowStock,
+        setNewOrder,
+        setTfaActive,
+        setSessionTimeout,
+        setApiKeyMasked,
+        setDefaultShippingFee,
+        setFreeShippingThreshold,
+        setWebhookUrl,
+        setWebhookEnabled,
+        setLogoUrl,
+      });
+      setRevealedApiKey(null);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      setError("Không thể lưu cấu hình.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleRotateKey = () => {
-    const randomHex = Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join("");
-    setApiKey(`ute_shop_live_${randomHex}`);
+  const handleRotateKey = async () => {
+    setError(null);
+    try {
+      const result = await rotateAdminApiKey();
+      setApiKeyMasked(result.apiKeyMasked);
+      setRevealedApiKey(result.apiKey);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error("Failed to rotate API key:", err);
+      setError("Không thể xoay API key.");
+    }
   };
+
+  const handleLogoSelect = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingLogo(true);
+    setError(null);
+    try {
+      const result = await uploadAdminImage(file);
+      setLogoUrl(result.url);
+    } catch (err) {
+      console.error("Failed to upload logo:", err);
+      setError("Không thể tải logo lên.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const inputStyle = {
+    padding: "10px 14px",
+    background: "rgba(13, 21, 38, 0.4)",
+    border: "1px solid var(--adm-border)",
+    borderRadius: "8px",
+    color: "#fff",
+    fontSize: "13.5px",
+    outline: "none",
+    fontFamily: "inherit",
+    width: "100%",
+  } as const;
+
+  if (loading) {
+    return (
+      <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
+        Đang tải cấu hình...
+      </div>
+    );
+  }
 
   const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
     return (
@@ -174,6 +382,7 @@ export function SettingsPage() {
         <button
           className="admin-btn admin-btn-primary"
           onClick={handleSave}
+          disabled={saving}
           style={{
             background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
             boxShadow: "0 4px 12px rgba(59,130,246,0.3)",
@@ -196,9 +405,13 @@ export function SettingsPage() {
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          <span>Lưu thay đổi</span>
+          <span>{saving ? "Đang lưu..." : "Lưu thay đổi"}</span>
         </button>
       </div>
+
+      {error && (
+        <p style={{ color: "#f87171", fontSize: "13px", margin: "0 0 16px" }}>{error}</p>
+      )}
 
       {/* Main Settings Body Grid */}
       <div
@@ -310,7 +523,9 @@ export function SettingsPage() {
 
         {/* Right Bento Configuration Pane */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
-          
+
+          {activeNav === "general" && (
+          <>
           {/* Row 1: Card A (Store Info) & Card B (Store Logo Dropzone) */}
           <div
             style={{
@@ -504,6 +719,16 @@ export function SettingsPage() {
                 justifyContent: "center",
               }}
             >
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  void handleLogoSelect(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
               <div
                 style={{
                   border: "2px dashed rgba(59,130,246,0.3)",
@@ -517,36 +742,63 @@ export function SettingsPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   background: "rgba(13, 21, 38, 0.2)",
-                  cursor: "pointer",
+                  cursor: uploadingLogo ? "wait" : "pointer",
+                }}
+                onClick={() => !uploadingLogo && logoInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!uploadingLogo) void handleLogoSelect(e.dataTransfer.files?.[0]);
                 }}
               >
-                {/* Glowing bag icon */}
-                <div
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "50%",
-                    background: "rgba(59,130,246,0.12)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#60a5fa",
-                    marginBottom: "16px",
-                    border: "1px solid rgba(59,130,246,0.25)",
-                    boxShadow: "0 0 15px rgba(59,130,246,0.15)",
-                  }}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <path d="M16 10a4 4 0 0 1-8 0" />
-                  </svg>
-                </div>
+                {logoUrl ? (
+                  <img
+                    src={resolveAssetUrl(logoUrl)}
+                    alt="Logo cửa hàng"
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "contain",
+                      borderRadius: "12px",
+                      marginBottom: "16px",
+                      background: "rgba(255,255,255,0.05)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "50%",
+                      background: "rgba(59,130,246,0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#60a5fa",
+                      marginBottom: "16px",
+                      border: "1px solid rgba(59,130,246,0.25)",
+                      boxShadow: "0 0 15px rgba(59,130,246,0.15)",
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <path d="M16 10a4 4 0 0 1-8 0" />
+                    </svg>
+                  </div>
+                )}
 
-                <span style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>Kéo & thả file hoặc</span>
-                
-                {/* Select file glass btn */}
+                <span style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>
+                  {uploadingLogo ? "Đang tải lên..." : "Kéo & thả file hoặc"}
+                </span>
+
                 <button
+                  type="button"
+                  disabled={uploadingLogo}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    logoInputRef.current?.click();
+                  }}
                   style={{
                     marginTop: "10px",
                     padding: "8px 16px",
@@ -556,22 +808,24 @@ export function SettingsPage() {
                     color: "#e2e8f0",
                     fontSize: "12.5px",
                     fontWeight: "600",
-                    cursor: "pointer",
+                    cursor: uploadingLogo ? "wait" : "pointer",
                     transition: "all 0.2s",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
-                  onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)")}
                 >
                   Chọn file
                 </button>
 
                 <p style={{ fontSize: "11px", color: "var(--adm-text-muted)", margin: "16px 0 0", lineHeight: "16px" }}>
-                  PNG, JPG, SVG tối đa 2MB. Kích thước khuyến nghị 512x512px.
+                  PNG, JPG, WebP tối đa 2MB. Kích thước khuyến nghị 512x512px.
                 </p>
               </div>
             </div>
           </div>
+          </>
+          )}
 
+          {activeNav === "payment" && (
+          <>
           {/* Row 2: Card C (Thanh toán & phí) */}
           <div
             className="admin-card"
@@ -842,17 +1096,60 @@ export function SettingsPage() {
 
             </div>
           </div>
+          </>
+          )}
 
-          {/* Row 3: Card D (Thông báo hệ thống) & Card E (Bảo mật tài khoản) */}
+          {activeNav === "shipping" && (
           <div
+            className="admin-card"
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "24px",
-              alignItems: "stretch",
+              padding: "24px",
+              background: "rgba(13, 21, 38, 0.6)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid var(--adm-border)",
+              borderRadius: "12px",
             }}
           >
-            {/* Card D: Thông báo hệ thống */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="3" width="15" height="13" />
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                  <circle cx="5.5" cy="18.5" r="2.5" />
+                  <circle cx="18.5" cy="18.5" r="2.5" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Vận chuyển</h3>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", maxWidth: "640px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Phí ship mặc định (VND)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={defaultShippingFee}
+                  onChange={(e) => setDefaultShippingFee(Number(e.target.value) || 0)}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Miễn phí ship từ (VND)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={freeShippingThreshold}
+                  onChange={(e) => setFreeShippingThreshold(Number(e.target.value) || 0)}
+                  style={inputStyle}
+                />
+                <span style={{ fontSize: "11px", color: "var(--adm-text-muted)" }}>Đặt 0 nếu không áp dụng miễn phí ship</span>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {activeNav === "email" && (
+          <>
+          {/* Card D: Thông báo hệ thống */}
             <div
               className="admin-card"
               style={{
@@ -947,8 +1244,11 @@ export function SettingsPage() {
 
               </div>
             </div>
+          </>
+          )}
 
-            {/* Card E: Bảo mật tài khoản */}
+          {activeNav === "security" && (
+          <>
             <div
               className="admin-card"
               style={{
@@ -1070,7 +1370,7 @@ export function SettingsPage() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {apiKey}
+                        {revealedApiKey ?? apiKeyMasked}
                       </p>
                     </div>
                   </div>
@@ -1111,7 +1411,49 @@ export function SettingsPage() {
 
               </div>
             </div>
+          </>
+          )}
+
+          {activeNav === "backup" && (
+          <div
+            className="admin-card"
+            style={{
+              padding: "24px",
+              background: "rgba(13, 21, 38, 0.6)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid var(--adm-border)",
+              borderRadius: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Tích hợp Webhook</h3>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "640px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: "13.5px", fontWeight: "600", color: "#fff" }}>Bật webhook</p>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--adm-text-muted)" }}>Gửi sự kiện đơn hàng tới URL bên thứ ba</p>
+                </div>
+                <ToggleSwitch checked={webhookEnabled} onChange={() => setWebhookEnabled(!webhookEnabled)} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Webhook URL</label>
+                <input
+                  type="url"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://example.com/webhooks/uteshop"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
           </div>
+          )}
 
         </div>
 

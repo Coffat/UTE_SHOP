@@ -8,6 +8,7 @@ import connectDB from './config/db.js';
 import v1Router from './routes/index.js';
 import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
+import { UPLOADS_DIR } from './shared/middlewares/uploadImage.js';
 
 // Load environment variables BEFORE anything else
 dotenv.config();
@@ -55,6 +56,9 @@ app.use(mongoSanitize());
 
 // ─── Global Rate Limiter (10 req/phút mọi route) ─────────────────────────────
 app.use('/api', generalLimiter);
+
+// ─── Static uploads ───────────────────────────────────────────────────────────
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // ─── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (_req: Request, res: Response) => res.json({ status: 'ok', message: 'UTESHOP API is running 🚀' }));

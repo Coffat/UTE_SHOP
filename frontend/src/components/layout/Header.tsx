@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { AppLogo } from "@/components/ui/AppLogo";
@@ -6,9 +6,12 @@ import { api } from "@/lib/api";
 
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { fetchProfile } from "@/features/profile/profileSlice";
+import { fetchProfile, resetProfile } from "@/features/profile/profileSlice";
 import { fetchWishlist } from "@/features/wishlist/wishlistSlice";
 import { fetchCategories } from "@/features/catalog/categoriesSlice";
+import { resetAuth } from "@/features/auth/authSlice";
+import { clearAuthSessionFlag, hasAuthSessionFlag } from "@/lib/authSession";
+import { getAvatarInitial, getDisplayName, isStorefrontCustomer } from "@/lib/userDisplay";
 
 const NAV_LINKS = [
   { label: "Trang chủ", href: "/" },
@@ -43,6 +46,9 @@ export function Header() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
     if (!profile) return;
@@ -81,16 +87,24 @@ export function Header() {
     }
   }, [dispatch, categories.length]);
 
-  // Tự động tải thông tin người dùng một lần để kiểm tra trạng thái đăng nhập
+  // Chỉ gọi profile khi có session flag (cookie HttpOnly là nguồn xác thực thật)
   useEffect(() => {
-    if (fetchStatus === "idle") {
+    if (
+      hasAuthSessionFlag() &&
+      (fetchStatus === "idle" || fetchStatus === "failed")
+    ) {
       dispatch(fetchProfile());
     }
   }, [dispatch, fetchStatus]);
 
-  // Tải danh sách yêu thích khi thông tin người dùng được tải thành công
+  const isLoggedIn = fetchStatus === "succeeded" && profile != null;
+  const showProfileLoading = hasAuthSessionFlag() && fetchStatus === "loading";
+  const displayName = profile ? getDisplayName(profile) : "User";
+  const avatarInitial = getAvatarInitial(displayName);
+
+  // Wishlist API chỉ cho CUSTOMER — admin/staff gọi sẽ 403 và trước đây làm mất session
   useEffect(() => {
-    if (profile && wishlistStatus === "idle") {
+    if (profile && isStorefrontCustomer(profile.role) && wishlistStatus === "idle") {
       dispatch(fetchWishlist());
     }
   }, [dispatch, profile, wishlistStatus]);
@@ -107,6 +121,25 @@ export function Header() {
       document.body.style.overflow = prev;
     };
   }, [mobileOpen]);
+
+  // Đóng user menu khi click bên ngoài
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Đóng các menu khi chuyển trang
+  useEffect(() => {
+    setIsUserMenuOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
     <header className="fixed top-4 left-1/2 z-50 w-[calc(100%-32px)] max-w-[1440px] xl:max-w-[1600px] 2xl:max-w-[1760px] 3xl:max-w-[1920px] -translate-x-1/2 md:top-6">
@@ -309,37 +342,6 @@ export function Header() {
               </div>
             )}
 
-            {profile ? (
-              <Link
-                to="/user/profile"
-                aria-label="Tài khoản"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
-                title={`Chào ${profile.fullName}`}
-              >
-                <MaterialIcon name="person" className="text-[22px]" />
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                aria-label="Đăng nhập"
-                className="flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1.5 text-xs font-bold text-deep-plum backdrop-blur-md hover:bg-primary hover:text-pure-ivory hover:border-primary transition-[color,background-color,border-color,transform] duration-300 shadow-sm active-press"
-              >
-                <MaterialIcon name="login" className="text-sm shrink-0" />
-                <span className="hidden sm:inline">Đăng nhập</span>
-              </Link>
-            )}
-            <Link
-              to={profile ? (profile.role === "admin" ? "/admin/profile/favorites" : "/user/profile/favorites") : "/login"}
-              aria-label="Danh sách yêu thích"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
-            >
-              <MaterialIcon name="favorite" className="text-[22px]" />
-              {wishlistItems.length > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-1 text-[9px] font-bold text-pure-ivory animate-fade-in">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </Link>
             <Link
               to="/cart"
               aria-label="Giỏ hàng"
@@ -352,6 +354,144 @@ export function Header() {
                 </span>
               )}
             </Link>
+            <Link
+              to={profile ? (profile.role?.toUpperCase() === "ADMIN" ? "/admin/profile/favorites" : "/user/profile/favorites") : "/login"}
+              aria-label="Danh sách yêu thích"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press"
+            >
+              <MaterialIcon name="favorite" className="text-[22px]" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-pure-ivory bg-primary px-1 text-[9px] font-bold text-pure-ivory animate-fade-in">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
+            {showProfileLoading ? (
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-soft-amethyst/20 border border-crystal-border/60 font-home-heading text-sm text-dusk-gray"
+                aria-label="Đang tải tài khoản"
+              >
+                …
+              </div>
+            ) : isLoggedIn ? (
+              <div className="relative flex items-center" ref={userMenuRef}>
+                <button
+                  type="button"
+                  aria-label="Tài khoản"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-soft-amethyst/30 border border-crystal-border/80 font-home-heading text-sm font-bold text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press shadow-sm cursor-pointer"
+                  title={`Chào ${displayName}`}
+                >
+                  {avatarInitial}
+                </button>
+
+                {/* Glassmorphic Dropdown User Menu */}
+                <div
+                  className={`absolute right-0 top-full mt-3 w-72 rounded-3xl glass-panel border border-crystal-border bg-pure-ivory/95 p-5 shadow-2xl backdrop-blur-xl transition-[opacity,transform] duration-300 z-[100] ${
+                    isUserMenuOpen
+                      ? "pointer-events-auto opacity-100 translate-y-0 scale-100"
+                      : "pointer-events-none opacity-0 translate-y-2 scale-95"
+                  }`}
+                >
+                  {/* User Profile Info */}
+                  <div className="flex flex-col items-center border-b border-crystal-border pb-4 mb-3 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-soft-amethyst/60 text-primary border border-white/60 text-xl font-bold shadow-inner mb-2.5">
+                      {avatarInitial}
+                    </div>
+                    <h4 className="font-home-heading text-sm font-bold text-midnight-purple leading-snug truncate w-full">
+                      {displayName}
+                    </h4>
+                    <p className="text-[11px] text-dusk-gray font-medium truncate w-full mt-0.5">
+                      {profile?.email ?? ""}
+                    </p>
+                    
+                    {/* Role Badge */}
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold mt-2 shadow-sm ${
+                      profile.role?.toUpperCase() === "ADMIN"
+                        ? "text-[#e11d48] bg-[#e11d48]/10"
+                        : ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(profile.role?.toUpperCase() || "")
+                        ? "text-[#6366f1] bg-[#6366f1]/10"
+                        : "text-[#0d9488] bg-[#0d9488]/10"
+                    }`}>
+                      <MaterialIcon name="verified" className="text-[11px] font-bold" />
+                      {profile.role?.toUpperCase() === "ADMIN"
+                        ? "Quản trị viên"
+                        : ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(profile.role?.toUpperCase() || "")
+                        ? "Nhân viên"
+                        : "Khách hàng"}
+                    </span>
+                  </div>
+
+                  {/* Navigation Links */}
+                  <div className="space-y-1">
+                    <Link
+                      to="/user/profile/overview"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 text-left font-home-heading text-xs font-bold text-midnight-purple hover:bg-soft-amethyst/20 hover:text-primary transition duration-200"
+                    >
+                      <MaterialIcon name="grid_view" className="text-[16px]" />
+                      <span>Tổng quan tài khoản</span>
+                    </Link>
+                    <Link
+                      to="/user/profile/favorites"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 text-left font-home-heading text-xs font-bold text-midnight-purple hover:bg-soft-amethyst/20 hover:text-primary transition duration-200"
+                    >
+                      <MaterialIcon name="favorite" className="text-[16px]" />
+                      <span>Sản phẩm yêu thích</span>
+                    </Link>
+                    <Link
+                      to="/user/profile/notifications"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 text-left font-home-heading text-xs font-bold text-midnight-purple hover:bg-soft-amethyst/20 hover:text-primary transition duration-200"
+                    >
+                      <MaterialIcon name="notifications" className="text-[16px]" />
+                      <span>Thông báo của tôi</span>
+                    </Link>
+                    
+                    {/* Admin Dashboard Access */}
+                    {(profile.role?.toUpperCase() === "ADMIN" || 
+                      ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(profile.role?.toUpperCase() || "")) && (
+                      <Link
+                        to={profile.role?.toUpperCase() === "ADMIN" ? "/admin" : "/staff/orders"}
+                        className="flex items-center gap-3 rounded-xl bg-primary/5 px-3 py-2 text-left font-home-heading text-xs font-bold text-primary hover:bg-primary hover:text-pure-ivory transition duration-200 border border-primary/10 mt-2"
+                      >
+                        <MaterialIcon name="admin_panel_settings" className="text-[16px]" />
+                        <span>Trang quản trị</span>
+                      </Link>
+                    )}
+
+                    <hr className="border-crystal-border my-2" />
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await api.post("/api/v1/auth/logout");
+                        } catch (err) {
+                          console.error("Lỗi khi đăng xuất", err);
+                        } finally {
+                          clearAuthSessionFlag();
+                          dispatch(resetAuth());
+                          dispatch(resetProfile());
+                          navigate("/login");
+                        }
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left font-home-heading text-xs font-bold text-error hover:bg-error/10 transition duration-200 cursor-pointer"
+                    >
+                      <MaterialIcon name="logout" className="text-[16px]" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                aria-label="Đăng nhập"
+                className="flex items-center gap-1.5 rounded-full bg-soft-amethyst/30 border border-crystal-border/80 px-3.5 py-1.5 text-xs font-bold text-deep-plum backdrop-blur-md hover:bg-primary hover:text-pure-ivory hover:border-primary transition-[color,background-color,border-color,transform] duration-300 shadow-sm active-press"
+              >
+                <MaterialIcon name="login" className="text-sm shrink-0" />
+                <span className="hidden sm:inline">Đăng nhập</span>
+              </Link>
+            )}
             <button
               type="button"
               className="flex h-10 w-10 items-center justify-center rounded-full text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary lg:hidden active-press"

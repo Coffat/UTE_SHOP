@@ -1,9 +1,15 @@
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { StatGrid } from "../components/StatCard";
 import { OrdersTable } from "../components/OrdersTable";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { LowStockList } from "../components/LowStockList";
-import { ADMIN_STATS, STAFF_STATS, RECENT_ORDERS, ACTIVITY_FEED, REVENUE_DATA, ORDER_STATUS_DATA, WEEKLY_TASKS, LOW_STOCK_PRODUCTS } from "../data/mockData";
+import type { StatCard, OrderItem, ActivityItem } from "../types/admin.types";
+import {
+  fetchAdminDashboard,
+  type DashboardData,
+  type DashboardPeriod,
+} from "../services/adminDashboard.api";
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -11,7 +17,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
-// ── Tooltip formatter ─────────────────────────────────────────────────────────
 function formatVND(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M ₫`;
   return value.toLocaleString("vi-VN") + " ₫";
@@ -26,11 +31,9 @@ const chartTooltipStyle = {
   boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
 };
 
-// ── Admin Dashboard ───────────────────────────────────────────────────────────
-function AdminDashboard() {
+function AdminDashboard({ data }: { data: DashboardData }) {
   return (
     <div className="admin-dashboard">
-      {/* Page Header */}
       <div className="admin-page-header">
         <div>
           <h2 className="admin-page-title">Tổng quan</h2>
@@ -39,8 +42,7 @@ function AdminDashboard() {
         <div className="admin-topbar-right">
           <div className="admin-date-picker" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(13, 21, 38, 0.4)", borderRadius: "8px", padding: "8px 16px", color: "#e2e8f0" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span style={{ fontSize: "13.5px", fontWeight: 500 }}>19/05/2024 - 25/05/2024</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <span style={{ fontSize: "13.5px", fontWeight: 500 }}>{data.periodLabel}</span>
           </div>
           <button className="admin-btn admin-btn-primary">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -49,25 +51,18 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats */}
-      <StatGrid cards={ADMIN_STATS} />
+      <StatGrid cards={data.stats} />
 
-      {/* Charts row */}
       <div className="admin-grid-2col">
-        {/* Revenue chart */}
         <div className="admin-card">
           <div className="admin-card-header">
             <div>
               <h3 className="admin-card-title">Doanh thu & Đơn hàng</h3>
               <p className="admin-card-subtitle">Tổng quan 12 tháng qua</p>
             </div>
-            <select className="admin-card-select">
-              <option>2026</option>
-              <option>2025</option>
-            </select>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={REVENUE_DATA} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <AreaChart data={data.revenueChart} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.3} />
@@ -91,7 +86,6 @@ function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Category pie */}
         <div className="admin-card">
           <div className="admin-card-header">
             <div>
@@ -102,7 +96,7 @@ function AdminDashboard() {
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
-                data={ORDER_STATUS_DATA}
+                data={data.orderStatusBreakdown}
                 cx="50%"
                 cy="50%"
                 innerRadius={58}
@@ -110,11 +104,11 @@ function AdminDashboard() {
                 paddingAngle={3}
                 dataKey="value"
               >
-                {ORDER_STATUS_DATA.map((entry: any, idx: number) => (
+                {data.orderStatusBreakdown.map((entry, idx) => (
                   <Cell key={idx} fill={entry.fill} stroke="transparent" />
                 ))}
               </Pie>
-              <Tooltip contentStyle={chartTooltipStyle} formatter={(v: any) => [`${v}%`, "Tỷ lệ"] as any} />
+              <Tooltip contentStyle={chartTooltipStyle} formatter={(v: any) => [`${v}`, "Số đơn"] as any} />
               <Legend
                 iconType="circle"
                 iconSize={8}
@@ -125,9 +119,7 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Orders + Activity */}
       <div className="admin-grid-3col">
-        {/* Recent orders (spans 2 cols) */}
         <div className="admin-card admin-col-2">
           <div className="admin-card-header">
             <div>
@@ -136,12 +128,10 @@ function AdminDashboard() {
             </div>
             <a href="/admin/orders" className="admin-card-link" style={{ color: "#6366f1", fontSize: "13.5px", textDecoration: "none" }}>Xem tất cả →</a>
           </div>
-          <OrdersTable orders={RECENT_ORDERS.slice(0, 5)} compact />
+          <OrdersTable orders={data.recentOrders} compact />
         </div>
 
-        {/* Low Stock and Activity feed (spans 1 col) */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Low Stock */}
           <div className="admin-card">
             <div className="admin-card-header" style={{ marginBottom: "16px" }}>
               <div>
@@ -149,10 +139,9 @@ function AdminDashboard() {
                 <p className="admin-card-subtitle">Sản phẩm cần nhập thêm</p>
               </div>
             </div>
-            <LowStockList items={LOW_STOCK_PRODUCTS} />
+            <LowStockList items={data.lowStock} />
           </div>
 
-          {/* Activity feed */}
           <div className="admin-card">
             <div className="admin-card-header" style={{ marginBottom: "16px" }}>
               <div>
@@ -160,7 +149,7 @@ function AdminDashboard() {
                 <p className="admin-card-subtitle">Nhật ký hệ thống</p>
               </div>
             </div>
-            <ActivityFeed items={ACTIVITY_FEED} />
+            <ActivityFeed items={data.activityFeed} />
           </div>
         </div>
       </div>
@@ -168,16 +157,16 @@ function AdminDashboard() {
   );
 }
 
-// ── Staff Dashboard ───────────────────────────────────────────────────────────
-function StaffDashboard() {
+function StaffDashboard({ data }: { data: DashboardData }) {
+  const pendingOrders = data.recentOrders.filter(
+    (o) => o.status === "pending" || o.status === "processing"
+  );
+
   return (
     <div className="admin-dashboard">
-      {/* Stats */}
-      <StatGrid cards={STAFF_STATS} />
+      <StatGrid cards={data.staffStats} />
 
-      {/* Tasks + Orders */}
       <div className="admin-grid-2col">
-        {/* Weekly task bar chart */}
         <div className="admin-card">
           <div className="admin-card-header">
             <div>
@@ -186,7 +175,7 @@ function StaffDashboard() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={WEEKLY_TASKS} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <BarChart data={[]} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
               <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -197,7 +186,6 @@ function StaffDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* My orders */}
         <div className="admin-card">
           <div className="admin-card-header">
             <div>
@@ -206,15 +194,12 @@ function StaffDashboard() {
             </div>
           </div>
           <OrdersTable
-            orders={RECENT_ORDERS.filter(
-              (o) => o.status === "pending" || o.status === "processing"
-            )}
+            orders={pendingOrders.length > 0 ? pendingOrders : data.recentOrders}
             compact
           />
         </div>
       </div>
 
-      {/* Activity */}
       <div className="admin-card" style={{ maxWidth: "640px" }}>
         <div className="admin-card-header">
           <div>
@@ -222,14 +207,73 @@ function StaffDashboard() {
             <p className="admin-card-subtitle">Lịch sử thao tác gần đây</p>
           </div>
         </div>
-        <ActivityFeed items={ACTIVITY_FEED.filter((_, i) => i < 4)} />
+        <ActivityFeed items={data.activityFeed.slice(0, 4)} />
       </div>
     </div>
   );
 }
 
-// ── Entry Component ───────────────────────────────────────────────────────────
+const FALLBACK_ADMIN_STATS: StatCard[] = [
+  { id: "revenue", label: "Doanh thu", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "revenue", color: "indigo" },
+  { id: "orders", label: "Đơn hàng", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "orders", color: "purple" },
+  { id: "users", label: "Khách hàng mới", value: 0, change: 0, changeLabel: "Không tải được dữ liệu", icon: "users", color: "emerald" },
+  { id: "rate", label: "Tỷ lệ chuyển đổi", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "rate", color: "amber" },
+];
+
+const FALLBACK_STAFF_STATS: StatCard[] = [
+  { id: "tasks", label: "Nhiệm vụ hôm nay", value: 0, change: 0, changeLabel: "—", icon: "tasks", color: "indigo" },
+  { id: "orders", label: "Đơn cần xử lý", value: 0, change: 0, changeLabel: "—", icon: "orders", color: "emerald" },
+  { id: "products", label: "Sản phẩm cập nhật", value: 0, change: 0, changeLabel: "—", icon: "products", color: "amber" },
+  { id: "completed", label: "Hoàn thành hôm nay", value: "—", change: 0, changeLabel: "—", icon: "completed", color: "rose" },
+];
+
+function buildFallbackDashboard(): DashboardData {
+  return {
+    period: "30d",
+    periodLabel: "Không tải được dữ liệu",
+    stats: FALLBACK_ADMIN_STATS,
+    revenueChart: [],
+    orderStatusBreakdown: [],
+    recentOrders: [] as OrderItem[],
+    lowStock: [],
+    activityFeed: [] as ActivityItem[],
+    staffStats: FALLBACK_STAFF_STATS,
+    pendingOrdersCount: 0,
+  };
+}
+
 export function AdminDashboardPage() {
   const { isAdmin } = useAdminAuth();
-  return isAdmin ? <AdminDashboard /> : <StaffDashboard />;
+  const [period] = useState<DashboardPeriod>("30d");
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchAdminDashboard(period)
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch dashboard:", err);
+        if (!cancelled) setData(buildFallbackDashboard());
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  if (loading || !data) {
+    return (
+      <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
+        Đang tải dashboard...
+      </div>
+    );
+  }
+
+  return isAdmin ? <AdminDashboard data={data} /> : <StaffDashboard data={data} />;
 }
