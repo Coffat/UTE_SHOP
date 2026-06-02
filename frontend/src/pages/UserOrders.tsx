@@ -158,7 +158,7 @@ export function UserOrders() {
 
             return (
               <div
-                key={order._id}
+                key={order.id || order._id}
                 className="glass-panel p-5 rounded-3xl border border-white/60 bg-white/40 shadow-sm hover:border-dreamy-purple/30 transition-all space-y-4"
               >
                 <div className="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-crystal-border/60">
@@ -179,7 +179,7 @@ export function UserOrders() {
                   <div className="flex items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end">
                     <p className="text-base font-bold text-primary">{formatVND(order.totalAmount || 0)}</p>
                     <button
-                      onClick={() => handleViewDetails(order._id)}
+                      onClick={() => handleViewDetails(order.id || order._id)}
                       className="bg-pure-ivory hover:bg-white text-deep-plum border border-crystal-border/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 active-press"
                     >
                       Chi tiết
@@ -189,7 +189,7 @@ export function UserOrders() {
                 </div>
 
                 {/* Expanded Details / Items Section */}
-                {selectedOrder && selectedOrder._id === order._id && (
+                {selectedOrder && selectedOrder._id === (order.id || order._id) && (
                   <div className="mt-4 pt-4 border-t border-crystal-border/40 space-y-3 animate-fade-in">
                     <h4 className="text-xs font-bold text-deep-plum uppercase tracking-wider">Danh sách sản phẩm:</h4>
                     <div className="space-y-3">
@@ -220,7 +220,7 @@ export function UserOrders() {
                                   </span>
                                 ) : (
                                   <button
-                                    onClick={() => handleOpenReview(order._id, productId, productName)}
+                                    onClick={() => handleOpenReview(order.id || order._id, productId, productName)}
                                     className="bg-primary hover:bg-deep-plum text-pure-ivory text-[11px] font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1 active-press transition"
                                   >
                                     <MaterialIcon name="star" className="text-xs" />

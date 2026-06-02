@@ -27,7 +27,13 @@ router.get(
 );
 
 // GET /api/v1/orders/:id – Chi tiết đơn
-router.get('/:id', authenticate, orderController.getOrder);
+router.get(
+  '/:id',
+  authenticate,
+  param('id').isMongoId().withMessage('Order ID không hợp lệ'),
+  handleValidationErrors,
+  orderController.getOrder
+);
 
 // POST /api/v1/orders/cart/sync – Đồng bộ giỏ hàng
 router.post(
