@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch server.ts",
-    "test": "node --import tsx --test tests/**/*.test.ts"
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "ngrok:sync": "python3 ./ngrok_sync_env.py ./.env",
+    "ngrok:start-sync": "bash ./ngrok_start_and_sync.sh 3000 ./.env"
   },
   "repository": {
     "type": "git",
@@ -34,7 +36,8 @@
     "mongoose": "^8.15.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.7",
-    "redis": "^5.12.1"
+    "redis": "^5.12.1",
+    "vnpay": "^2.4.0"
   },
   "homepage": "https://github.com/Coffat/BaiTap2#readme",
   "devDependencies": {

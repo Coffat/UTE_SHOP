@@ -28,9 +28,12 @@ export interface BackendProduct {
   } | string;
   tags?: string[];
   minifiedVariants?: {
+    variantId?: string | { _id?: string };
     sizeName: string;
     price: number;
     oldPrice?: number;
+    inStock?: boolean;
+    stock?: number;
   }[];
   reviewStats?: {
     ratingAverage: number;

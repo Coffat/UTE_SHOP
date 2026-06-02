@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { isValidMongoObjectId } from "@/lib/variant";
+import { parseDecimalPrice } from "@/lib/price";
 
 export interface CartItem {
   productId: string;
@@ -30,7 +32,26 @@ const loadCartFromStorage = (): CartState => {
     if (serialized) {
       const parsed = JSON.parse(serialized) as CartState;
       if (Array.isArray(parsed.items)) {
-        return parsed;
+        const validItems = parsed.items
+          .filter((item) => isValidMongoObjectId(item.variantId))
+          .map((item) => ({
+            ...item,
+            price: parseDecimalPrice(item.price),
+          }));
+        const subtotal = validItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const shippingFee =
+          validItems.length === 0
+            ? 0
+            : subtotal >= FREE_SHIPPING_THRESHOLD
+              ? 0
+              : DEFAULT_SHIPPING_FEE;
+        return {
+          ...parsed,
+          items: validItems,
+          subtotal,
+          shippingFee,
+          totalAmount: Math.max(0, subtotal + shippingFee - (parsed.discountAmount ?? 0)),
+        };
       }
     }
   } catch (e) {

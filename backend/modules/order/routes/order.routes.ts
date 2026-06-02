@@ -1,5 +1,6 @@
 import express from 'express';
 import * as orderController from '../controllers/order.controller.js';
+import * as paymentGatewayController from '../../finance/controllers/paymentGateway.controller.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
 import {
   validatePlaceOrder,
@@ -7,11 +8,23 @@ import {
   validateCancelOrder,
   validateListOrders,
 } from '../middlewares/order.validator.js';
+import asyncHandler from '../../../shared/utils/asyncHandler.js';
+import { param } from 'express-validator';
+import { handleValidationErrors } from '../../../shared/middlewares/handleValidation.js';
 
 const router = express.Router();
 
 // GET /api/v1/orders – Danh sách đơn (admin thấy tất, customer thấy của mình)
 router.get('/', authenticate, validateListOrders, orderController.listOrders);
+
+// GET /api/v1/orders/:id/payment-status – Trạng thái thanh toán đơn hàng
+router.get(
+  '/:id/payment-status',
+  authenticate,
+  param('id').isMongoId().withMessage('Order ID không hợp lệ'),
+  handleValidationErrors,
+  asyncHandler(paymentGatewayController.getOrderPaymentStatus)
+);
 
 // GET /api/v1/orders/:id – Chi tiết đơn
 router.get('/:id', authenticate, orderController.getOrder);

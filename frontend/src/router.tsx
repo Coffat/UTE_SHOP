@@ -19,6 +19,7 @@ import { Favorites } from "./pages/Favorites";
 import { Checkout } from "./pages/Checkout";
 import { MockMomoGateway } from "./pages/MockMomoGateway";
 import { OrderSuccess } from "./pages/OrderSuccess";
+import { PaymentResult } from "./pages/PaymentResult";
 import { BlogList } from "./pages/BlogList";
 import { BlogDetail } from "./pages/BlogDetail";
 import { Notifications } from "./pages/Notifications";
@@ -122,6 +123,7 @@ export const router = createBrowserRouter([
           { path: "category/:slug", element: <CategoryProductList /> },
           { path: "cart", element: <Cart /> },
           { path: "checkout", element: <Checkout /> },
+          { path: "payment-result", element: <PaymentResult /> },
           { path: "order-success/:orderId", element: <OrderSuccess /> },
           { path: "blogs", element: <BlogList /> },
           { path: "blogs/:slug", element: <BlogDetail /> },

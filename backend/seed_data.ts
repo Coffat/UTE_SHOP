@@ -39,7 +39,7 @@ const seedUsers = [
       fullName: 'Thang Vu',
       email: 'vuthang@uteshop.vn',
       passwordHash: 'password123',
-      phone: '0123456789',
+      phone: '0901234567',
       isEmailVerified: true,
       status: UserStatus.ACTIVE,
     },

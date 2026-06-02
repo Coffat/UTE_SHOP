@@ -15,6 +15,10 @@ export interface IMOPayment extends IPayment {
   gatewayTransactionId: string | null;
 }
 
+export interface IVNPayPayment extends IPayment {
+  gatewayTransactionId: string | null;
+}
+
 export interface ICODPayment extends IPayment {
   shipperNote: string;
 }
@@ -40,6 +44,11 @@ const Payment = mongoose.model<IPayment>('Payment', paymentSchema);
 
 export const MOPayment = Payment.discriminator<IMOPayment>(
   'MOMO',
+  new Schema({ gatewayTransactionId: { type: String, default: null } })
+);
+
+export const VNPayPayment = Payment.discriminator<IVNPayPayment>(
+  'VNPAY',
   new Schema({ gatewayTransactionId: { type: String, default: null } })
 );
 

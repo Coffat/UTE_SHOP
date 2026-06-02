@@ -1,5 +1,5 @@
 import { ClientSession } from 'mongoose';
-import Payment, { IPayment, MOPayment, CODPayment, CashPayment } from '../models/Payment.js';
+import Payment, { IPayment, MOPayment, CODPayment, CashPayment, VNPayPayment } from '../models/Payment.js';
 import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
 import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
 import { PaymentStrategyFactory } from './strategies/PaymentStrategyFactory.js';
@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 interface CreatePaymentRecordParams {
   orderId: string;
   amount: number | string;
-  paymentMethod: 'MOMO' | 'COD' | 'CASH';
+  paymentMethod: 'MOMO' | 'COD' | 'CASH' | 'VNPAY';
   session?: ClientSession;
 }
 
@@ -21,7 +21,7 @@ export const createPaymentRecord = async ({
   paymentMethod,
   session,
 }: CreatePaymentRecordParams): Promise<IPayment> => {
-  const ModelMap: Record<string, any> = { MOMO: MOPayment, COD: CODPayment, CASH: CashPayment };
+  const ModelMap: Record<string, any> = { MOMO: MOPayment, VNPAY: VNPayPayment, COD: CODPayment, CASH: CashPayment };
   const Model = ModelMap[paymentMethod] ?? Payment;
 
   const [payment] = await Model.create(

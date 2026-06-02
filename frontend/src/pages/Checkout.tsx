@@ -5,10 +5,13 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RootState, AppDispatch } from "@/store";
 import { clearCart } from "@/features/cart/cartSlice";
 import { formatVND } from "./ProductList";
+import { isAxiosError } from "axios";
 import { api } from "@/lib/api";
-import { CashVNIcon, MomoIcon, VNPayIcon, CardVNIcon } from "@/icons";
+import { CashVNIcon, MomoIcon, VNPayIcon } from "@/icons";
 import { fetchProfile } from "@/features/profile/profileSlice";
 import { useToast } from "@/components/ui/ToastContext";
+import { isValidMongoObjectId } from "@/lib/variant";
+import { isValidVietnameseMobilePhone, normalizeVietnamesePhone } from "@/lib/phone";
 
 export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
@@ -24,7 +27,7 @@ export function Checkout() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [giftNote, setGiftNote] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO" | "VNPAY" | "CARD">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO" | "VNPAY">("COD");
 
   // Fetch profile on mount if idle
   useEffect(() => {
@@ -37,7 +40,7 @@ export function Checkout() {
   useEffect(() => {
     if (profile) {
       if (profile.fullName && !fullName) setFullName(profile.fullName);
-      if (profile.phone && !phone) setPhone(profile.phone);
+      if (profile.phone && !phone) setPhone(normalizeVietnamesePhone(profile.phone));
       if (profile.address && !address) setAddress(profile.address);
     }
   }, [profile]);
@@ -53,8 +56,23 @@ export function Checkout() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !phone || !address) {
+    if (!fullName.trim() || !phone.trim() || !address.trim()) {
       showToast("Vui lòng điền đầy đủ thông tin giao hàng.", "warning");
+      return;
+    }
+
+    const normalizedPhone = normalizeVietnamesePhone(phone);
+    if (!isValidVietnameseMobilePhone(normalizedPhone)) {
+      showToast("Số điện thoại không hợp lệ. Vui lòng nhập dạng 0901234567.", "warning");
+      return;
+    }
+
+    const invalidItems = items.filter((item) => !isValidMongoObjectId(item.variantId));
+    if (invalidItems.length > 0) {
+      showToast(
+        "Giỏ hàng có sản phẩm không hợp lệ. Vui lòng xóa và thêm lại từ trang chi tiết sản phẩm.",
+        "warning"
+      );
       return;
     }
 
@@ -78,46 +96,47 @@ export function Checkout() {
       const orderResponse = await api.post("/api/v1/orders", {
         cartId,
         recipientInfo: {
-          fullName,
-          phone,
-          deliveryNote: address,
+          fullName: fullName.trim(),
+          phone: normalizedPhone,
+          deliveryNote: address.trim(),
         },
-        paymentMethod: (paymentMethod === "MOMO" || paymentMethod === "VNPAY") ? "MOMO" : "COD",
-        note: giftNote,
+        paymentMethod,
+        note: giftNote.trim(),
       });
 
       const orderData = orderResponse.data.data;
       const orderId = orderData._id;
 
-      // 3. Fetch associated payment record
-      const paymentResponse = await api.get(`/api/v1/payments/order/${orderId}`);
-      const payments = paymentResponse.data.data;
-      if (!payments || payments.length === 0) {
-        throw new Error("Không tìm thấy thông tin giao dịch thanh toán.");
-      }
-      const paymentId = payments[0]._id;
-
-      // 4. Process payment strategy
-      const processResponse = await api.post(`/api/v1/payments/${paymentId}/process`);
-      const processResult = processResponse.data.data;
-
       if (paymentMethod === "MOMO" || paymentMethod === "VNPAY") {
-        if (processResult.redirectUrl) {
-          navigate(processResult.redirectUrl);
-        } else {
-          throw new Error(`Không thể tạo liên kết thanh toán trực tuyến ${paymentMethod === "MOMO" ? "MoMo" : "VNPay"}.`);
+        const createPaymentEndpoint =
+          paymentMethod === "MOMO" ? "/api/v1/payments/momo/create" : "/api/v1/payments/vnpay/create";
+        const processResponse = await api.post(createPaymentEndpoint, { orderId });
+        const processResult = processResponse.data.data;
+        const redirectUrl = processResult?.payUrl || processResult?.paymentUrl;
+        if (!redirectUrl) {
+          throw new Error(
+            `Không thể tạo liên kết thanh toán trực tuyến ${paymentMethod === "MOMO" ? "MoMo" : "VNPay"}.`
+          );
         }
+        window.location.href = redirectUrl;
       } else {
         dispatch(clearCart());
         navigate(`/order-success/${orderId}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Checkout submit error:", err);
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại."
-      );
+      let message = "Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại.";
+      if (isAxiosError(err)) {
+        const body = err.response?.data as {
+          message?: string;
+          errors?: { message?: string }[];
+        };
+        const fieldMessages = body?.errors?.map((e) => e.message).filter(Boolean).join(" ");
+        message = fieldMessages || body?.message || err.message || message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -255,7 +274,8 @@ export function Checkout() {
                       required
                       placeholder="0901234567"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, ""))}
+                      onBlur={() => setPhone((current) => normalizeVietnamesePhone(current))}
                       className="w-full bg-transparent text-sm text-deep-plum outline-none"
                     />
                   </div>
@@ -368,30 +388,6 @@ export function Checkout() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-deep-plum truncate">Cổng Ví VNPay</p>
                       <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán VNPay QR & Thẻ nội địa</p>
-                    </div>
-                  </label>
-
-                  {/* Thẻ thanh toán (Card/Napas) */}
-                  <label
-                    className={`rounded-2xl border p-4 flex items-center gap-3.5 cursor-pointer relative overflow-hidden select-none hover-lift active-press ${
-                      paymentMethod === "CARD"
-                        ? "bg-soft-amethyst/20 border-primary shadow-[0_4px_12px_rgba(49,27,146,0.06)]"
-                        : "bg-pure-ivory/50 border-crystal-border hover:bg-pure-ivory/80"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={paymentMethod === "CARD"}
-                      onChange={() => setPaymentMethod("CARD")}
-                      className="accent-primary w-4 h-4 cursor-pointer"
-                    />
-                    <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm border border-crystal-border/30">
-                      <CardVNIcon size={44} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-deep-plum truncate">Thẻ ATM / Visa / Napas</p>
-                      <p className="text-xs text-dusk-gray mt-0.5 truncate">Thanh toán thẻ ATM nội địa & Quốc tế</p>
                     </div>
                   </label>
 

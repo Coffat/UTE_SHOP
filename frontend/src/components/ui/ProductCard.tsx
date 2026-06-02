@@ -6,6 +6,8 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { addToCart } from "@/features/cart/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/features/wishlist/wishlistSlice";
 import { useToast } from "@/components/ui/ToastContext";
+import { isValidMongoObjectId } from "@/lib/variant";
+import { parseDecimalPrice } from "@/lib/price";
 
 export type ProductBadge = {
   label: string;
@@ -24,6 +26,11 @@ export type Product = {
   rating?: number;
   soldCount?: number;
   className?: string;
+  /** ObjectId biến thể từ API (minifiedVariants[0].variantId) */
+  primaryVariantId?: string;
+  primaryVariantName?: string;
+  primaryVariantPrice?: number;
+  primaryVariantStock?: number;
 };
 
 const BADGE_PILL_BASE =
@@ -76,6 +83,10 @@ export function ProductCard({
   rating = 5,
   soldCount,
   className = "",
+  primaryVariantId,
+  primaryVariantName = "Tiêu chuẩn",
+  primaryVariantPrice,
+  primaryVariantStock = 99,
 }: Product) {
   const dispatch = useDispatch<AppDispatch>();
   const { profile } = useSelector((state: RootState) => state.profile);
@@ -103,14 +114,16 @@ export function ProductCard({
           description,
           mainImageUrl: imageUrl,
           status: "ACTIVE",
-          minifiedVariants: [
-            {
-              _id: "default",
-              sizeName: "Tiêu chuẩn",
-              price: numericPrice,
-              stock: 99,
-            },
-          ],
+          minifiedVariants: primaryVariantId
+            ? [
+                {
+                  variantId: primaryVariantId,
+                  sizeName: primaryVariantName,
+                  price: primaryVariantPrice ?? numericPrice,
+                  stock: primaryVariantStock,
+                },
+              ]
+            : [],
         } as any)
       );
     }
@@ -120,17 +133,26 @@ export function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
-    const numericPrice = parseInt(price.replace(/[^0-9]/g, "")) || 0;
+    if (!primaryVariantId || !isValidMongoObjectId(primaryVariantId)) {
+      showToast("Vui lòng vào trang chi tiết sản phẩm để chọn biến thể trước khi thêm vào giỏ.", "warning");
+      return;
+    }
+
+    const parsedVariantPrice = parseDecimalPrice(primaryVariantPrice);
+    const numericPrice =
+      parsedVariantPrice > 0
+        ? parsedVariantPrice
+        : parseInt(price.replace(/[^0-9]/g, ""), 10) || 0;
     dispatch(
       addToCart({
         productId: id,
-        variantId: "default",
+        variantId: primaryVariantId,
         name,
-        variantName: "Tiêu chuẩn",
+        variantName: primaryVariantName,
         price: numericPrice,
         imageUrl,
         quantity: 1,
-        stock: 99,
+        stock: primaryVariantStock,
       })
     );
     showToast(`Đã thêm "${name}" vào giỏ hàng thành công!`, "success");

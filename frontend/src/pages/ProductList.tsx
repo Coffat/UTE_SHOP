@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { getProductCardVariantProps } from "@/lib/variant";
 import { AppDispatch, RootState } from "@/store";
 import { fetchProducts, BackendProduct } from "@/features/catalog/catalogSlice";
 import { fetchCategories } from "@/features/catalog/categoriesSlice";
@@ -415,6 +416,7 @@ export function ProductList() {
                       imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
                       imageAlt={product.name}
                       rating={product.reviewStats?.ratingAverage ?? 5}
+                      {...getProductCardVariantProps(product.minifiedVariants)}
                       badge={
                         hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :
                         hasTag(product, "ban-chay") ? { label: "Bán chạy", tone: "default" } :

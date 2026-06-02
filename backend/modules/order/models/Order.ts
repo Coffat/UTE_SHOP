@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import OrderType from '../../../shared/enums/OrderType.js';
+import PaymentMethod from '../../../shared/enums/PaymentMethod.js';
+import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 
 export interface IOrderItem {
   productVariant: Types.ObjectId;
@@ -36,6 +38,8 @@ export interface IOrder extends Document {
   discountAmount: Types.Decimal128;
   totalAmount: Types.Decimal128;
   note: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: OrderPaymentStatus;
   voucher: Types.ObjectId | null;
   handledBy: Types.ObjectId | null;
   statusHistory: IOrderStatusHistory[];
@@ -80,6 +84,8 @@ const orderSchema = new Schema<IOrder>(
     discountAmount: { type: Schema.Types.Decimal128, default: 0 },
     totalAmount: { type: Schema.Types.Decimal128, required: true },
     note: { type: String, default: '' },
+    paymentMethod: { type: String, enum: Object.values(PaymentMethod), default: PaymentMethod.COD },
+    paymentStatus: { type: String, enum: Object.values(OrderPaymentStatus), default: OrderPaymentStatus.UNPAID },
     voucher: { type: Schema.Types.ObjectId, ref: 'Voucher', default: null },
     handledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     statusHistory: [orderStatusHistorySchema],

@@ -11,6 +11,7 @@ import { images } from "@/lib/images";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchHomeProducts, fetchTopProducts, BackendProduct } from "@/features/catalog/catalogSlice";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { getProductCardVariantProps } from "@/lib/variant";
 
 const { products } = images;
 
@@ -45,6 +46,7 @@ const mapToUI = (p: BackendProduct, fallbackImage: string): Product => {
     badge,
     rating: p.reviewStats?.ratingAverage || 5,
     soldCount: p.soldCount,
+    ...getProductCardVariantProps(p.minifiedVariants),
   };
 };
 

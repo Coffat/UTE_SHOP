@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { getProductCardVariantProps } from "@/lib/variant";
 import { AppDispatch, RootState } from "@/store";
 import {
   fetchProducts,
@@ -136,6 +137,7 @@ export function CategoryProductList() {
                   imageAlt={product.name}
                   rating={product.reviewStats?.ratingAverage ?? 5}
                   soldCount={product.soldCount}
+                  {...getProductCardVariantProps(product.minifiedVariants)}
                   badge={
                     hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :
                     hasTag(product, "ban-chay") ? { label: "Bán chạy", tone: "default" } :

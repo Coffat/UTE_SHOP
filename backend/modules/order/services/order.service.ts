@@ -15,6 +15,8 @@ import { createPaymentRecord } from '../../finance/services/payment.service.js';
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import OrderType from '../../../shared/enums/OrderType.js';
+import PaymentMethod from '../../../shared/enums/PaymentMethod.js';
+import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
 import {
@@ -43,6 +45,15 @@ export const getOrCreateCart = async (customerId?: string, sessionId?: string): 
 };
 
 export const syncCart = async (customerId: string, items: { variantId: string; quantity: number }[] = []): Promise<ICart> => {
+  for (const item of items) {
+    if (!mongoose.Types.ObjectId.isValid(item.variantId)) {
+      throw new AppError(`variantId không hợp lệ: ${item.variantId}`, 400);
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      throw new AppError('Số lượng sản phẩm phải là số nguyên dương', 400);
+    }
+  }
+
   let cart = await Cart.findOne({ customer: customerId, status: 'ACTIVE' });
   if (!cart) {
     cart = new Cart({ customer: customerId, status: 'ACTIVE', items: [] });
@@ -83,9 +94,16 @@ interface PlaceOrderParams {
   deliveryAddressId?: string;
   orderType?: OrderType;
   voucherCode?: string;
-  paymentMethod: 'MOMO' | 'COD' | 'CASH';
+  paymentMethod: 'MOMO' | 'COD' | 'CASH' | 'VNPAY';
   note?: string;
 }
+
+const resolveInitialOrderPaymentStatus = (paymentMethod: PlaceOrderParams['paymentMethod']): OrderPaymentStatus => {
+  if (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.VNPAY) {
+    return OrderPaymentStatus.PENDING;
+  }
+  return OrderPaymentStatus.UNPAID;
+};
 
 /**
  * Fallback checkout flow for MongoDB installations without replica sets.
@@ -129,6 +147,7 @@ export const placeOrderWithoutTransaction = async ({
 
   const shippingFee = orderType === OrderType.ONLINE ? 30000 : 0;
   const totalAmount = subtotal + shippingFee - discountAmount;
+  const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
 
   // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
   const [order] = await Order.create([
@@ -146,6 +165,8 @@ export const placeOrderWithoutTransaction = async ({
       totalAmount: mongoose.Types.Decimal128.fromString(totalAmount.toString()) as any,
       voucher: voucherId,
       note: note || '',
+      paymentMethod,
+      paymentStatus: orderPaymentStatus,
       statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed (no-transaction fallback)' }],
     },
   ]);
@@ -240,6 +261,7 @@ export const placeOrder = async ({
 
     const shippingFee = orderType === OrderType.ONLINE ? 30000 : 0;
     const totalAmount = subtotal + shippingFee - discountAmount;
+  const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
 
     // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
     const [order] = await Order.create(
@@ -258,6 +280,8 @@ export const placeOrder = async ({
           totalAmount: mongoose.Types.Decimal128.fromString(totalAmount.toString()) as any,
           voucher: voucherId,
           note: note || '',
+          paymentMethod,
+          paymentStatus: orderPaymentStatus,
           statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed' }],
         },
       ],

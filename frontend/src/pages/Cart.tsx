@@ -5,7 +5,9 @@ import { RootState, AppDispatch } from "@/store";
 import { updateQuantity, removeFromCart, clearCart, addToCart } from "@/features/cart/cartSlice";
 import { formatVND, getProductImage } from "./ProductList";
 import { useEffect, useState } from "react";
-import { BackendProduct, fetchProducts, MOCK_VARIANTS_MAP } from "@/features/catalog/catalogSlice";
+import { BackendProduct, fetchProducts } from "@/features/catalog/catalogSlice";
+import { resolvePrimaryVariant } from "@/lib/variant";
+import { parseDecimalPrice } from "@/lib/price";
 
 export function Cart() {
   const dispatch = useDispatch<AppDispatch>();
@@ -52,26 +54,21 @@ export function Cart() {
 
   // Thêm nhanh sản phẩm gợi ý vào giỏ hàng
   const handleAddRecommended = (p: BackendProduct) => {
-    const mockVariants = MOCK_VARIANTS_MAP[p._id] || [{
-      _id: `var-${p._id}-std`,
-      sku: `${p._id.toUpperCase().slice(0, 3)}-STD`,
-      sizeName: "Tiêu chuẩn",
-      price: p.minifiedVariants?.[0]?.price || 990000,
-      images: [getProductImage(p._id)],
-      stock: 15
-    }];
-    const standardVariant = mockVariants[0];
-    
-    dispatch(addToCart({
-      productId: p._id,
-      variantId: standardVariant._id,
-      name: p.name,
-      variantName: standardVariant.sizeName,
-      price: standardVariant.price,
-      imageUrl: getProductImage(p._id),
-      quantity: 1,
-      stock: standardVariant.stock || 15
-    }));
+    const primary = resolvePrimaryVariant(p.minifiedVariants);
+    if (!primary.variantId) return;
+
+    dispatch(
+      addToCart({
+        productId: p._id,
+        variantId: primary.variantId,
+        name: p.name,
+        variantName: primary.sizeName,
+        price: primary.price || parseDecimalPrice(p.minifiedVariants?.[0]?.price) || 990000,
+        imageUrl: p.mainImageUrl || getProductImage(p.slug || p._id),
+        quantity: 1,
+        stock: primary.stock || 15,
+      })
+    );
   };
 
   // Phần hiển thị gợi ý sản phẩm bán chạy (CRO)

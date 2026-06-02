@@ -9,6 +9,7 @@ import "swiper/css/navigation";
 import "swiper/css/thumbs";
 import "swiper/css/effect-fade";
 
+import { parseDecimalPrice } from "@/lib/price";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { ProductRowSection } from "@/components/sections/ProductRowSection";
 import {
@@ -113,7 +114,7 @@ export function ProductDetail() {
         : [getProductImage(selectedProduct.slug || selectedProduct._id)];
 
   const activeStock = selectedVariant?.stock ?? 10;
-  const activePrice = selectedVariant?.price ?? 1230000;
+  const activePrice = parseDecimalPrice(selectedVariant?.price) || 1230000;
   const activeOldPrice = selectedVariant?.oldPrice;
 
   const increment = () => {

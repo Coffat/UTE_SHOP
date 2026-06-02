@@ -7,6 +7,8 @@ import { fetchWishlist, removeFromWishlist } from "@/features/wishlist/wishlistS
 import { addToCart } from "@/features/cart/cartSlice";
 import { getProductImage, formatVND } from "./ProductList";
 import { useToast } from "@/components/ui/ToastContext";
+import { resolvePrimaryVariant } from "@/lib/variant";
+import { parseDecimalPrice } from "@/lib/price";
 
 export function Favorites() {
   const navigate = useNavigate();
@@ -25,10 +27,16 @@ export function Favorites() {
   }, [dispatch, profile]);
 
   const handleAddToCart = (p: any) => {
-    const priceVal = p.minifiedVariants?.[0]?.price || 990000;
-    const variantId = p.minifiedVariants?.[0]?._id || "default";
-    const variantName = p.minifiedVariants?.[0]?.sizeName || "Tiêu chuẩn";
-    const stockVal = p.minifiedVariants?.[0]?.stock || 99;
+    const primary = resolvePrimaryVariant(p.minifiedVariants);
+    if (!primary.variantId) {
+      showToast("Không tìm thấy biến thể hợp lệ. Vui lòng mở trang chi tiết sản phẩm.", "warning");
+      return;
+    }
+
+    const priceVal = primary.price || parseDecimalPrice(p.minifiedVariants?.[0]?.price) || 990000;
+    const variantId = primary.variantId;
+    const variantName = primary.sizeName;
+    const stockVal = primary.stock || 99;
 
     dispatch(
       addToCart({

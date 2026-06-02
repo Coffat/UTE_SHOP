@@ -4,6 +4,10 @@ import mongoose from 'mongoose';
 import OrderType from '../../../shared/enums/OrderType.js';
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
+import {
+  isValidVietnameseMobilePhone,
+  normalizeVietnamesePhone,
+} from '../../../shared/utils/vietnamesePhone.js';
 
 const isObjectId = (val: string) => {
   if (!mongoose.Types.ObjectId.isValid(val)) throw new Error('ID không hợp lệ');
@@ -16,7 +20,16 @@ export const validatePlaceOrder = [
   body('cartId').notEmpty().custom(isObjectId).withMessage('cartId không hợp lệ'),
   body('recipientInfo').notEmpty().withMessage('Thông tin người nhận là bắt buộc'),
   body('recipientInfo.fullName').notEmpty().trim().isLength({ max: 100 }),
-  body('recipientInfo.phone').notEmpty().isMobilePhone('vi-VN').withMessage('Số điện thoại không hợp lệ'),
+  body('recipientInfo.phone')
+    .notEmpty()
+    .withMessage('Số điện thoại là bắt buộc')
+    .customSanitizer((value) => normalizeVietnamesePhone(String(value)))
+    .custom((value) => {
+      if (!isValidVietnameseMobilePhone(String(value))) {
+        throw new Error('Số điện thoại không hợp lệ (vd: 0901234567)');
+      }
+      return true;
+    }),
   body('orderType')
     .optional()
     .isIn(Object.values(OrderType))
@@ -27,8 +40,8 @@ export const validatePlaceOrder = [
     .isLength({ min: 3, max: 30 }),
   body('paymentMethod')
     .notEmpty()
-    .isIn(['MOMO', 'COD', 'CASH'])
-    .withMessage('paymentMethod phải là MOMO, COD hoặc CASH'),
+    .isIn(['MOMO', 'COD', 'CASH', 'VNPAY'])
+    .withMessage('paymentMethod phải là MOMO, COD, CASH hoặc VNPAY'),
   body('note').optional().trim().isLength({ max: 500 }),
   handleValidationErrors,
 ];
