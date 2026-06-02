@@ -140,7 +140,7 @@ export const placeOrderWithoutTransaction = async ({
   let discountAmount = 0;
   let voucherId: string | null = null;
   if (voucherCode) {
-    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal);
+    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
     discountAmount = disc;
     voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
   }
@@ -254,7 +254,7 @@ export const placeOrder = async ({
     let discountAmount = 0;
     let voucherId: string | null = null;
     if (voucherCode) {
-      const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal);
+      const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
       discountAmount = disc;
       voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
     }

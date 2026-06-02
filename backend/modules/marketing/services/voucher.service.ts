@@ -14,7 +14,8 @@ import DiscountType from '../../../shared/enums/DiscountType.js';
  */
 export const validateAndCalculateVoucher = async (
   code: string,
-  orderTotal: number
+  orderTotal: number,
+  customerId?: string
 ): Promise<{ discountAmount: number; voucher: IVoucher }> => {
   const voucher = await Voucher.findOne({ code: code.toUpperCase(), isActive: true });
 
@@ -22,6 +23,9 @@ export const validateAndCalculateVoucher = async (
   if (voucher.validUntil < new Date()) throw new Error('Mã voucher đã hết hạn');
   if (voucher.usageLimit !== null && voucher.usageLimit !== undefined && voucher.usedCount >= voucher.usageLimit) {
     throw new Error('Mã voucher đã hết lượt sử dụng');
+  }
+  if (voucher.customer && customerId && voucher.customer.toString() !== customerId) {
+    throw new Error('Mã voucher này không dành cho tài khoản của bạn');
   }
   if (Number(voucher.minOrderAmount) > orderTotal) {
     throw new Error(`Đơn hàng tối thiểu ${voucher.minOrderAmount} để dùng voucher này`);

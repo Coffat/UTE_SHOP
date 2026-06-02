@@ -176,7 +176,14 @@ export class OrderRepository {
 
   async findById(orderId: string): Promise<IOrder | null> {
     return Order.findById(orderId)
-      .populate('items.productVariant', 'sku sizeName price')
+      .populate({
+        path: 'items.productVariant',
+        select: 'sku sizeName price product',
+        populate: {
+          path: 'product',
+          select: 'name mainImageUrl slug'
+        }
+      })
       .populate('customer', 'email fullName');
   }
 
