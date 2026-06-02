@@ -41,6 +41,7 @@ import { SettingsPage } from "./admin/pages/SettingsPage";
 import { ProfilePage as AdminProfilePage } from "./admin/pages/ProfilePage";
 import { BlogsPage } from "./admin/pages/BlogsPage";
 import { ReviewsPage } from "./admin/pages/ReviewsPage";
+import { MarketingManagementPage } from "./admin/pages/MarketingManagementPage";
 
 export const router = createBrowserRouter([
   {
@@ -85,6 +86,7 @@ export const router = createBrowserRouter([
           { path: "profile", element: <AdminProfilePage /> },
           { path: "blogs", element: <BlogsPage /> },
           { path: "reviews", element: <ReviewsPage /> },
+          { path: "marketing", element: <MarketingManagementPage /> },
         ],
       },
       // --- Staff Routes ---
@@ -104,6 +106,7 @@ export const router = createBrowserRouter([
           { path: "categories", element: <CategoriesPage /> },
           { path: "blogs", element: <BlogsPage /> },
           { path: "reviews", element: <ReviewsPage /> },
+          { path: "marketing", element: <MarketingManagementPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],
       },

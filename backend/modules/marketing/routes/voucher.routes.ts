@@ -28,20 +28,20 @@ router.post(
 
 router.get(
   '/',
-  authenticate, authorize('ADMIN'),
+  authenticate, authorize('ADMIN', 'SALES'),
   asyncHandler(voucherController.getVouchers)
 );
 
 router.post(
   '/',
-  authenticate, authorize('ADMIN'),
+  authenticate, authorize('ADMIN', 'SALES'),
   validateCreateVoucher,
   asyncHandler(voucherController.createVoucher)
 );
 
 router.patch(
   '/:id/toggle',
-  authenticate, authorize('ADMIN'),
+  authenticate, authorize('ADMIN', 'SALES'),
   validateToggleVoucher,
   asyncHandler(voucherController.toggleVoucher)
 );
