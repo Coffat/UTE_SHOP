@@ -89,7 +89,7 @@ router.use('/admin', adminRoutes);
 // Catalog
 router.use('/storefront', storefrontRoutes);
 router.use('/products', productRoutes);
-router.use('/products', reviewRoutes);     // nested: /products/:id/reviews
+router.use('/products/:id/reviews', reviewRoutes);
 router.use('/categories', categoryRoutes);
 
 // Inventory

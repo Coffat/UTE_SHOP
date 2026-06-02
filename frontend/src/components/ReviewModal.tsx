@@ -90,8 +90,9 @@ export function ReviewModal({ orderId, productId, productName, onClose, onSucces
                   className="p-1 transition-transform duration-200 hover:scale-120 active:scale-95"
                 >
                   <MaterialIcon
-                    name={star <= rating ? "star" : "star_border"}
-                    className={`text-[36px] ${star <= rating ? "text-[#d97706]" : "text-dusk-gray/40"}`}
+                    name="star"
+                    filled={star <= rating}
+                    className={`text-[36px] ${star <= rating ? "text-[#d97706]" : "text-dusk-gray/30"}`}
                   />
                 </button>
               ))}
