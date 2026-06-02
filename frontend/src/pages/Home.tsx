@@ -9,7 +9,12 @@ import { PromoBanner } from "@/components/sections/PromoBanner";
 import type { Product, ProductBadge } from "@/components/ui/ProductCard";
 import { images } from "@/lib/images";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchHomeProducts, fetchTopProducts, BackendProduct } from "@/features/catalog/catalogSlice";
+import {
+  fetchHomeProducts,
+  fetchTopProducts,
+  BackendProduct,
+  getReviewAverage,
+} from "@/features/catalog/catalogSlice";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { getProductCardVariantProps } from "@/lib/variant";
 
@@ -44,7 +49,7 @@ const mapToUI = (p: BackendProduct, fallbackImage: string): Product => {
     imageUrl: p.mainImageUrl || fallbackImage,
     imageAlt: p.name,
     badge,
-    rating: p.reviewStats?.ratingAverage || 5,
+    rating: getReviewAverage(p.reviewStats),
     soldCount: p.soldCount,
     ...getProductCardVariantProps(p.minifiedVariants),
   };

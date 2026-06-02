@@ -96,6 +96,7 @@ export const validateAdminUpdateCategory = [
 
 export const validateCreateReview = [
   param('id').custom(isObjectId),
+  body('orderId').notEmpty().withMessage('Mã đơn hàng là bắt buộc').custom(isObjectId),
   body('rating').notEmpty().isInt({ min: 1, max: 5 }).withMessage('Rating từ 1 đến 5'),
   body('comment').optional().trim().isLength({ max: 1000 }),
   handleValidationErrors,

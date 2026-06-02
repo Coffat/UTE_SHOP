@@ -18,6 +18,7 @@ const NO_OUTLINE_SUFFIX = new Set([
   "add",
   "redeem",
   "add_shopping_cart",
+  "check",
 ]);
 
 /** Một số tên MD dùng bộ `ic` (Material Icons) vì `material-symbols` không có hoặc khác tên. */

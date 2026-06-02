@@ -25,6 +25,7 @@ export interface AdminOrderListItemDto {
   status: OrderStatus;
   orderType: string;
   payment: AdminOrderPaymentDto | null;
+  items?: any[];
 }
 
 const decimalToNumber = (value: unknown): number => {
@@ -65,5 +66,6 @@ export const mapOrderToAdminListItem = (
           status: payment.status as PaymentStatus,
         }
       : null,
+    items: order.items as any[],
   };
 };

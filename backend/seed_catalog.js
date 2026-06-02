@@ -17,7 +17,6 @@ import ProductVariant from './modules/catalog/models/ProductVariant.js';
 import Review from './modules/catalog/models/Review.js';
 import Warehouse from './modules/inventory/models/Warehouse.js';
 import StockLevel from './modules/inventory/models/StockLevel.js';
-import User from './modules/user/models/User.js';
 import Customer from './modules/user/models/Customer.js';
 
 import ProductStatus from './shared/enums/ProductStatus.js';
@@ -213,18 +212,28 @@ const seedCatalog = async () => {
     }
     console.log(`✅ Seeding ${Object.keys(tags).length} Tags done.`);
 
-    // 5. Setup Customer for Reviews
-    let customer = await Customer.findOne({ email: 'vuthang@uteshop.vn' });
-    if (!customer) {
-      console.log('⚠️ Customer not found, creating a mock customer for reviews...');
-      customer = await Customer.create({
-        fullName: 'Thắng Vũ',
-        email: 'vuthang@uteshop.vn',
-        passwordHash: '$2a$10$vY3Z.Yp75d3fXz9Vpx1OQeT3l9EpyQ2Wl/xTfF1Q9D2WwA0T2mUuW', // 'password123'
-        phone: '0123456789',
-        isEmailVerified: true,
-        status: 'ACTIVE',
-      });
+    // 5. Setup Customers for Reviews
+    const customerProfiles = [
+      { fullName: 'Thắng Vũ', email: 'vuthang@uteshop.vn', phone: '0123456789' },
+      { fullName: 'Minh Anh', email: 'minhanh@uteshop.vn', phone: '0912345678' },
+      { fullName: 'Lan Chi', email: 'lanchi@uteshop.vn', phone: '0988222333' },
+      { fullName: 'Đức Trần', email: 'ductran@uteshop.vn', phone: '0909333444' },
+      { fullName: 'Quỳnh Như', email: 'quynhnhu@uteshop.vn', phone: '0933555777' },
+    ];
+    const reviewCustomers = [];
+    for (const profile of customerProfiles) {
+      let customer = await Customer.findOne({ email: profile.email });
+      if (!customer) {
+        customer = await Customer.create({
+          fullName: profile.fullName,
+          email: profile.email,
+          passwordHash: '$2a$10$vY3Z.Yp75d3fXz9Vpx1OQeT3l9EpyQ2Wl/xTfF1Q9D2WwA0T2mUuW', // 'password123'
+          phone: profile.phone,
+          isEmailVerified: true,
+          status: 'ACTIVE',
+        });
+      }
+      reviewCustomers.push(customer);
     }
 
     // 6. Define 120 Products Blueprint (10 products per category)
@@ -1395,8 +1404,8 @@ const seedCatalog = async () => {
         tags: p.tags.map(slug => tags[slug]._id),
         minifiedVariants: minifiedVariants,
         reviewStats: {
-          averageRating: Number((4.2 + (imageIdx % 9) * 0.1).toFixed(1)),
-          totalReviews: (imageIdx * 4 + 7) % 35
+          averageRating: 0,
+          totalReviews: 0
         },
         views: ((imageIdx * 23 + 127) % 500) + 60,
         soldCount: ((imageIdx * 9 + 17) % 150) + 15
@@ -1428,20 +1437,23 @@ const seedCatalog = async () => {
       }
 
       // Seed mock reviews for this product
-      const reviewCount = createdProduct.reviewStats.totalReviews > 2 ? 2 : createdProduct.reviewStats.totalReviews;
-      for (let r = 0; r < reviewCount; r++) {
-        const ratings = [5, 4.5, 5, 4];
-        const comments = [
-          'Hoa siêu đẹp, đóng gói rất cẩn thận tỉ mỉ, shipper giao hàng vô cùng nhiệt tình chu đáo!',
-          'Hương thơm ngọt ngào tự nhiên phảng phất, đặt mua tặng ai cũng tấm tắc khen ngợi hết lời.',
-          'Màu sắc pastel tinh tế nhẹ nhàng, đúng gu cắm hoa Pinterest mộc mạc bay bổng của shop!',
-          'Rất hài lòng về chất lượng dịch vụ của UTE_SHOP, sẽ tiếp tục ủng hộ lâu dài.'
-        ];
+      const reviewCount = 2 + (imageIdx % 3); // 2 -> 4 reviews per product
+      const ratings = [5, 4, 5, 3, 4];
+      const comments = [
+        'Hoa rất tươi, phối màu đẹp và gói hàng chắc chắn. Nhận quà ai cũng khen.',
+        'Shop tư vấn tận tình, giao đúng giờ, bó hoa nhìn ngoài còn đẹp hơn hình.',
+        'Mùi hương tự nhiên dễ chịu, để được khá lâu, mình sẽ đặt lại dịp tới.',
+        'Thiết kế đúng phong cách nhẹ nhàng, nhìn tinh tế và phù hợp để tặng.',
+        'Dịch vụ ổn, nhân viên thân thiện, sản phẩm nhận được đúng như mô tả.',
+        'Đóng gói cẩn thận, thiệp viết đẹp, tổng thể trải nghiệm mua hàng rất tốt.',
+      ];
 
+      for (let r = 0; r < reviewCount; r++) {
+        const reviewer = reviewCustomers[(imageIdx + r) % reviewCustomers.length];
         try {
           await Review.create({
             product: createdProduct._id,
-            customer: customer._id,
+            customer: reviewer._id,
             rating: ratings[(imageIdx + r) % ratings.length],
             comment: comments[(imageIdx + r) % comments.length],
             isVerified: true
@@ -1450,6 +1462,16 @@ const seedCatalog = async () => {
           // Ignore review duplicate index collision
         }
       }
+
+      const seededReviews = await Review.find({ product: createdProduct._id }).select('rating');
+      const totalReviews = seededReviews.length;
+      const averageRating = totalReviews > 0
+        ? Number((seededReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
+        : 0;
+      await Product.findByIdAndUpdate(createdProduct._id, {
+        'reviewStats.averageRating': averageRating,
+        'reviewStats.totalReviews': totalReviews
+      });
 
       imageIdx++;
     }

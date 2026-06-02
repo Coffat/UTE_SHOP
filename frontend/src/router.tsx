@@ -15,6 +15,7 @@ import { CategoryProductList } from "./pages/CategoryProductList";
 import { Cart } from "./pages/Cart";
 import { ProfileLayout } from "./pages/ProfileLayout";
 import { ProfileOverview } from "./pages/ProfileOverview";
+import { UserOrders } from "./pages/UserOrders";
 import { Favorites } from "./pages/Favorites";
 import { Checkout } from "./pages/Checkout";
 import { MockMomoGateway } from "./pages/MockMomoGateway";
@@ -134,6 +135,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Navigate to="overview" replace /> },
               { path: "overview", element: <ProfileOverview /> },
+              { path: "orders", element: <UserOrders /> },
               { path: "favorites", element: <Favorites /> },
               { path: "notifications", element: <Notifications /> },
             ]

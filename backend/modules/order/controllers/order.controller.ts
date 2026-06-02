@@ -68,7 +68,33 @@ export const getOrder = asyncHandler(async (req: Request, res: Response) => {
     throw err;
   }
 
-  sendSuccess(res, 200, 'OK', order);
+  const orderObj = order.toObject();
+  if (req.user!.role === 'CUSTOMER') {
+    const Review = (await import('../../catalog/models/Review.js')).default;
+    for (const item of orderObj.items) {
+      const productId = item.productVariant && typeof item.productVariant === 'object' && item.productVariant.product
+        ? (item.productVariant.product._id || item.productVariant.product)
+        : null;
+      if (productId) {
+        const reviewExists = await Review.findOne({
+          customer: req.user!.id,
+          product: productId,
+          order: order._id,
+        });
+        item.isReviewed = !!reviewExists;
+        item.review = reviewExists ? {
+          rating: reviewExists.rating,
+          comment: reviewExists.comment,
+          createdAt: reviewExists.createdAt,
+        } : null;
+      } else {
+        item.isReviewed = false;
+        item.review = null;
+      }
+    }
+  }
+
+  sendSuccess(res, 200, 'OK', orderObj);
 });
 
 // POST /api/v1/orders – Đặt hàng (ACID transaction)

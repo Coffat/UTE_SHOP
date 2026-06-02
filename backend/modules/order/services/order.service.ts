@@ -140,7 +140,7 @@ export const placeOrderWithoutTransaction = async ({
   let discountAmount = 0;
   let voucherId: string | null = null;
   if (voucherCode) {
-    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal);
+    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
     discountAmount = disc;
     voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
   }
@@ -254,7 +254,7 @@ export const placeOrder = async ({
     let discountAmount = 0;
     let voucherId: string | null = null;
     if (voucherCode) {
-      const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal);
+      const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
       discountAmount = disc;
       voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
     }
@@ -374,7 +374,8 @@ export const assertOrderAccess = (
   role: string
 ): void => {
   if (role === 'CUSTOMER') {
-    const customerId = order.customer?.toString();
+    const customer = order.customer;
+    const customerId = (customer as any)?._id?.toString() || (customer as any)?.toString();
     if (!customerId || customerId !== userId) {
       throw new AppError('Bạn không có quyền xem đơn hàng này', 403);
     }

@@ -8,6 +8,7 @@ import {
   fetchProducts,
   fetchCategoryBySlug,
   clearSelectedCategory,
+  getReviewAverage,
 } from "@/features/catalog/catalogSlice";
 import { getProductImage, formatVND, hasTag } from "./ProductList";
 
@@ -135,7 +136,7 @@ export function CategoryProductList() {
                   price={priceStr}
                   imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
                   imageAlt={product.name}
-                  rating={product.reviewStats?.ratingAverage ?? 5}
+                  rating={getReviewAverage(product.reviewStats)}
                   soldCount={product.soldCount}
                   {...getProductCardVariantProps(product.minifiedVariants)}
                   badge={

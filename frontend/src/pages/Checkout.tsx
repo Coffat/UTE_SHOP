@@ -29,6 +29,12 @@ export function Checkout() {
   const [giftNote, setGiftNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO" | "VNPAY">("COD");
 
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
   // Fetch profile on mount if idle
   useEffect(() => {
     if (fetchStatus === "idle") {
@@ -52,7 +58,40 @@ export function Checkout() {
   // Cấu hình định mức
   const SHIPPING_THRESHOLD = 1000000;
   const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : 30000;
-  const finalPrice = subtotal + shippingCost;
+  const finalPrice = Math.max(0, subtotal + shippingCost - discountAmount);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponError(null);
+    try {
+      const response = await api.post("/api/v1/vouchers/validate", {
+        code: couponCode.trim(),
+        orderTotal: subtotal,
+      });
+      if (response.data.success && response.data.data) {
+        setDiscountAmount(response.data.data.discountAmount);
+        setCouponApplied(true);
+        showToast("Áp dụng mã giảm giá thành công!", "success");
+      } else {
+        setCouponError(response.data.message || "Mã không hợp lệ.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      let errMsg = "Mã giảm giá không hợp lệ hoặc đã hết hạn.";
+      if (isAxiosError(err)) {
+        const body = err.response?.data as { message?: string };
+        errMsg = body?.message || errMsg;
+      }
+      setCouponError(errMsg);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode("");
+    setCouponApplied(false);
+    setDiscountAmount(0);
+    setCouponError(null);
+  };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +141,7 @@ export function Checkout() {
         },
         paymentMethod,
         note: giftNote.trim(),
+        voucherCode: couponApplied ? couponCode.trim() : undefined,
       });
 
       const orderData = orderResponse.data.data;
@@ -451,6 +491,54 @@ export function Checkout() {
 
               <div className="h-px bg-crystal-border/60 my-5"></div>
 
+              {/* Coupon Code Input Block */}
+              <div className="bg-pure-ivory/50 rounded-2xl p-4 my-4 border border-crystal-border/40 space-y-3">
+                <label className="text-xs font-bold text-deep-plum block flex items-center gap-1">
+                  <MaterialIcon name="redeem" className="text-primary text-[15px]" />
+                  Mã giảm giá
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Nhập mã giảm giá..."
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={couponApplied}
+                    className="flex-1 bg-pure-ivory border border-crystal-border text-sm px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 font-semibold"
+                  />
+                  {couponApplied ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="bg-rose-500 hover:bg-rose-600 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl active-press transition cursor-pointer"
+                    >
+                      Hủy bỏ
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={!couponCode.trim()}
+                      className="bg-deep-plum hover:bg-primary disabled:bg-dusk-gray/30 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl active-press disabled:opacity-50 transition cursor-pointer"
+                    >
+                      Áp dụng
+                    </button>
+                  )}
+                </div>
+                {couponError && (
+                  <p className="text-xs text-error font-semibold flex items-center gap-1">
+                    <MaterialIcon name="error" className="text-xs text-error" />
+                    {couponError}
+                  </p>
+                )}
+                {couponApplied && (
+                  <p className="text-xs text-[#059669] font-bold flex items-center gap-1">
+                    <MaterialIcon name="check_circle" className="text-xs text-[#059669]" />
+                    Áp dụng thành công! Giảm {formatVND(discountAmount)}
+                  </p>
+                )}
+              </div>
+
               {/* Price rows */}
               <div className="space-y-3.5 text-sm font-medium text-midnight-purple">
                 <div className="flex justify-between">
@@ -465,6 +553,12 @@ export function Checkout() {
                     <span className="text-deep-plum font-semibold">{formatVND(shippingCost)}</span>
                   )}
                 </div>
+                {couponApplied && (
+                  <div className="flex justify-between text-[#059669] font-semibold">
+                    <span>Mã giảm giá</span>
+                    <span>-{formatVND(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="h-px bg-crystal-border/40 my-1"></div>
                 <div className="flex justify-between items-end">
                   <span className="text-deep-plum font-bold text-base">Tổng số tiền</span>

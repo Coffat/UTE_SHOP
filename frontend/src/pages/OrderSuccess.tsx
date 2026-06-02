@@ -140,9 +140,8 @@ export function OrderSuccess() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
               <Link
                 to="/products"
-                className="inline-flex items-center justify-center gap-2 btn-hero-cta-gradient px-8 py-3 rounded-full font-bold tracking-wide transition hover:-translate-y-0.5 shadow-md text-sm"
+                className="inline-flex items-center justify-center btn-hero-cta-gradient px-8 py-3 rounded-full font-bold tracking-wide transition hover:-translate-y-0.5 shadow-md text-sm"
               >
-                <MaterialIcon name="shopping_basket" />
                 Tiếp Tục Mua Sắm
               </Link>
               <Link
