@@ -374,7 +374,8 @@ export const assertOrderAccess = (
   role: string
 ): void => {
   if (role === 'CUSTOMER') {
-    const customerId = order.customer?.toString();
+    const customer = order.customer;
+    const customerId = (customer as any)?._id?.toString() || (customer as any)?.toString();
     if (!customerId || customerId !== userId) {
       throw new AppError('Bạn không có quyền xem đơn hàng này', 403);
     }
