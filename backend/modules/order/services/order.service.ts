@@ -174,10 +174,6 @@ export const placeOrderWithoutTransaction = async ({
   // ── STEP 3: Trừ kho (inventory.service) ──────────────────────────────────
   for (const item of cart.items) {
     await decreaseStock((item.productVariant as any)._id, item.quantity, customerId || 'GUEST');
-    await Product.findByIdAndUpdate(
-      (item.productVariant as any).product,
-      { $inc: { soldCount: item.quantity } }
-    );
   }
 
   // ── STEP 4: Tạo Payment record (finance.service) ──────────────────────────
@@ -291,11 +287,6 @@ export const placeOrder = async ({
     // ── STEP 3: Trừ kho (inventory.service) ──────────────────────────────────
     for (const item of cart.items) {
       await decreaseStock((item.productVariant as any)._id, item.quantity, customerId || 'GUEST', session);
-      await Product.findByIdAndUpdate(
-        (item.productVariant as any).product,
-        { $inc: { soldCount: item.quantity } },
-        { session }
-      );
     }
 
     // ── STEP 4: Tạo Payment record (finance.service) ──────────────────────────
@@ -338,7 +329,22 @@ export const placeOrder = async ({
   }
 };
 
-// ─── Thay đổi trạng thái Order ───────────────────────────────────────────────
+// ─── Thay đổi trạng thái & Đếm số lượng bán ──────────────────────────────────
+
+export const incrementOrderSoldCount = async (order: IOrder, session?: ClientSession) => {
+  if (order.isSoldCountIncremented) return;
+  for (const item of order.items) {
+    const productVariant: any = typeof item.productVariant === 'object' ? item.productVariant : await mongoose.model('ProductVariant').findById(item.productVariant);
+    if (productVariant) {
+      await Product.findByIdAndUpdate(
+        productVariant.product,
+        { $inc: { soldCount: item.quantity } },
+        session ? { session } : {}
+      );
+    }
+  }
+  order.isSoldCountIncremented = true;
+};
 
 export const updateOrderStatus = async (
   orderId: string,
@@ -365,6 +371,12 @@ export const updateOrderStatus = async (
 
   order.status = newStatus;
   order.statusHistory.push({ status: newStatus, note: note ?? '', changedBy: changedById as any });
+
+  // Increment soldCount if COMPLETED/DELIVERED
+  if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.DELIVERED) {
+    await incrementOrderSoldCount(order);
+  }
+
   return order.save();
 };
 
@@ -424,6 +436,9 @@ export const confirmOrderPayment = async (
     note: `Payment completed via ${paymentMethod}.${transactionId ? ` Transaction ID: ${transactionId}` : ''}`,
     changedBy: null as any
   });
+
+  // Increment soldCount since order is PAID
+  await incrementOrderSoldCount(order, session);
 
   await order.save(session ? { session } : {});
   return order;

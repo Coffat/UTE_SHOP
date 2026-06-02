@@ -23,6 +23,7 @@ import {
   incrementProductViews,
 } from "@/features/catalog/catalogSlice";
 import { addToCart } from "@/features/cart/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/features/wishlist/wishlistSlice";
 import { getProductImage, formatVND } from "./ProductList";
 import { images } from "@/lib/images";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -54,10 +55,14 @@ export function ProductDetail() {
     (state) => state.catalog
   );
 
+  const { items: wishlistItems, status: wishlistStatus } = useAppSelector((state) => state.wishlist);
+  const { user } = useAppSelector((state) => state.auth);
+
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
 
   // Tải chi tiết sản phẩm và biến thể
   useEffect(() => {
@@ -72,6 +77,40 @@ export function ProductDetail() {
       void dispatch(clearSelectedProduct());
     };
   }, [id, dispatch]);
+
+  // Handle recently viewed products in LocalStorage
+  useEffect(() => {
+    try {
+      const key = "recently_viewed_products";
+      const stored = localStorage.getItem(key);
+      let list = stored ? JSON.parse(stored) : [];
+      setRecentlyViewed(list);
+
+      if (selectedProduct) {
+        // Remove if already exists
+        list = list.filter((p: any) => p.id !== selectedProduct._id);
+        
+        const minPrice = selectedVariants.length > 0 ? selectedVariants[0].price : 1230000;
+        const imgUrl = selectedProduct.mainImageUrl || getProductImage(selectedProduct.slug || selectedProduct._id);
+        const statsReviewAverage = getReviewAverage(selectedProduct.reviewStats);
+
+        list.unshift({
+          id: selectedProduct._id,
+          name: selectedProduct.name,
+          description: selectedProduct.description,
+          price: formatVND(minPrice),
+          imageUrl: imgUrl,
+          imageAlt: selectedProduct.name,
+          rating: statsReviewAverage,
+        });
+
+        if (list.length > 10) list = list.slice(0, 10);
+        localStorage.setItem(key, JSON.stringify(list));
+      }
+    } catch (e) {
+      console.error("Lỗi khi lưu sản phẩm đã xem", e);
+    }
+  }, [selectedProduct, selectedVariants]);
 
   // Đặt mặc định là biến thể đầu tiên khi danh sách được nạp
   useEffect(() => {
@@ -180,6 +219,20 @@ export function ProductDetail() {
       setAddedSuccess(false);
       navigate("/cart");
     }, 1200);
+  };
+
+  const isFavorite = wishlistItems.some((item) => item._id === selectedProduct?._id);
+  
+  const handleToggleFavorite = () => {
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+    if (isFavorite) {
+      dispatch(removeFromWishlist(selectedProduct._id));
+    } else {
+      dispatch(addToWishlist(selectedProduct));
+    }
   };
 
   // Fallback to SIMILAR_PRODUCTS if related list is empty
@@ -292,10 +345,23 @@ export function ProductDetail() {
               {typeof selectedProduct.category === "object" ? selectedProduct.category.name : "Bộ sưu tập"}
             </div>
 
-            {/* Title */}
-            <h1 className="font-hero-display text-4xl lg:text-5xl font-bold text-deep-plum mb-4 leading-tight">
-              {selectedProduct.name}
-            </h1>
+            {/* Title & Favorite */}
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h1 className="font-hero-display text-4xl lg:text-5xl font-bold text-deep-plum leading-tight">
+                {selectedProduct.name}
+              </h1>
+              <button
+                onClick={handleToggleFavorite}
+                className={`p-3 rounded-full border transition-all ${
+                  isFavorite 
+                    ? "bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100" 
+                    : "bg-white/60 border-crystal-border text-dusk-gray hover:bg-white hover:text-deep-plum"
+                }`}
+                title={isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+              >
+                <MaterialIcon name="favorite" filled={isFavorite} className="text-[28px]" />
+              </button>
+            </div>
 
             {/* Stats */}
             <div className="flex items-center gap-4 mb-6">
@@ -503,6 +569,17 @@ export function ProductDetail() {
             products={productsToRender}
           />
         </div>
+
+        {/* Recently Viewed */}
+        {recentlyViewed.filter(p => p.id !== selectedProduct._id).length > 0 && (
+          <div className="pt-12 mt-12 border-t border-crystal-border/60">
+            <ProductRowSection
+              title="Sản phẩm đã xem"
+              subtitle="Nhìn lại những lựa chọn bạn đã lướt qua."
+              products={recentlyViewed.filter(p => p.id !== selectedProduct._id)}
+            />
+          </div>
+        )}
 
       </div>
     </div>

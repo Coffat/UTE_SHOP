@@ -45,6 +45,7 @@ export interface IOrder extends Document {
   statusHistory: IOrderStatusHistory[];
   isDeleted?: boolean;
   deletedAt?: Date | null;
+  isSoldCountIncremented?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +92,7 @@ const orderSchema = new Schema<IOrder>(
     statusHistory: [orderStatusHistorySchema],
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
+    isSoldCountIncremented: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
