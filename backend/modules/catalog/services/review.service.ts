@@ -6,6 +6,22 @@ import Product from '../models/Product.js';
 import DiscountType from '../../../shared/enums/DiscountType.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 
+const recomputeProductReviewStats = async (productId: string): Promise<void> => {
+  const approvedReviews = await Review.find({ product: productId, isVerified: true }).select('rating');
+  const totalReviews = approvedReviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? Math.round(
+          (approvedReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews) * 10
+        ) / 10
+      : 0;
+
+  await Product.findByIdAndUpdate(productId, {
+    'reviewStats.averageRating': averageRating,
+    'reviewStats.totalReviews': totalReviews,
+  });
+};
+
 export const createReview = async (
   customerId: string,
   productId: string,
@@ -55,26 +71,15 @@ export const createReview = async (
     rating,
     comment,
     imageUrls,
-    isVerified: true,
+    isVerified: false,
   });
 
-  // 5. Update Product stats (averageRating, totalReviews)
-  const allReviewsForProduct = await Review.find({ product: productId });
-  const totalReviews = allReviewsForProduct.length;
-  const sumRating = allReviewsForProduct.reduce((sum, r) => sum + r.rating, 0);
-  const averageRating = Math.round((sumRating / totalReviews) * 10) / 10;
-
-  await Product.findByIdAndUpdate(productId, {
-    'reviewStats.averageRating': averageRating,
-    'reviewStats.totalReviews': totalReviews,
-  });
-
-  // 6. Reward points (+100 points)
+  // 5. Reward points (+100 points)
   await Customer.findByIdAndUpdate(customerId, {
     $inc: { 'loyalty.points': 100 }
   });
 
-  // 7. Generate unique single-use Voucher code
+  // 6. Generate unique single-use Voucher code
   const randomSuffix = Math.random().toString(36).slice(2, 8).toUpperCase();
   const voucherCode = `REV-${randomSuffix}`;
   
@@ -93,13 +98,14 @@ export const createReview = async (
     customer: customerId,
   });
 
-  // 8. Return review details and reward info
+  // 7. Return review details and reward info
   return {
     review,
     reward: {
       points: 100,
       voucherCode: voucher.code,
       discountValue: 10,
+      reviewStatus: 'PENDING_APPROVAL',
     }
   };
 };
@@ -121,21 +127,31 @@ export const getReviewsByProduct = async (
   { page = 1, limit = 10 }: GetReviewsParams = {}
 ): Promise<ReviewListResponse> => {
   const [items, total] = await Promise.all([
-    Review.find({ product: productId })
+    Review.find({ product: productId, isVerified: true })
       .populate('customer', 'fullName')
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 }),
-    Review.countDocuments({ product: productId }),
+    Review.countDocuments({ product: productId, isVerified: true }),
   ]);
   return { items, total, page, limit };
 };
 
-export const approveReview = async (reviewId: string): Promise<IReview | null> =>
-  Review.findByIdAndUpdate(reviewId, { isVerified: true }, { new: true });
+export const approveReview = async (reviewId: string): Promise<IReview | null> => {
+  const updatedReview = await Review.findByIdAndUpdate(reviewId, { isVerified: true }, { new: true });
+  if (updatedReview) {
+    await recomputeProductReviewStats(updatedReview.product.toString());
+  }
+  return updatedReview;
+};
 
-export const rejectReview = async (reviewId: string): Promise<IReview | null> =>
-  Review.findByIdAndDelete(reviewId);
+export const rejectReview = async (reviewId: string): Promise<IReview | null> => {
+  const deletedReview = await Review.findByIdAndDelete(reviewId);
+  if (deletedReview) {
+    await recomputeProductReviewStats(deletedReview.product.toString());
+  }
+  return deletedReview;
+};
 
 export const getAllReviews = async (
   { page = 1, limit = 10 }: GetReviewsParams = {}

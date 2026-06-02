@@ -16,6 +16,9 @@ import {
   fetchProductById,
   fetchProductVariants,
   fetchRelatedProducts,
+  fetchProductReviews,
+  getReviewAverage,
+  getReviewCount,
   clearSelectedProduct,
   incrementProductViews,
 } from "@/features/catalog/catalogSlice";
@@ -26,12 +29,28 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const { products: imgProducts } = images;
 
+const formatReviewDate = (date: string) =>
+  new Date(date).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { selectedProduct, selectedVariants, relatedProducts, loading } = useAppSelector(
+  const {
+    selectedProduct,
+    selectedVariants,
+    selectedProductReviews,
+    selectedProductReviewsMeta,
+    relatedProducts,
+    loading,
+    productReviewsLoading,
+    productReviewsError,
+  } = useAppSelector(
     (state) => state.catalog
   );
 
@@ -45,6 +64,7 @@ export function ProductDetail() {
     if (id) {
       void dispatch(fetchProductById(id));
       void dispatch(fetchProductVariants(id));
+      void dispatch(fetchProductReviews(id));
       void dispatch(fetchRelatedProducts(id));
       void dispatch(incrementProductViews(id));
     }
@@ -92,7 +112,7 @@ export function ProductDetail() {
         imageUrl: imgUrl,
         imageAlt: p.name,
         badge: label ? { label, tone } : undefined,
-        rating: p.reviewStats?.ratingAverage ?? 5,
+        rating: getReviewAverage(p.reviewStats),
       };
     });
   }, [relatedProducts]);
@@ -116,6 +136,21 @@ export function ProductDetail() {
   const activeStock = selectedVariant?.stock ?? 10;
   const activePrice = parseDecimalPrice(selectedVariant?.price) || 1230000;
   const activeOldPrice = selectedVariant?.oldPrice;
+  const statsReviewAverage = getReviewAverage(selectedProduct.reviewStats);
+  const statsReviewCount = getReviewCount(selectedProduct.reviewStats);
+  const listReviewCount = selectedProductReviewsMeta?.total ?? selectedProductReviews.length;
+  const listReviewAverage = selectedProductReviews.length > 0
+    ? Number(
+        (
+          selectedProductReviews.reduce((sum, review) => sum + review.rating, 0) /
+          selectedProductReviews.length
+        ).toFixed(1)
+      )
+    : 0;
+  const reviewCount = listReviewCount > 0 ? listReviewCount : statsReviewCount;
+  const reviewAverage = listReviewCount > 0
+    ? listReviewAverage
+    : statsReviewAverage;
 
   const increment = () => {
     if (quantity < activeStock) setQuantity((q) => q + 1);
@@ -266,8 +301,8 @@ export function ProductDetail() {
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center gap-1">
                 <MaterialIcon name="star" className="text-star-rating text-[20px]" filled />
-                <span className="font-bold text-deep-plum text-lg">{selectedProduct.reviewStats?.ratingAverage ?? 5}</span>
-                <span className="text-dusk-gray text-sm ml-1">({selectedProduct.reviewStats?.ratingCount ?? 124} đánh giá)</span>
+                <span className="font-bold text-deep-plum text-lg">{reviewAverage}</span>
+                <span className="text-dusk-gray text-sm ml-1">({reviewCount} đánh giá)</span>
               </div>
               <div className="h-4 w-px bg-crystal-border"></div>
               <div className="text-sm font-medium text-midnight-purple">
@@ -396,6 +431,69 @@ export function ProductDetail() {
 
           </div>
         </div>
+
+        {/* Product Reviews */}
+        <section className="mb-12">
+          <div className="glass-panel rounded-3xl border border-crystal-border/60 p-6 sm:p-8">
+            <div className="flex flex-col gap-3 border-b border-crystal-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-hero-display text-2xl font-semibold text-deep-plum sm:text-3xl">
+                  Đánh giá từ khách hàng
+                </h2>
+                <p className="mt-1 text-sm text-dusk-gray">
+                  Trải nghiệm thực tế của người mua sản phẩm này.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-crystal-border bg-white/70 px-4 py-2">
+                <MaterialIcon name="star" filled className="text-[18px] text-star-rating" />
+                <span className="font-semibold text-deep-plum">{reviewAverage}</span>
+                <span className="text-sm text-dusk-gray">/ 5</span>
+                <span className="h-4 w-px bg-crystal-border/70" />
+                <span className="text-sm font-medium text-midnight-purple">{reviewCount} đánh giá</span>
+              </div>
+            </div>
+
+            {productReviewsLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-crystal-border border-t-primary"></div>
+              </div>
+            ) : productReviewsError ? (
+              <div className="mt-6 rounded-2xl border border-crystal-border bg-white/70 px-4 py-5 text-sm text-midnight-purple">
+                {productReviewsError}
+              </div>
+            ) : selectedProductReviews.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-crystal-border bg-white/70 px-4 py-5 text-sm text-midnight-purple">
+                Sản phẩm chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ trải nghiệm của bạn.
+              </div>
+            ) : (
+              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                {selectedProductReviews.map((review) => (
+                  <article key={review._id} className="rounded-2xl border border-crystal-border/70 bg-white/80 p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-deep-plum">{review.customer?.fullName || "Khách hàng UTE SHOP"}</h3>
+                        <p className="mt-1 text-xs text-dusk-gray">{formatReviewDate(review.createdAt)}</p>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <MaterialIcon
+                            key={`${review._id}-star-${star}`}
+                            name="star"
+                            filled={star <= review.rating}
+                            className={`text-[16px] ${star <= review.rating ? "text-star-rating" : "text-crystal-border"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm leading-relaxed text-midnight-purple">
+                      {review.comment}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Similar Products */}
         <div className="pt-12 border-t border-crystal-border/60">

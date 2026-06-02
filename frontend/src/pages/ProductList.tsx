@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { getProductCardVariantProps } from "@/lib/variant";
 import { AppDispatch, RootState } from "@/store";
-import { fetchProducts, BackendProduct } from "@/features/catalog/catalogSlice";
+import { fetchProducts, BackendProduct, getReviewAverage } from "@/features/catalog/catalogSlice";
 import { fetchCategories } from "@/features/catalog/categoriesSlice";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { images } from "@/lib/images";
@@ -415,7 +415,7 @@ export function ProductList() {
                       price={priceStr}
                       imageUrl={product.mainImageUrl || getProductImage(product.slug || product._id)}
                       imageAlt={product.name}
-                      rating={product.reviewStats?.ratingAverage ?? 5}
+                      rating={getReviewAverage(product.reviewStats)}
                       {...getProductCardVariantProps(product.minifiedVariants)}
                       badge={
                         hasTag(product, "khuyen-mai") ? { label: "Khuyến mãi", tone: "pink" } :

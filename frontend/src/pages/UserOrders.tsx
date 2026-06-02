@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/ToastContext";
 import { api } from "@/lib/api";
 import { ReviewModal } from "@/components/ReviewModal";
 import { RewardModal } from "@/components/RewardModal";
+import { addToCart } from "@/features/cart/cartSlice";
+import { parseDecimalPrice } from "@/lib/price";
 
 export function UserOrders() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export function UserOrders() {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [reviewTarget, setReviewTarget] = useState<{ orderId: string; productId: string; productName: string } | null>(null);
   const [rewardData, setRewardData] = useState<{ points: number; voucherCode: string } | null>(null);
+  const [viewingReview, setViewingReview] = useState<{ productName: string; rating: number; comment: string } | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -47,11 +50,43 @@ export function UserOrders() {
     setReviewTarget({ orderId, productId, productName });
   };
 
-  const handleReviewSuccess = (reward: { points: number; voucherCode: string }) => {
+  const handleReviewSuccess = (
+    reward: { points: number; voucherCode: string },
+    reviewData?: { rating: number; comment: string }
+  ) => {
+    const targetProductId = reviewTarget?.productId;
     setReviewTarget(null);
     setRewardData(reward);
     // Refresh orders list to update isReviewed flags
     dispatch(fetchUserOrders());
+
+    // Update the local selectedOrder items list state directly so that the item is marked as reviewed immediately
+    if (selectedOrder && targetProductId) {
+      setSelectedOrder((prev: any) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          items: prev.items?.map((item: any) => {
+            const product = item.productVariant?.product;
+            const itemId = product?._id || product;
+            if (itemId === targetProductId) {
+              return {
+                ...item,
+                isReviewed: true,
+                review: reviewData
+                  ? {
+                      rating: reviewData.rating,
+                      comment: reviewData.comment,
+                      createdAt: new Date().toISOString(),
+                    }
+                  : null,
+              };
+            }
+            return item;
+          }),
+        };
+      });
+    }
   };
 
   const handleViewDetails = async (orderId: string) => {
@@ -65,6 +100,49 @@ export function UserOrders() {
     } catch (err) {
       console.error(err);
       showToast("Lỗi khi tải chi tiết đơn hàng", "error");
+    }
+  };
+
+  const handleBuyAgain = (item: any) => {
+    const pVar = item.productVariant;
+    const product = pVar?.product;
+    const productId = product?._id || product;
+    const variantId = pVar?._id || pVar;
+    if (!productId || !variantId) {
+      showToast("Không thể mua lại sản phẩm này do thiếu thông tin biến thể.", "warning");
+      return;
+    }
+
+    const price = parseDecimalPrice(item.unitPrice);
+
+    dispatch(
+      addToCart({
+        productId,
+        variantId,
+        name: product?.name || item.snapshotName,
+        variantName: pVar?.sizeName || "Tiêu chuẩn",
+        price,
+        imageUrl: product?.mainImageUrl || getProductImage(product?.slug || productId),
+        quantity: 1,
+        stock: pVar?.stock || 99,
+      })
+    );
+    showToast(`Đã thêm "${product?.name || item.snapshotName}" vào giỏ hàng!`, "success");
+  };
+
+  const handleViewWrittenReview = (item: any, productName: string) => {
+    if (item.review) {
+      setViewingReview({
+        productName,
+        rating: item.review.rating,
+        comment: item.review.comment,
+      });
+    } else {
+      setViewingReview({
+        productName,
+        rating: 5,
+        comment: "Sản phẩm đã được đánh giá thành công.",
+      });
     }
   };
 
@@ -214,10 +292,22 @@ export function UserOrders() {
                             {isCompleted && (
                               <div className="flex-shrink-0">
                                 {item.isReviewed ? (
-                                  <span className="text-[11px] font-semibold text-dusk-gray/60 bg-gray-100 border border-gray-200/60 px-3 py-1.5 rounded-xl flex items-center gap-1 select-none">
-                                    <MaterialIcon name="check" className="text-xs text-dusk-gray/60" />
-                                    Đã đánh giá
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => handleViewWrittenReview(item, productName)}
+                                      className="bg-pure-ivory hover:bg-white text-primary border border-primary/20 hover:border-primary/50 text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 active-press transition cursor-pointer"
+                                    >
+                                      <MaterialIcon name="rate_review" className="text-xs" />
+                                      Xem đánh giá
+                                    </button>
+                                    <button
+                                      onClick={() => handleBuyAgain(item)}
+                                      className="bg-primary hover:bg-deep-plum text-pure-ivory text-[11px] font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1 active-press transition cursor-pointer"
+                                    >
+                                      <MaterialIcon name="shopping_bag" className="text-xs" />
+                                      Mua lại
+                                    </button>
+                                  </div>
                                 ) : (
                                   <button
                                     onClick={() => handleOpenReview(order.id || order._id, productId, productName)}
@@ -259,6 +349,62 @@ export function UserOrders() {
           voucherCode={rewardData.voucherCode}
           onClose={() => setRewardData(null)}
         />
+      )}
+
+      {/* Viewing written review modal */}
+      {viewingReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#4a3b52]/40 backdrop-blur-md animate-fade-in">
+          {/* Float Level (L2) Modal */}
+          <div className="w-full max-w-md rounded-[24px] border border-white/60 bg-white/70 backdrop-blur-[40px] p-6 sm:p-8 shadow-[0_10px_40px_rgba(168,85,247,0.05)] relative overflow-hidden group motion-safe:animate-scale-in">
+            
+            {/* Ambient background decorative colors */}
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#c084fc]/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[#fbcfe8]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="flex justify-between items-start pb-5 border-b border-[#f3e8ff]/50 relative z-10">
+              <div>
+                <h3 className="font-hero-display text-[28px] font-medium text-[#311b92] leading-[1.2]">Đánh giá của bạn</h3>
+                <p className="text-[14px] text-[#7e6e8c] mt-1 truncate max-w-[280px] sm:max-w-[360px] font-medium font-ui" title={viewingReview.productName}>
+                  {viewingReview.productName}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingReview(null)}
+                className="text-[#7e6e8c] hover:text-[#311b92] p-2 rounded-full hover:bg-white/40 transition active-press cursor-pointer"
+              >
+                <MaterialIcon name="close" className="text-[20px]" />
+              </button>
+            </div>
+            
+            <div className="mt-6 space-y-5 relative z-10">
+              <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <MaterialIcon
+                    key={i}
+                    name="star"
+                    filled={i < viewingReview.rating}
+                    className={`text-[32px] ${i < viewingReview.rating ? "text-[#c084fc] drop-shadow-sm" : "text-[#7e6e8c]/20"}`}
+                  />
+                ))}
+              </div>
+              
+              <div className="rounded-[16px] border border-white/60 bg-white/80 p-5 text-[17px] text-[#4a3b52] font-ui min-h-[100px] leading-[1.6] whitespace-pre-wrap shadow-inner">
+                {viewingReview.comment}
+              </div>
+            </div>
+            
+            <div className="flex justify-end pt-5 mt-6 border-t border-[#f3e8ff]/50 relative z-10">
+              {/* Primary CTA Button */}
+              <button
+                type="button"
+                onClick={() => setViewingReview(null)}
+                className="bg-[#c084fc] hover:bg-[#a855f7] text-[#311b92] px-8 py-2.5 rounded-full text-[14px] font-bold shadow-[0_0_15px_rgba(192,132,252,0.3)] hover:shadow-[0_0_25px_rgba(192,132,252,0.5)] transition hover-lift active-press cursor-pointer font-ui"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -36,14 +36,41 @@ export interface BackendProduct {
     stock?: number;
   }[];
   reviewStats?: {
-    ratingAverage: number;
-    ratingCount: number;
+    ratingAverage?: number;
+    ratingCount?: number;
+    averageRating?: number;
+    totalReviews?: number;
   };
   views?: number;
   soldCount?: number;
   isPublished?: boolean;
   mainImageUrl?: string;
 }
+
+export interface ProductReview {
+  _id: string;
+  customer: {
+    _id: string;
+    fullName: string;
+  };
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+interface ProductReviewPagination {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export const getReviewAverage = (
+  reviewStats: BackendProduct["reviewStats"]
+) => reviewStats?.averageRating ?? reviewStats?.ratingAverage ?? 0;
+
+export const getReviewCount = (
+  reviewStats: BackendProduct["reviewStats"]
+) => reviewStats?.totalReviews ?? reviewStats?.ratingCount ?? 0;
 
 export interface CatalogState {
   products: BackendProduct[];
@@ -64,6 +91,8 @@ export interface CatalogState {
   };
   selectedProduct: BackendProduct | null;
   selectedVariants: BackendVariant[];
+  selectedProductReviews: ProductReview[];
+  selectedProductReviewsMeta: ProductReviewPagination | null;
   topProducts: {
     bestSellers: BackendProduct[];
     mostViewed: BackendProduct[];
@@ -75,7 +104,9 @@ export interface CatalogState {
     description?: string;
   } | null;
   loading: boolean;
+  productReviewsLoading: boolean;
   error: string | null;
+  productReviewsError: string | null;
 }
 
 const initialState: CatalogState = {
@@ -90,10 +121,14 @@ const initialState: CatalogState = {
   },
   selectedProduct: null,
   selectedVariants: [],
+  selectedProductReviews: [],
+  selectedProductReviewsMeta: null,
   topProducts: null,
   selectedCategory: null,
   loading: false,
+  productReviewsLoading: false,
   error: null,
+  productReviewsError: null,
 };
 
 // Mock fallback dữ liệu khi chưa chạy backend hoặc db rỗng
@@ -283,6 +318,29 @@ export const fetchRelatedProducts = createAsyncThunk(
   }
 );
 
+export const fetchProductReviews = createAsyncThunk(
+  "catalog/fetchProductReviews",
+  async (productId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/products/${productId}/reviews`, {
+        params: { page: 1, limit: 6 },
+      });
+      if (response.data?.success && response.data?.data) {
+        return response.data.data as {
+          items: ProductReview[];
+          total: number;
+          page: number;
+          limit: number;
+        };
+      }
+      return { items: [], total: 0, page: 1, limit: 6 };
+    } catch (err) {
+      console.warn(`Backend reviews fetch for ${productId} failed.`);
+      return rejectWithValue("Lỗi tải đánh giá sản phẩm");
+    }
+  }
+);
+
 export const fetchHomeProducts = createAsyncThunk(
   "catalog/fetchHomeProducts",
   async (_, { rejectWithValue }) => {
@@ -364,6 +422,10 @@ const catalogSlice = createSlice({
     clearSelectedProduct(state) {
       state.selectedProduct = null;
       state.selectedVariants = [];
+      state.selectedProductReviews = [];
+      state.selectedProductReviewsMeta = null;
+      state.productReviewsLoading = false;
+      state.productReviewsError = null;
     },
     clearSelectedCategory(state) {
       state.selectedCategory = null;
@@ -405,6 +467,26 @@ const catalogSlice = createSlice({
       // Related Products
       .addCase(fetchRelatedProducts.fulfilled, (state, action: PayloadAction<BackendProduct[]>) => {
         state.relatedProducts = action.payload;
+      })
+      // Product reviews
+      .addCase(fetchProductReviews.pending, (state) => {
+        state.productReviewsLoading = true;
+        state.productReviewsError = null;
+      })
+      .addCase(fetchProductReviews.fulfilled, (state, action) => {
+        state.productReviewsLoading = false;
+        state.selectedProductReviews = action.payload.items;
+        state.selectedProductReviewsMeta = {
+          page: action.payload.page,
+          limit: action.payload.limit,
+          total: action.payload.total,
+        };
+      })
+      .addCase(fetchProductReviews.rejected, (state, action) => {
+        state.productReviewsLoading = false;
+        state.productReviewsError = action.payload as string ?? "Lỗi tải đánh giá sản phẩm";
+        state.selectedProductReviews = [];
+        state.selectedProductReviewsMeta = null;
       })
       // Home Products
       .addCase(fetchHomeProducts.pending, (state) => {

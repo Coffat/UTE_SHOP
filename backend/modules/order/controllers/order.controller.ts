@@ -82,8 +82,14 @@ export const getOrder = asyncHandler(async (req: Request, res: Response) => {
           order: order._id,
         });
         item.isReviewed = !!reviewExists;
+        item.review = reviewExists ? {
+          rating: reviewExists.rating,
+          comment: reviewExists.comment,
+          createdAt: reviewExists.createdAt,
+        } : null;
       } else {
         item.isReviewed = false;
+        item.review = null;
       }
     }
   }

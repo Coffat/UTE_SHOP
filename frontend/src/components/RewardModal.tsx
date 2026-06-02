@@ -8,6 +8,19 @@ interface RewardModalProps {
   onClose: () => void;
 }
 
+/**
+ * ─── DESIGN DIRECTION SUMMARY ────────────────────────────────────────────────
+ * Aesthetic Name: Luxury Botanical / Editorial Minimal
+ * DFII Score: 13
+ * Key Inspiration: French high-end florist tag designs & botanical portfolios.
+ *
+ * ─── DIFFERENTIATION CALLOUT ─────────────────────────────────────────────────
+ * This avoids generic AI UI patterns by replacing floating emoji confetti and neon 
+ * gradient boxes with elegant serif typography (Cormorant Garamond), a hand-drawn 
+ * SVG botanical stem outline background, receipt-style minimalist rows, and a fine 
+ * border ticket-stub styling for the discount code.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 export function RewardModal({ points, voucherCode, onClose }: RewardModalProps) {
   const { showToast } = useToast();
   const [copied, setCopied] = useState<boolean>(false);
@@ -20,94 +33,102 @@ export function RewardModal({ points, voucherCode, onClose }: RewardModalProps) 
       setTimeout(() => setCopied(false), 3000);
     } catch (err) {
       console.error(err);
-      showToast("Không thể tự động sao chép mã. Hãy tự bôi đen mã.", "error");
+      showToast("Không thể tự động sao chép mã. Hãy tự bôi đơn mã.", "error");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-midnight-purple/50 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-midnight-purple/35 backdrop-blur-sm animate-fade-in">
       
-      {/* Confetti Emoji Falling Visual Effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
-        <span className="absolute text-4xl animate-bounce" style={{ left: "10%", top: "15%", animationDuration: "3s" }}>🎉</span>
-        <span className="absolute text-4xl animate-bounce" style={{ right: "12%", top: "25%", animationDuration: "4s" }}>🌸</span>
-        <span className="absolute text-3xl animate-bounce" style={{ left: "20%", bottom: "30%", animationDuration: "3.5s" }}>✨</span>
-        <span className="absolute text-3xl animate-bounce" style={{ right: "25%", bottom: "15%", animationDuration: "2.8s" }}>💖</span>
-        <span className="absolute text-4xl animate-bounce" style={{ left: "45%", top: "5%", animationDuration: "4.5s" }}>🎈</span>
-      </div>
-
-      <div className="glass-panel w-full max-w-md rounded-[32px] border border-white/90 p-8 shadow-[0_25px_60px_rgba(139,107,255,0.18)] text-center relative overflow-hidden group motion-safe:animate-scale-in">
+      {/* Main card */}
+      <div className="relative w-full max-w-[420px] bg-white border border-dusk-gray/20 rounded-2xl p-8 sm:p-10 shadow-[0_15px_45px_rgba(49,27,146,0.06)] overflow-hidden motion-safe:animate-fade-up">
         
-        {/* Dynamic Glowing background circles */}
-        <div className="absolute -right-20 -top-20 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -left-20 -bottom-20 w-48 h-48 bg-[#ff758c]/20 rounded-full blur-3xl pointer-events-none"></div>
-
-        {/* Celebratory Icon */}
-        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-soft-amethyst/30 to-[#ff758c]/30 text-primary shadow-inner relative">
-          <span className="absolute animate-ping inline-flex h-full w-full rounded-full bg-[#ff758c]/30 opacity-75"></span>
-          <MaterialIcon name="celebration" className="text-[52px] text-deep-plum animate-pulse" />
+        {/* Hand-drawn SVG botanical line art stem background */}
+        <div className="absolute right-0 bottom-0 w-48 h-48 text-[#4a5d4e]/5 select-none pointer-events-none translate-x-6 translate-y-6">
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.75" className="w-full h-full">
+            <path d="M10,95 Q40,65 75,10" />
+            <path d="M75,10 Q60,25 50,20 Q40,15 30,30 Q20,45 25,80" />
+            <path d="M50,20 Q45,35 37,32 Q29,29 25,80" />
+            <path d="M75,10 C65,0 45,5 40,20 C30,15 20,30 30,40" />
+            <path d="M45,65 Q30,60 25,45 Q40,50 45,65" />
+            <path d="M55,50 Q70,45 75,30 Q60,35 55,50" />
+          </svg>
         </div>
 
-        {/* Content Details */}
-        <h3 className="font-hero-display text-3xl font-extrabold text-gradient mb-2 tracking-tight">Đánh Giá Thành Công!</h3>
-        <p className="text-sm font-semibold text-deep-plum">Cảm ơn bạn đã chia sẻ đánh giá quý báu về sản phẩm.</p>
-        
-        {/* Rewards Section */}
-        <div className="mt-6 space-y-4">
+        {/* Minimal Decorative Top Divider */}
+        <div className="flex justify-center mb-6">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#4a5d4e]/40 mx-1"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#cfa86b]/40 mx-1"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#4a5d4e]/40 mx-1"></div>
+        </div>
+
+        {/* Celebratory Title in Serif Italic */}
+        <div className="text-center space-y-2 mb-8">
+          <h3 className="font-serif text-3xl font-bold italic text-deep-plum tracking-wide">
+            Đóng góp tinh tế
+          </h3>
+          <p className="text-[10px] text-dusk-gray font-bold tracking-widest uppercase font-sans">
+            Cảm ơn bạn đã gửi đánh giá sản phẩm
+          </p>
+        </div>
+
+        {/* Receipt-style Reward details */}
+        <div className="space-y-6">
           
-          {/* Points Reward Box */}
-          <div className="rounded-2xl border border-white/60 bg-pure-ivory/80 px-4 py-3.5 flex items-center justify-between shadow-sm relative overflow-hidden">
-            <div className="absolute inset-y-0 left-0 w-1.5 bg-[#54b398]"></div>
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-[#54b398]/10 flex items-center justify-center text-[#54b398]">
-                <MaterialIcon name="stars" className="text-[20px]" />
-              </div>
-              <span className="text-xs font-bold text-dusk-gray">Điểm tích lũy nhận được</span>
+          {/* Points received */}
+          <div className="flex items-baseline justify-between border-b border-dashed border-dusk-gray/10 pb-4">
+            <div className="space-y-1">
+              <span className="text-[9px] uppercase font-bold tracking-widest text-[#4a5d4e]">
+                Loyalty Reward
+              </span>
+              <p className="text-xs font-semibold text-deep-plum">Điểm tích lũy nhận được</p>
             </div>
-            <span className="text-lg font-extrabold text-[#54b398]">+{points} điểm</span>
+            <span className="text-lg font-extrabold text-[#4a5d4e] font-serif">
+              +{points} pts
+            </span>
           </div>
 
-          {/* Voucher Reward Box */}
-          <div className="rounded-2xl border border-white/60 bg-pure-ivory/80 p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
-            <div className="absolute inset-y-0 left-0 w-1.5 bg-primary"></div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <MaterialIcon name="sell" className="text-[20px]" />
-                </div>
-                <span className="text-xs font-bold text-dusk-gray text-left">
-                  Mã giảm giá cá nhân 10%<br />
-                  <span className="text-[10px] text-dusk-gray/70 font-medium">Hạn dùng 30 ngày • 1 lần dùng</span>
+          {/* Voucher received - styled like a physical botanical gift tag */}
+          <div className="border border-dashed border-[#cfa86b]/50 bg-[#f9f5eb]/50 rounded-xl p-5 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <span className="text-[9px] uppercase font-bold tracking-widest text-[#cfa86b]">
+                  Special Gift Voucher
                 </span>
+                <p className="text-xs font-bold text-deep-plum">
+                  Ưu đãi 10% cho đơn hàng sau
+                </p>
               </div>
+              <span className="text-[10px] text-dusk-gray/60 font-semibold italic">
+                30 ngày
+              </span>
             </div>
 
-            {/* Copyable Voucher Code Area */}
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 bg-soft-amethyst/30 border border-crystal-border/80 px-4 py-3 rounded-xl font-mono font-bold text-deep-plum text-sm text-center tracking-wider shadow-inner select-all">
+            {/* Monospace Code & Copy Button stub */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-white border border-[#cfa86b]/20 px-4 py-3 rounded-lg font-mono font-bold text-deep-plum text-xs text-center tracking-widest shadow-inner select-all">
                 {voucherCode}
               </div>
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="bg-deep-plum hover:bg-primary text-pure-ivory p-3 rounded-xl transition-[background-color,transform] active:scale-95 shadow-sm active-press cursor-pointer flex-shrink-0 flex items-center justify-center"
+                className="bg-[#cfa86b]/10 hover:bg-[#cfa86b]/20 text-[#cfa86b] border border-[#cfa86b]/25 p-3 rounded-lg transition-all active:scale-95 cursor-pointer flex-shrink-0 flex items-center justify-center"
                 title="Sao chép mã giảm giá"
               >
-                <MaterialIcon name={copied ? "assignment_turned_in" : "content_copy"} className="text-[18px]" />
+                <MaterialIcon name={copied ? "check" : "content_copy"} className="text-[16px] font-bold" />
               </button>
             </div>
           </div>
 
         </div>
 
-        {/* Action Button */}
+        {/* Lowercase, clean close button */}
         <button
           type="button"
           onClick={onClose}
-          className="w-full btn-hero-cta-gradient py-3.5 rounded-full font-bold tracking-wide mt-8 shadow-md hover-lift active-press text-sm"
+          className="w-full mt-8 bg-deep-plum hover:bg-[#4a5d4e] text-white text-xs font-bold uppercase tracking-widest py-3.5 rounded-lg shadow-sm hover-lift active-press transition duration-300 cursor-pointer"
         >
-          Tuyệt vời, cảm ơn!
+          Hoàn tất
         </button>
 
       </div>
