@@ -36,7 +36,10 @@ export interface IOrder extends Document {
   subtotal: Types.Decimal128;
   shippingFee: Types.Decimal128;
   discountAmount: Types.Decimal128;
-  totalAmount: Types.Decimal128;
+  pointsUsed: number;
+  pointsDiscount: Types.Decimal128;
+  finalTotal: Types.Decimal128;
+  totalAmount: Types.Decimal128; // Legacy or equivalent to finalTotal
   note: string;
   paymentMethod: PaymentMethod;
   paymentStatus: OrderPaymentStatus;
@@ -83,7 +86,10 @@ const orderSchema = new Schema<IOrder>(
     subtotal: { type: Schema.Types.Decimal128, required: true },
     shippingFee: { type: Schema.Types.Decimal128, default: 0 },
     discountAmount: { type: Schema.Types.Decimal128, default: 0 },
-    totalAmount: { type: Schema.Types.Decimal128, required: true },
+    pointsUsed: { type: Number, default: 0 },
+    pointsDiscount: { type: Schema.Types.Decimal128, default: 0 },
+    finalTotal: { type: Schema.Types.Decimal128, required: true },
+    totalAmount: { type: Schema.Types.Decimal128, required: true }, // Legacy
     note: { type: String, default: '' },
     paymentMethod: { type: String, enum: Object.values(PaymentMethod), default: PaymentMethod.COD },
     paymentStatus: { type: String, enum: Object.values(OrderPaymentStatus), default: OrderPaymentStatus.UNPAID },

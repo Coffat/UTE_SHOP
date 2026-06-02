@@ -3,10 +3,9 @@ import {
   getProfile,
   editProfile,
   changePassword,
-  getFavorites,
-  addFavorite,
-  removeFavorite,
 } from '../controllers/user.controller.js';
+import * as wishlistController from '../controllers/wishlist.controller.js';
+import * as pointController from '../controllers/point.controller.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
 import { validateChangePassword } from '../middlewares/user.validator.js';
 
@@ -34,13 +33,11 @@ router.post(
   changePassword
 );
 
-// GET /api/v1/users/favorites – Lấy danh sách yêu thích (chỉ CUSTOMER)
-router.get('/favorites', authenticate, authorize('CUSTOMER'), getFavorites);
+// Wishlist routes
+router.get('/wishlist', authenticate, wishlistController.getWishlist);
+router.post('/wishlist/:productId', authenticate, wishlistController.toggleWishlist);
 
-// POST /api/v1/users/favorites/:productId – Thêm sản phẩm vào danh sách yêu thích (chỉ CUSTOMER)
-router.post('/favorites/:productId', authenticate, authorize('CUSTOMER'), addFavorite);
-
-// DELETE /api/v1/users/favorites/:productId – Xóa sản phẩm khỏi danh sách yêu thích (chỉ CUSTOMER)
-router.delete('/favorites/:productId', authenticate, authorize('CUSTOMER'), removeFavorite);
+// Points route
+router.get('/points/history', authenticate, pointController.getPointHistory);
 
 export default router;

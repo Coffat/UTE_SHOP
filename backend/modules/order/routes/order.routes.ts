@@ -42,6 +42,13 @@ router.post(
   orderController.syncCart
 );
 
+// POST /api/v1/orders/preview – Xem trước
+router.post(
+  '/preview',
+  authenticate, authorize('CUSTOMER'),
+  orderController.previewOrder
+);
+
 // POST /api/v1/orders – Đặt hàng – chỉ CUSTOMER
 router.post(
   '/',

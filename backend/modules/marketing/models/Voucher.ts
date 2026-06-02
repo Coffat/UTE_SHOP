@@ -12,7 +12,8 @@ export interface IVoucher extends Document {
   usedCount: number;
   isActive: boolean;
   campaign?: mongoose.Types.ObjectId | null;
-  customer?: mongoose.Types.ObjectId | null;
+  customer?: mongoose.Types.ObjectId | null; // Nếu chỉ dành riêng cho 1 user
+  usedBy: { userId: mongoose.Types.ObjectId; usageCount: number }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +31,12 @@ const voucherSchema = new Schema<IVoucher>(
     isActive: { type: Boolean, default: true },
     campaign: { type: Schema.Types.ObjectId, ref: 'Campaign', default: null },
     customer: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    usedBy: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: 'User' },
+        usageCount: { type: Number, default: 0 },
+      },
+    ],
   },
   { timestamps: true }
 );
