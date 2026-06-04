@@ -5,9 +5,13 @@ export interface IConversation extends Document {
   customerId: mongoose.Types.ObjectId;
   assignedStaffId?: mongoose.Types.ObjectId | null;
   status: ChatConversationStatus;
+  aiEnabled: boolean;
+  lastAiResponseAt?: Date | null;
+  handoffReason?: string | null;
+  aiFailureCount?: number;
   lastMessageAt?: Date | null;
   lastMessagePreview?: string | null;
-  lastMessageSenderType?: 'customer' | 'staff' | 'system' | null;
+  lastMessageSenderType?: 'customer' | 'staff' | 'ai' | 'system' | null;
   lastCustomerMessageAt?: Date | null;
   lastStaffMessageAt?: Date | null;
   customerLastReadAt?: Date | null;
@@ -29,9 +33,13 @@ const conversationSchema = new Schema<IConversation>(
       required: true,
       index: true,
     },
+    aiEnabled: { type: Boolean, default: true },
+    lastAiResponseAt: { type: Date, default: null },
+    handoffReason: { type: String, default: null, maxlength: 120 },
+    aiFailureCount: { type: Number, default: 0, min: 0 },
     lastMessageAt: { type: Date, default: null },
     lastMessagePreview: { type: String, default: null, maxlength: 2000 },
-    lastMessageSenderType: { type: String, enum: ['customer', 'staff', 'system'], default: null },
+    lastMessageSenderType: { type: String, enum: ['customer', 'staff', 'ai', 'system'], default: null },
     lastCustomerMessageAt: { type: Date, default: null },
     lastStaffMessageAt: { type: Date, default: null },
     customerLastReadAt: { type: Date, default: null },

@@ -21,7 +21,8 @@ const parseCookieHeader = (cookieHeader: string | undefined) => {
 
 export const authenticateSocket = (socket: Socket): SocketAuthUser => {
   const cookies = parseCookieHeader(socket.handshake.headers.cookie);
-  const token = cookies.accessToken;
+  const handshakeAuth = socket.handshake.auth as { accessToken?: string; token?: string } | undefined;
+  const token = cookies.accessToken || handshakeAuth?.accessToken || handshakeAuth?.token;
   if (!token) {
     throw new Error('Socket unauthorized: accessToken not found in cookie');
   }

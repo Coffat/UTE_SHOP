@@ -20,6 +20,7 @@ import PaymentMethod from '../../../shared/enums/PaymentMethod.js';
 import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
+import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
 import {
   mapOrderToAdminListItem,
   type AdminOrderListItemDto,
@@ -117,6 +118,7 @@ export const placeOrderWithoutTransaction = async ({
   deliveryAddressId,
   orderType = OrderType.ONLINE,
   voucherCode,
+  pointsToUse,
   paymentMethod,
   note,
 }: PlaceOrderParams): Promise<IOrder> => {
@@ -381,13 +383,13 @@ export const updateOrderStatus = async (
   order.status = newStatus;
   order.statusHistory.push({ status: newStatus, note: note ?? '', changedBy: changedById as any });
 
-  // Increment soldCount if COMPLETED/DELIVERED
-  if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.DELIVERED) {
+  // Increment soldCount when order reaches completed status.
+  if (newStatus === OrderStatus.COMPLETED) {
     await incrementOrderSoldCount(order);
   }
 
-  // Grant points if DELIVERED and not yet granted
-  if (newStatus === OrderStatus.DELIVERED && order.customer) {
+  // Grant points when completed and not yet granted
+  if (newStatus === OrderStatus.COMPLETED && order.customer) {
     // Check if points already granted
     const existingEarned = await PointLedger.findOne({ order: order._id, type: PointTransactionType.EARNED });
     if (!existingEarned) {
@@ -625,6 +627,55 @@ export const getOrders = async ({
 
 export const getOrderById = (orderId: string): Promise<IOrder | null> =>
   orderRepository.findById(orderId);
+
+export interface CustomerOrderStatusLookup {
+  orderId: string;
+  orderCode: string;
+  status: OrderStatus;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  recipientName: string;
+}
+
+export const getCustomerOrderStatusByCode = async (
+  customerId: string,
+  orderCode: string
+): Promise<CustomerOrderStatusLookup | null> => {
+  const normalizedCode = orderCode.trim();
+  if (!normalizedCode) {
+    throw new AppError('Mã đơn hàng không hợp lệ', 400);
+  }
+
+  const baseFilter = {
+    customer: customerId,
+    isDeleted: { $ne: true },
+  };
+
+  const order = await Order.findOne({
+    ...baseFilter,
+    orderCode: normalizedCode,
+  })
+    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .lean() || await Order.findOne({
+    ...baseFilter,
+    orderCode: normalizedCode.toUpperCase(),
+  })
+    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .lean();
+
+  if (!order) return null;
+
+  return {
+    orderId: String(order._id),
+    orderCode: String(order.orderCode),
+    status: order.status as OrderStatus,
+    paymentStatus: String(order.paymentStatus),
+    createdAt: new Date(order.createdAt as string | Date).toISOString(),
+    updatedAt: new Date(order.updatedAt as string | Date).toISOString(),
+    recipientName: String((order.recipient as { fullName?: string } | undefined)?.fullName ?? ''),
+  };
+};
 
 const decimalToNumber = (value: any): number => {
   if (value == null) return 0;

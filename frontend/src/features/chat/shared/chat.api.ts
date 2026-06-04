@@ -26,6 +26,11 @@ export async function sendCustomerMessage(
   return unwrap<{ message: any; conversation: Conversation }>(response);
 }
 
+export async function requestCustomerHandoff(conversationId: string) {
+  const response = await api.post(`/api/v1/customer/chat/conversations/${conversationId}/handoff`);
+  return unwrap<{ message: any; conversation: Conversation }>(response);
+}
+
 export async function listStaffConversations(params: {
   status?: string;
   search?: string;

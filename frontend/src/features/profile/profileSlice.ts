@@ -42,6 +42,7 @@ export type UserProfileDto = {
   _id: string;
   fullName: string;
   email: string;
+  points?: number;
   phone?: string;
   address?: string;
   role?: string;

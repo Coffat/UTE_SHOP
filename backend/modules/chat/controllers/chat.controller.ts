@@ -39,6 +39,9 @@ const getParticipantUserIds = (conversation: any) => {
   return [...ids];
 };
 
+const shouldBroadcastMessageToStaffInbox = (conversation: any) =>
+  conversation?.status === 'waiting_staff';
+
 const getActor = (req: Request) => {
   if (!req.user) throw new Error('Unauthorized');
   return { id: req.user.id, role: req.user.role };
@@ -86,7 +89,9 @@ export const customerSendMessage = asyncHandler(async (req: Request, res: Respon
 
     const result = await sendMessage({ conversationId, actor, content, clientMessageId });
 
-    emitNewMessage(conversationId, result.message, getParticipantUserIds(result.conversation));
+    emitNewMessage(conversationId, result.message, getParticipantUserIds(result.conversation), {
+      includeStaffInbox: shouldBroadcastMessageToStaffInbox(result.conversation),
+    });
     emitConversationUpdated(conversationId, result.conversation);
     emitStaffInboxConversationUpdated(result.conversation);
 
@@ -130,7 +135,9 @@ export const staffAssignConversation = asyncHandler(async (req: Request, res: Re
       { event: 'staff_assigned', staffId: actor.id }
     );
 
-    emitNewMessage(conversationId, systemMessage, getParticipantUserIds(conversation));
+    emitNewMessage(conversationId, systemMessage, getParticipantUserIds(conversation), {
+      includeStaffInbox: shouldBroadcastMessageToStaffInbox(conversation),
+    });
     emitStaffAssigned(conversationId, {
       conversationId,
       staffId: actor.id,
@@ -169,7 +176,9 @@ export const staffSendMessage = asyncHandler(async (req: Request, res: Response)
     const { content, clientMessageId } = req.body as { content: string; clientMessageId?: string };
     const result = await sendMessage({ conversationId, actor, content, clientMessageId });
 
-    emitNewMessage(conversationId, result.message, getParticipantUserIds(result.conversation));
+    emitNewMessage(conversationId, result.message, getParticipantUserIds(result.conversation), {
+      includeStaffInbox: shouldBroadcastMessageToStaffInbox(result.conversation),
+    });
     emitConversationUpdated(conversationId, result.conversation);
     emitStaffInboxConversationUpdated(result.conversation);
 
@@ -193,7 +202,9 @@ export const staffUpdateConversationStatus = asyncHandler(async (req: Request, r
       { event: 'conversation_status_updated', status }
     );
 
-    emitNewMessage(conversationId, systemMessage, getParticipantUserIds(conversation));
+    emitNewMessage(conversationId, systemMessage, getParticipantUserIds(conversation), {
+      includeStaffInbox: shouldBroadcastMessageToStaffInbox(conversation),
+    });
     emitConversationUpdated(conversationId, conversation);
     emitStaffInboxConversationUpdated(conversation);
 

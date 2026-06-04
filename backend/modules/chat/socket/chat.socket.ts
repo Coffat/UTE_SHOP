@@ -161,7 +161,9 @@ export const initializeChatSocket = (httpServer: HttpServer) => {
           clientMessageId: payload.clientMessageId,
         });
 
-        emitNewMessage(payload.conversationId, result.message);
+        emitNewMessage(payload.conversationId, result.message, [], {
+          includeStaffInbox: result.conversation.status === 'waiting_staff',
+        });
         emitConversationUpdated(payload.conversationId, result.conversation);
         emitStaffInboxConversationUpdated(result.conversation);
       } catch (error: any) {
@@ -175,7 +177,12 @@ export const initializeChatSocket = (httpServer: HttpServer) => {
 
 export const getChatSocket = () => io;
 
-export const emitNewMessage = (conversationId: string, message: unknown, participantUserIds: string[] = []) => {
+export const emitNewMessage = (
+  conversationId: string,
+  message: unknown,
+  participantUserIds: string[] = [],
+  options: { includeStaffInbox?: boolean } = {}
+) => {
   if (!io) return;
   let emitter = io.to(getConversationRoom(conversationId));
   for (const userId of participantUserIds) {
@@ -183,6 +190,9 @@ export const emitNewMessage = (conversationId: string, message: unknown, partici
     emitter = emitter.to(getUserRoom(userId));
   }
   emitter.emit('new_message', { conversationId, message });
+  if (options.includeStaffInbox) {
+    io.to(STAFF_INBOX_ROOM).emit('new_message', { conversationId, message });
+  }
 };
 
 export const emitConversationUpdated = (conversationId: string, conversation: unknown) => {

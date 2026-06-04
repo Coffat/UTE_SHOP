@@ -1,16 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { hasAuthSessionFlag } from "@/lib/authSession";
 import { useAppSelector } from "@/store/hooks";
 import {
   createOrGetCustomerConversation,
   getCustomerMessages,
+  requestCustomerHandoff,
   sendCustomerMessage,
 } from "../shared/chat.api";
-import type { Conversation, Message } from "../shared/chat.types";
+import type { Conversation, Message, ProductSuggestion } from "../shared/chat.types";
 import { chatSocket } from "../shared/chat.socket";
+import { startCustomerAiStream } from "../shared/chat.sse";
 
 const createClientMessageId = () => `cmsg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 const shouldDisplayMessage = (message: Message) => message.messageType !== "system_event";
+
+const toCurrency = (value?: number) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return null;
+  return value.toLocaleString("vi-VN") + "đ";
+};
+
+const getProductSuggestions = (message: Message): ProductSuggestion[] => {
+  const suggestions = message.metadata?.productSuggestions;
+  if (!Array.isArray(suggestions)) return [];
+  return suggestions
+    .map((item) => ({
+      id: String(item.id ?? ""),
+      name: String(item.name ?? ""),
+      slug: typeof item.slug === "string" ? item.slug : undefined,
+      description: typeof item.description === "string" ? item.description : undefined,
+      mainImageUrl: typeof item.mainImageUrl === "string" ? item.mainImageUrl : undefined,
+      priceFrom: typeof item.priceFrom === "number" ? item.priceFrom : undefined,
+      inStock: typeof item.inStock === "boolean" ? item.inStock : undefined,
+    }))
+    .filter((item) => item.id && item.name);
+};
 
 export function CustomerChatWidget() {
   const profile = useAppSelector((state) => state.profile.profile);
@@ -26,9 +50,24 @@ export function CustomerChatWidget() {
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const typingTimerRef = useRef<number | null>(null);
+  const aiStreamCloseRef = useRef<(() => void) | null>(null);
+  const aiTempMessageIdRef = useRef<string | null>(null);
 
   const isCustomer = profile?.role === "CUSTOMER";
   const canUseChat = hasAuthSessionFlag() && isCustomer;
+
+  const closeAiStream = useCallback(() => {
+    if (aiStreamCloseRef.current) {
+      aiStreamCloseRef.current();
+      aiStreamCloseRef.current = null;
+    }
+    aiTempMessageIdRef.current = null;
+  }, []);
+
+  const shouldAutoAskAi = useCallback((conv: Conversation | null) => {
+    if (!conv) return false;
+    return conv.status === "waiting_staff" && conv.assignedStaffId == null && conv.aiEnabled !== false;
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     if (!listRef.current) return;
@@ -67,6 +106,97 @@ export function CustomerChatWidget() {
     });
   }, []);
 
+  const upsertAiTempToken = useCallback((token: string) => {
+    const tempId = aiTempMessageIdRef.current;
+    if (!tempId || !token) return;
+    setMessages((prev) => {
+      const idx = prev.findIndex((msg) => msg._id === tempId);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], content: `${next[idx].content}${token}`, deliveryState: "sent" as const };
+      return next;
+    });
+  }, []);
+
+  const startAiStream = useCallback(
+    (conversationId: string, customerMessageId: string) => {
+      closeAiStream();
+      const tempId = `tmp_ai_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      aiTempMessageIdRef.current = tempId;
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: tempId,
+          conversationId,
+          senderType: "ai",
+          senderId: null,
+          clientMessageId: null,
+          messageType: "text",
+          content: "",
+          createdAt: new Date().toISOString(),
+          deliveryState: "sending",
+        },
+      ]);
+
+      aiStreamCloseRef.current = startCustomerAiStream({
+        conversationId,
+        messageId: customerMessageId,
+        onToken: (text) => {
+          upsertAiTempToken(text);
+          scrollToBottom();
+        },
+        onHandoff: () => {
+          setTyping(false);
+        },
+        onDone: ({ messageId: aiMessageId }) => {
+          setMessages((prev) => {
+            const tempIdx = prev.findIndex((msg) => msg._id === tempId);
+            if (tempIdx < 0) return prev;
+            const existingIdx = prev.findIndex((msg) => msg._id === aiMessageId);
+            if (existingIdx >= 0) {
+              return prev.filter((msg) => msg._id !== tempId);
+            }
+            const next = [...prev];
+            next[tempIdx] = { ...next[tempIdx], _id: aiMessageId, deliveryState: "sent" as const };
+            return next;
+          });
+          aiTempMessageIdRef.current = aiMessageId;
+          aiStreamCloseRef.current = null;
+          scrollToBottom();
+        },
+        onError: (message) => {
+          setMessages((prev) => {
+            const tempIdx = prev.findIndex((msg) => msg._id === tempId);
+            if (tempIdx < 0) {
+              return [
+                ...prev,
+                {
+                  _id: `tmp_ai_error_${Date.now()}`,
+                  conversationId,
+                  senderType: "ai",
+                  senderId: null,
+                  clientMessageId: null,
+                  messageType: "text",
+                  content: message,
+                  createdAt: new Date().toISOString(),
+                  deliveryState: "sent",
+                },
+              ];
+            }
+            const next = [...prev];
+            next[tempIdx] = { ...next[tempIdx], content: message, deliveryState: "sent" as const };
+            return next;
+          });
+          aiStreamCloseRef.current = null;
+          aiTempMessageIdRef.current = null;
+          setTyping(false);
+          scrollToBottom();
+        },
+      });
+    },
+    [closeAiStream, scrollToBottom, upsertAiTempToken]
+  );
+
   const loadCurrentConversation = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -97,11 +227,17 @@ export function CustomerChatWidget() {
 
   useEffect(() => {
     return () => {
+      closeAiStream();
       if (typingTimerRef.current) {
         window.clearTimeout(typingTimerRef.current);
       }
     };
-  }, []);
+  }, [closeAiStream]);
+
+  useEffect(() => {
+    if (open) return;
+    closeAiStream();
+  }, [open, closeAiStream]);
 
   useEffect(() => {
     if (!open || !conversation) return;
@@ -179,6 +315,9 @@ export function CustomerChatWidget() {
       const response = await sendCustomerMessage(conversation._id, { content, clientMessageId });
       setConversation(response.conversation);
       upsertMessage(response.message);
+      if (shouldAutoAskAi(response.conversation)) {
+        startAiStream(conversation._id, response.message._id);
+      }
     } catch {
       setMessages((prev) =>
         prev.map((msg) => {
@@ -191,7 +330,20 @@ export function CustomerChatWidget() {
     } finally {
       setSending(false);
     }
-  }, [conversation, input, profile?._id, scrollToBottom, upsertMessage]);
+  }, [conversation, input, profile?._id, scrollToBottom, shouldAutoAskAi, startAiStream, upsertMessage]);
+
+  const requestHandoff = useCallback(async () => {
+    if (!conversation) return;
+    closeAiStream();
+    try {
+      const response = await requestCustomerHandoff(conversation._id);
+      setConversation(response.conversation);
+      upsertMessage(response.message);
+      scrollToBottom();
+    } catch {
+      setError("Không thể chuyển nhân viên lúc này. Vui lòng thử lại.");
+    }
+  }, [closeAiStream, conversation, scrollToBottom, upsertMessage]);
 
   const retryMessage = useCallback(
     async (msg: Message) => {
@@ -230,6 +382,17 @@ export function CustomerChatWidget() {
               Đóng
             </button>
           </div>
+          {conversation?.status !== "closed" && (
+            <div className="border-b border-crystal-border bg-white px-3 pb-2">
+              <button
+                type="button"
+                onClick={() => void requestHandoff()}
+                className="active-press rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
+              >
+                Gặp nhân viên
+              </button>
+            </div>
+          )}
 
           <div ref={listRef} className="flex-1 overflow-y-auto bg-surface-container-low/60 px-2.5 py-2.5">
             {loading ? (
@@ -254,6 +417,7 @@ export function CustomerChatWidget() {
                 )}
                 {messages.map((msg) => {
                   const mine = msg.senderType === "customer";
+                  const productSuggestions = msg.senderType === "ai" ? getProductSuggestions(msg) : [];
                   return (
                     <div
                       key={msg._id}
@@ -263,6 +427,8 @@ export function CustomerChatWidget() {
                         className={`max-w-[80%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed shadow-sm ${
                           mine
                             ? "bg-primary text-pure-ivory"
+                            : msg.senderType === "ai"
+                              ? "border border-indigo-200 bg-indigo-50 text-indigo-900"
                             : msg.senderType === "system"
                               ? "border border-slate-200 bg-slate-100 text-slate-700"
                               : "border border-crystal-border bg-white text-midnight-purple"
@@ -280,6 +446,55 @@ export function CustomerChatWidget() {
                           >
                             Gửi lỗi, bấm để gửi lại
                           </button>
+                        )}
+                        {msg.senderType === "ai" && msg.deliveryState === "sending" && (
+                          <div className="mt-1 text-[10px] font-medium text-indigo-700/80">AI đang trả lời...</div>
+                        )}
+                        {msg.senderType === "ai" && productSuggestions.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {productSuggestions.map((product) => (
+                              <Link
+                                key={`${msg._id}_${product.id}`}
+                                to={`/product/${product.id}`}
+                                className="block rounded-xl border border-indigo-200 bg-white p-2 transition hover:bg-indigo-50"
+                              >
+                                <div className="flex items-start gap-2">
+                                  {product.mainImageUrl ? (
+                                    <img
+                                      src={product.mainImageUrl}
+                                      alt={product.name}
+                                      className="h-12 w-12 rounded-lg border border-slate-200 object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-500">
+                                      Hoa
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[11px] font-semibold text-indigo-900">
+                                      {product.name}
+                                    </p>
+                                    {product.description ? (
+                                      <p className="line-clamp-2 text-[10px] text-slate-600">{product.description}</p>
+                                    ) : null}
+                                    <div className="mt-1 flex items-center gap-2 text-[10px]">
+                                      {toCurrency(product.priceFrom) ? (
+                                        <span className="font-semibold text-rose-600">
+                                          Từ {toCurrency(product.priceFrom)}
+                                        </span>
+                                      ) : null}
+                                      {product.inStock === false ? (
+                                        <span className="font-medium text-slate-500">Tạm hết hàng</span>
+                                      ) : product.inStock === true ? (
+                                        <span className="font-medium text-emerald-600">Còn hàng</span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>

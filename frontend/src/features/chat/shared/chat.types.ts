@@ -1,7 +1,23 @@
 export type ConversationStatus = "waiting_staff" | "staff_handling" | "resolved" | "closed";
-export type SenderType = "customer" | "staff" | "system";
+export type SenderType = "customer" | "staff" | "ai" | "system";
 export type MessageType = "text" | "system_event";
 export type MessageDeliveryState = "sending" | "sent" | "failed";
+
+export interface ProductSuggestion {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  mainImageUrl?: string;
+  priceFrom?: number;
+  inStock?: boolean;
+}
+
+export interface AiMessageMetadata {
+  templateType?: "plain_text" | "product_suggestions";
+  productSuggestions?: ProductSuggestion[];
+  [key: string]: unknown;
+}
 
 export interface ChatUserBrief {
   _id?: string;
@@ -17,6 +33,10 @@ export interface Conversation {
   customerId: string | ChatUserBrief;
   assignedStaffId: string | ChatUserBrief | null;
   status: ConversationStatus;
+  aiEnabled?: boolean;
+  lastAiResponseAt?: string | null;
+  handoffReason?: string | null;
+  aiFailureCount?: number;
   lastMessageAt?: string | null;
   lastMessagePreview?: string | null;
   lastMessageSenderType?: SenderType | null;
@@ -38,7 +58,7 @@ export interface Message {
   clientMessageId?: string | null;
   messageType: MessageType;
   content: string;
-  metadata?: Record<string, unknown> | null;
+  metadata?: AiMessageMetadata | null;
   createdAt: string;
   updatedAt?: string;
   deliveryState?: MessageDeliveryState;

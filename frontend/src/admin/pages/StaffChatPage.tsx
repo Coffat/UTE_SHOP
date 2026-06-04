@@ -334,6 +334,11 @@ export function StaffChatPage() {
                     {item.lastMessagePreview || "Chưa có tin nhắn"}
                   </div>
                   <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>{item.status}</div>
+                  {item.handoffReason && (
+                    <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>
+                      handoff: {item.handoffReason}
+                    </div>
+                  )}
                 </button>
               );
             })
@@ -425,7 +430,13 @@ export function StaffChatPage() {
                         maxWidth: "70%",
                         borderRadius: 10,
                         padding: "8px 10px",
-                        background: mine ? "#4f46e5" : msg.senderType === "system" ? "#334155" : "#1e293b",
+                        background: mine
+                          ? "#4f46e5"
+                          : msg.senderType === "ai"
+                            ? "#1d4ed8"
+                            : msg.senderType === "system"
+                              ? "#334155"
+                              : "#1e293b",
                         color: "#fff",
                         fontSize: 13,
                       }}
@@ -521,6 +532,9 @@ export function StaffChatPage() {
             </div>
             <div style={{ color: "#e2e8f0", fontSize: 13 }}>
               <strong>Trạng thái:</strong> {activeConversation.status}
+            </div>
+            <div style={{ color: "#e2e8f0", fontSize: 13 }}>
+              <strong>Handoff reason:</strong> {activeConversation.handoffReason || "-"}
             </div>
           </>
         )}

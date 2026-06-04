@@ -7,7 +7,7 @@ export const CHAT_CONVERSATION_STATUSES = [
 
 export type ChatConversationStatus = (typeof CHAT_CONVERSATION_STATUSES)[number];
 
-export const CHAT_SENDER_TYPES = ['customer', 'staff', 'system'] as const;
+export const CHAT_SENDER_TYPES = ['customer', 'staff', 'ai', 'system'] as const;
 export type ChatSenderType = (typeof CHAT_SENDER_TYPES)[number];
 
 export const CHAT_MESSAGE_TYPES = ['text', 'system_event'] as const;
