@@ -42,6 +42,7 @@ import { ProfilePage as AdminProfilePage } from "./admin/pages/ProfilePage";
 import { BlogsPage } from "./admin/pages/BlogsPage";
 import { ReviewsPage } from "./admin/pages/ReviewsPage";
 import { MarketingManagementPage } from "./admin/pages/MarketingManagementPage";
+import { StaffChatPage } from "./admin/pages/StaffChatPage";
 
 export const router = createBrowserRouter([
   {
@@ -87,6 +88,7 @@ export const router = createBrowserRouter([
           { path: "blogs", element: <BlogsPage /> },
           { path: "reviews", element: <ReviewsPage /> },
           { path: "marketing", element: <MarketingManagementPage /> },
+          { path: "chat", element: <StaffChatPage /> },
         ],
       },
       // --- Staff Routes ---
@@ -107,6 +109,7 @@ export const router = createBrowserRouter([
           { path: "blogs", element: <BlogsPage /> },
           { path: "reviews", element: <ReviewsPage /> },
           { path: "marketing", element: <MarketingManagementPage /> },
+          { path: "chat", element: <StaffChatPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],
       },

@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import http from 'node:http';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -9,6 +10,7 @@ import v1Router from './routes/index.js';
 import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
 import { UPLOADS_DIR } from './shared/middlewares/uploadImage.js';
+import { initializeChatSocket } from './modules/chat/socket/chat.socket.js';
 
 // Load environment variables BEFORE anything else
 dotenv.config();
@@ -17,6 +19,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const httpServer = http.createServer(app);
 
 // ─── Trust proxy (nếu deploy sau nginx/load balancer) ─────────────────────────
 app.set('trust proxy', 1);
@@ -83,6 +86,8 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // ─── Start server ──────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+initializeChatSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(` UTESHOP API running on port ${PORT} [${process.env.NODE_ENV ?? 'development'}]`);
 });

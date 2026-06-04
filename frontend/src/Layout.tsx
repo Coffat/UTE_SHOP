@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { ToastProvider } from "@/components/ui/ToastContext";
+import { CustomerChatWidget } from "@/features/chat/customer/CustomerChatWidget";
 
 export function Layout() {
   return (
@@ -11,6 +12,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <CustomerChatWidget />
     </ToastProvider>
   );
 }

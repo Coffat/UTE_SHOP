@@ -45,6 +45,7 @@ import notificationRoutes from '../modules/notification/routes/notification.rout
 // ─── Module: Blog & System Support ────────────────────────────────────────────
 import blogRoutes from '../modules/system/routes/blog.routes.js';
 import supportRoutes from '../modules/system/routes/support.routes.js';
+import chatRoutes from '../modules/chat/routes/chat.routes.js';
 import adminBlogRoutes from '../modules/system/routes/blog.routes.js';
 import staffProductRoutes from '../modules/staff/routes/products.routes.js';
 import staffCategoryRoutes from '../modules/staff/routes/categories.routes.js';
@@ -114,5 +115,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/admin/blogs', adminBlogRoutes); // Admin namespace alias (Phase 5)
 router.use('/support', supportRoutes);
+router.use('/', chatRoutes);
 
 export default router;

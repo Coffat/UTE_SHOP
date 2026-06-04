@@ -67,7 +67,7 @@ export function Hero() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex max-w-xl flex-col gap-5 lg:col-span-4 lg:max-w-none lg:py-4 xl:gap-6"
+          className="flex max-w-xl flex-col gap-5 lg:col-span-5 lg:mx-auto lg:w-full lg:max-w-[30rem] lg:py-4 xl:gap-6"
         >
           <motion.h1
             variants={itemVariants}
@@ -127,7 +127,7 @@ export function Hero() {
         </motion.div>
 
         {/* Right Column: Blossoming Spring Flower Image */}
-        <div className="relative flex w-full justify-center lg:col-span-8 lg:justify-end lg:pl-2">
+        <div className="relative flex w-full justify-center lg:col-span-7 lg:justify-end lg:pl-2">
           <motion.div
             variants={imageVariants}
             initial="hidden"
