@@ -4,6 +4,8 @@ import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import { AppError } from '../../../shared/utils/AppError.js';
+import { calculateOrderTotal } from '../../marketing/services/discount.service.js';
+import Cart from '../models/Cart.js';
 
 const ADMIN_STAFF_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'];
 
@@ -95,6 +97,27 @@ export const getOrder = asyncHandler(async (req: Request, res: Response) => {
   }
 
   sendSuccess(res, 200, 'OK', orderObj);
+});
+
+// POST /api/v1/orders/preview – Xem trước giá trị đơn hàng
+export const previewOrder = asyncHandler(async (req: Request, res: Response) => {
+  const { cartId, voucherCode, pointsToUse } = req.body;
+  const cart = await Cart.findById(cartId).populate('items.productVariant');
+  if (!cart) return sendError(res, 404, 'Giỏ hàng không tồn tại');
+
+  let subTotal = 0;
+  cart.items.forEach((item: any) => {
+    subTotal += Number(item.productVariant.price) * item.quantity;
+  });
+
+  const result = await calculateOrderTotal({
+    subTotal,
+    voucherCode,
+    pointsToUse: pointsToUse || 0,
+    userId: req.user!.id
+  });
+
+  sendSuccess(res, 200, 'OK', result);
 });
 
 // POST /api/v1/orders – Đặt hàng (ACID transaction)

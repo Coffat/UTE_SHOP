@@ -32,11 +32,19 @@ import {
   updateShift,
   cancelShift,
 } from '../controllers/admin.controller.js';
+import * as pointAdminController from '../controllers/point.admin.controller.js';
 
 const router = express.Router();
 
-// Mount global protection layers for all routes mounted under /api/v1/admin
+// Mount authentication layer
 router.use(authenticate);
+
+// ─── Points Management Routes (Admin & Sales) ──────────────────────────────
+router.get('/users/points', authorize('ADMIN', 'SALES'), pointAdminController.getUsersPoints);
+router.get('/users/:id/points', authorize('ADMIN', 'SALES'), pointAdminController.getUserPointLedger);
+router.post('/users/:id/points/adjust', authorize('ADMIN', 'SALES'), pointAdminController.adjustUserPoints);
+
+// Mount global protection layers for all other admin routes
 router.use(authorize('ADMIN'));
 
 // ─── Staff Management Routes ─────────────────────────────────────────────────

@@ -10,8 +10,8 @@ import {
   fetchUserOrders,
   UNAUTH,
   updateProfile,
-} from "@/features/profile/profileSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { api } from "@/lib/api";
 
 const sideMenu = [
   { label: "Tổng quan", icon: "grid_view", active: true },
@@ -57,6 +57,8 @@ export function UserProfile() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
+  const [pointsHistory, setPointsHistory] = useState<any[]>([]);
+  const [pointsLoading, setPointsLoading] = useState(false);
 
   const fnId = useId();
   const phId = useId();
@@ -65,6 +67,17 @@ export function UserProfile() {
   useEffect(() => {
     void dispatch(fetchProfile());
     void dispatch(fetchUserOrders());
+    
+    // Fetch points history
+    setPointsLoading(true);
+    api.get("/api/v1/users/points/history")
+      .then(res => {
+        if (res.data.success) {
+          setPointsHistory(res.data.data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch points", err))
+      .finally(() => setPointsLoading(false));
   }, [dispatch]);
 
   useEffect(() => {
@@ -463,6 +476,46 @@ export function UserProfile() {
               <button type="button" className="mt-4 text-sm font-semibold text-primary">
                 Xem tất cả đơn hàng
               </button>
+            </article>
+
+            {/* Điểm tích lũy */}
+            <article className="glass-panel rounded-[22px] p-5 shadow-[0_10px_40px_rgba(168,85,247,0.04)] mt-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-section-title text-[32px] text-deep-plum flex items-center gap-2">
+                  <MaterialIcon name="stars" className="text-primary text-[28px]" />
+                  Lịch sử điểm tích lũy
+                </h3>
+              </div>
+
+              {pointsLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                </div>
+              ) : pointsHistory.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <p className="mt-2 text-sm font-medium text-midnight-purple">Chưa có giao dịch điểm nào.</p>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {pointsHistory.slice(0, 5).map((txn) => (
+                    <li
+                      key={txn._id}
+                      className="flex items-center gap-3 rounded-2xl border border-white/60 bg-pure-ivory/65 px-4 py-3"
+                    >
+                      <div className={`flex size-10 items-center justify-center rounded-xl ${txn.type === 'EARNED' ? 'bg-safe-mint/20 text-[#2a9d66]' : 'bg-rose-500/10 text-rose-500'}`}>
+                        <MaterialIcon name={txn.type === 'EARNED' ? 'add_circle' : 'remove_circle'} className="text-[20px]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-midnight-purple">{txn.description}</p>
+                        <p className="text-xs text-dusk-gray">{new Date(txn.createdAt).toLocaleDateString("vi-VN")}</p>
+                      </div>
+                      <p className={`text-sm font-bold ${txn.type === 'EARNED' ? 'text-[#2a9d66]' : 'text-rose-500'}`}>
+                        {txn.type === 'EARNED' ? '+' : '-'}{txn.amount}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </article>
 
             <div className="space-y-4">

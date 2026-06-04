@@ -8,9 +8,10 @@ export type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.re
 import type { GetOrdersParams, OrdersSummaryDto } from '../repositories/order.repository.js';
 
 // ─── Cross-module imports (gọi SERVICE, không import MODEL) ───────────────────
-import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
-import { validateAndCalculateVoucher, markVoucherUsed } from '../../marketing/services/voucher.service.js';
 import { createPaymentRecord } from '../../finance/services/payment.service.js';
+import { calculateOrderTotal, applyDiscounts } from '../../marketing/services/discount.service.js';
+import PointLedger, { PointTransactionType } from '../../user/models/PointLedger.js';
+import User from '../../user/models/User.js';
 // ─────────────────────────────────────────────────────────────────────────────
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
@@ -94,6 +95,7 @@ interface PlaceOrderParams {
   deliveryAddressId?: string;
   orderType?: OrderType;
   voucherCode?: string;
+  pointsToUse?: number;
   paymentMethod: 'MOMO' | 'COD' | 'CASH' | 'VNPAY';
   note?: string;
 }
@@ -136,17 +138,14 @@ export const placeOrderWithoutTransaction = async ({
     };
   });
 
-  // ── STEP 1: Áp voucher (marketing.service) ────────────────────────────────
-  let discountAmount = 0;
-  let voucherId: string | null = null;
-  if (voucherCode) {
-    const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
-    discountAmount = disc;
-    voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
-  }
+  // ── STEP 1: Áp voucher và điểm (discount.service) ─────────────────────────
+  const calcResult = await calculateOrderTotal({
+    subTotal: subtotal,
+    voucherCode,
+    pointsToUse: pointsToUse || 0,
+    userId: customerId || '',
+  });
 
-  const shippingFee = orderType === OrderType.ONLINE ? 30000 : 0;
-  const totalAmount = subtotal + shippingFee - discountAmount;
   const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
 
   // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
@@ -159,11 +158,14 @@ export const placeOrderWithoutTransaction = async ({
       items: orderItems,
       recipient: recipientInfo,
       deliveryAddress: deliveryAddressId || null,
-      subtotal: mongoose.Types.Decimal128.fromString(subtotal.toString()) as any,
-      shippingFee: mongoose.Types.Decimal128.fromString(shippingFee.toString()) as any,
-      discountAmount: mongoose.Types.Decimal128.fromString(discountAmount.toString()) as any,
-      totalAmount: mongoose.Types.Decimal128.fromString(totalAmount.toString()) as any,
-      voucher: voucherId,
+      subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
+      shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
+      discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,
+      pointsUsed: calcResult.pointsUsed,
+      pointsDiscount: mongoose.Types.Decimal128.fromString(calcResult.pointsDiscount.toString()) as any,
+      totalAmount: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+      finalTotal: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+      voucher: calcResult.voucherId || null,
       note: note || '',
       paymentMethod,
       paymentStatus: orderPaymentStatus,
@@ -177,10 +179,12 @@ export const placeOrderWithoutTransaction = async ({
   }
 
   // ── STEP 4: Tạo Payment record (finance.service) ──────────────────────────
-  await createPaymentRecord({ orderId: (order._id as mongoose.Types.ObjectId).toString(), amount: totalAmount, paymentMethod });
+  await createPaymentRecord({ orderId: (order._id as mongoose.Types.ObjectId).toString(), amount: calcResult.finalTotal, paymentMethod });
 
-  // ── STEP 5: Mark voucher used ─────────────────────────────────────────────
-  if (voucherId) await markVoucherUsed(voucherId);
+  // ── STEP 5: Mark voucher used and deduct points ─────────────────────────
+  if (customerId && (calcResult.voucherId || calcResult.pointsUsed > 0)) {
+    await applyDiscounts(customerId, (order._id as mongoose.Types.ObjectId).toString(), calcResult.pointsUsed, calcResult.voucherId);
+  }
 
   // ── STEP 6: Convert cart ──────────────────────────────────────────────────
   await Cart.findByIdAndUpdate(cartId, { status: 'CONVERTED' });
@@ -206,6 +210,7 @@ export const placeOrder = async ({
   deliveryAddressId,
   orderType = OrderType.ONLINE,
   voucherCode,
+  pointsToUse,
   paymentMethod,
   note,
 }: PlaceOrderParams): Promise<IOrder> => {
@@ -222,6 +227,7 @@ export const placeOrder = async ({
       deliveryAddressId,
       orderType,
       voucherCode,
+      pointsToUse,
       paymentMethod,
       note,
     });
@@ -246,18 +252,15 @@ export const placeOrder = async ({
       };
     });
 
-    // ── STEP 1: Áp voucher (marketing.service) ────────────────────────────────
-    let discountAmount = 0;
-    let voucherId: string | null = null;
-    if (voucherCode) {
-      const { discountAmount: disc, voucher } = await validateAndCalculateVoucher(voucherCode, subtotal, customerId);
-      discountAmount = disc;
-      voucherId = (voucher._id as mongoose.Types.ObjectId).toString();
-    }
+    // ── STEP 1: Áp voucher và điểm (discount.service) ─────────────────────────
+    const calcResult = await calculateOrderTotal({
+      subTotal: subtotal,
+      voucherCode,
+      pointsToUse: pointsToUse || 0,
+      userId: customerId || '',
+    });
 
-    const shippingFee = orderType === OrderType.ONLINE ? 30000 : 0;
-    const totalAmount = subtotal + shippingFee - discountAmount;
-  const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
+    const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
 
     // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
     const [order] = await Order.create(
@@ -270,11 +273,14 @@ export const placeOrder = async ({
           items: orderItems,
           recipient: recipientInfo,
           deliveryAddress: deliveryAddressId || null,
-          subtotal: mongoose.Types.Decimal128.fromString(subtotal.toString()) as any,
-          shippingFee: mongoose.Types.Decimal128.fromString(shippingFee.toString()) as any,
-          discountAmount: mongoose.Types.Decimal128.fromString(discountAmount.toString()) as any,
-          totalAmount: mongoose.Types.Decimal128.fromString(totalAmount.toString()) as any,
-          voucher: voucherId,
+          subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
+          shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
+          discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,
+          pointsUsed: calcResult.pointsUsed,
+          pointsDiscount: mongoose.Types.Decimal128.fromString(calcResult.pointsDiscount.toString()) as any,
+          totalAmount: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+          finalTotal: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+          voucher: calcResult.voucherId || null,
           note: note || '',
           paymentMethod,
           paymentStatus: orderPaymentStatus,
@@ -290,10 +296,12 @@ export const placeOrder = async ({
     }
 
     // ── STEP 4: Tạo Payment record (finance.service) ──────────────────────────
-    await createPaymentRecord({ orderId: (order._id as mongoose.Types.ObjectId).toString(), amount: totalAmount, paymentMethod, session });
+    await createPaymentRecord({ orderId: (order._id as mongoose.Types.ObjectId).toString(), amount: calcResult.finalTotal, paymentMethod, session });
 
-    // ── STEP 5: Mark voucher used ─────────────────────────────────────────────
-    if (voucherId) await markVoucherUsed(voucherId, session);
+    // ── STEP 5: Mark voucher used and deduct points ───────────────────────────
+    if (customerId && (calcResult.voucherId || calcResult.pointsUsed > 0)) {
+      await applyDiscounts(customerId, (order._id as mongoose.Types.ObjectId).toString(), calcResult.pointsUsed, calcResult.voucherId, session);
+    }
 
     // ── STEP 6: Convert cart ──────────────────────────────────────────────────
     await Cart.findByIdAndUpdate(cartId, { status: 'CONVERTED' }, { session });
@@ -319,6 +327,7 @@ export const placeOrder = async ({
         deliveryAddressId,
         orderType,
         voucherCode,
+        pointsToUse,
         paymentMethod,
         note,
       });
@@ -375,6 +384,26 @@ export const updateOrderStatus = async (
   // Increment soldCount if COMPLETED/DELIVERED
   if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.DELIVERED) {
     await incrementOrderSoldCount(order);
+  }
+
+  // Grant points if DELIVERED and not yet granted
+  if (newStatus === OrderStatus.DELIVERED && order.customer) {
+    // Check if points already granted
+    const existingEarned = await PointLedger.findOne({ order: order._id, type: PointTransactionType.EARNED });
+    if (!existingEarned) {
+      const finalTotalNumber = parseFloat(order.finalTotal?.toString() || order.totalAmount.toString());
+      const earnedPoints = Math.floor(finalTotalNumber / 100000);
+      if (earnedPoints > 0) {
+        await User.findByIdAndUpdate(order.customer, { $inc: { points: earnedPoints } });
+        await PointLedger.create({
+          user: order.customer,
+          order: order._id,
+          amount: earnedPoints,
+          type: PointTransactionType.EARNED,
+          description: `Tích điểm từ đơn hàng ${order.orderCode}`
+        });
+      }
+    }
   }
 
   return order.save();

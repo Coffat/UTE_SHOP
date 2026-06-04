@@ -35,6 +35,11 @@ export function Checkout() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponError, setCouponError] = useState<string | null>(null);
 
+  // Points states
+  const [pointsInput, setPointsInput] = useState<number | "">("");
+  const [pointsApplied, setPointsApplied] = useState(0);
+  const [pointsError, setPointsError] = useState<string | null>(null);
+
   // Fetch profile on mount if idle
   useEffect(() => {
     if (fetchStatus === "idle") {
@@ -58,7 +63,14 @@ export function Checkout() {
   // Cấu hình định mức
   const SHIPPING_THRESHOLD = 1000000;
   const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : 30000;
-  const finalPrice = Math.max(0, subtotal + shippingCost - discountAmount);
+  
+  // Tính toán giới hạn điểm
+  const pointsAvailable = profile?.points || 0;
+  const maxPointsAllowed = Math.floor((subtotal * 0.5) / 1000); // Tối đa 50% giá trị đơn hàng
+  const maxPointsCanUse = Math.min(pointsAvailable, maxPointsAllowed);
+  const pointsDiscount = pointsApplied * 1000;
+
+  const finalPrice = Math.max(0, subtotal + shippingCost - discountAmount - pointsDiscount);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -91,6 +103,42 @@ export function Checkout() {
     setCouponApplied(false);
     setDiscountAmount(0);
     setCouponError(null);
+  };
+
+  const handleApplyPoints = () => {
+    setPointsError(null);
+    const pts = Number(pointsInput);
+    if (!pts || pts <= 0) {
+      setPointsError("Vui lòng nhập số điểm hợp lệ.");
+      return;
+    }
+    if (pts > pointsAvailable) {
+      setPointsError(`Bạn chỉ có ${pointsAvailable} điểm.`);
+      return;
+    }
+    if (pts > maxPointsAllowed) {
+      setPointsError(`Bạn chỉ được dùng tối đa ${maxPointsAllowed} điểm cho đơn hàng này.`);
+      return;
+    }
+    setPointsApplied(pts);
+    showToast(`Áp dụng thành công ${pts} điểm!`, "success");
+  };
+
+  const handleUseMaxPoints = () => {
+    setPointsError(null);
+    if (maxPointsCanUse <= 0) {
+      setPointsError("Không có điểm nào có thể sử dụng cho đơn hàng này.");
+      return;
+    }
+    setPointsInput(maxPointsCanUse);
+    setPointsApplied(maxPointsCanUse);
+    showToast(`Áp dụng tối đa ${maxPointsCanUse} điểm thành công!`, "success");
+  };
+
+  const handleRemovePoints = () => {
+    setPointsInput("");
+    setPointsApplied(0);
+    setPointsError(null);
   };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -142,6 +190,7 @@ export function Checkout() {
         paymentMethod,
         note: giftNote.trim(),
         voucherCode: couponApplied ? couponCode.trim() : undefined,
+        pointsToUse: pointsApplied > 0 ? pointsApplied : undefined,
       });
 
       const orderData = orderResponse.data.data;
@@ -539,6 +588,73 @@ export function Checkout() {
                 )}
               </div>
 
+              {/* Points Usage Block */}
+              <div className="bg-pure-ivory/50 rounded-2xl p-4 my-4 border border-crystal-border/40 space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-deep-plum flex items-center gap-1">
+                    <MaterialIcon name="stars" className="text-primary text-[15px]" />
+                    Sử dụng điểm tích lũy
+                  </label>
+                  <span className="text-xs font-semibold text-dusk-gray bg-white px-2 py-1 rounded-md border border-crystal-border/50 shadow-sm">
+                    Hiện có: <span className="text-primary font-bold">{pointsAvailable}</span> điểm
+                  </span>
+                </div>
+                <p className="text-[11px] text-dusk-gray leading-tight">
+                  1 điểm = 1.000đ. Tối đa dùng 50% giá trị đơn hàng ({maxPointsAllowed} điểm).
+                </p>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      placeholder="Nhập số điểm..."
+                      value={pointsInput}
+                      onChange={(e) => setPointsInput(e.target.value ? Number(e.target.value) : "")}
+                      disabled={pointsApplied > 0}
+                      className="w-full bg-pure-ivory border border-crystal-border text-sm px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 font-semibold"
+                    />
+                    {!pointsApplied && (
+                      <button
+                        type="button"
+                        onClick={handleUseMaxPoints}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider bg-soft-amethyst/30 text-primary px-2 py-1 rounded-md hover:bg-soft-amethyst/50 transition cursor-pointer"
+                      >
+                        Dùng tối đa
+                      </button>
+                    )}
+                  </div>
+                  {pointsApplied > 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleRemovePoints}
+                      className="bg-rose-500 hover:bg-rose-600 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl active-press transition cursor-pointer"
+                    >
+                      Hủy bỏ
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleApplyPoints}
+                      disabled={!pointsInput}
+                      className="bg-deep-plum hover:bg-primary disabled:bg-dusk-gray/30 text-pure-ivory text-xs font-bold px-4 py-2.5 rounded-xl active-press disabled:opacity-50 transition cursor-pointer"
+                    >
+                      Sử dụng
+                    </button>
+                  )}
+                </div>
+                {pointsError && (
+                  <p className="text-xs text-error font-semibold flex items-center gap-1">
+                    <MaterialIcon name="error" className="text-xs text-error" />
+                    {pointsError}
+                  </p>
+                )}
+                {pointsApplied > 0 && (
+                  <p className="text-xs text-[#059669] font-bold flex items-center gap-1">
+                    <MaterialIcon name="check_circle" className="text-xs text-[#059669]" />
+                    Áp dụng thành công {pointsApplied} điểm! Giảm {formatVND(pointsDiscount)}
+                  </p>
+                )}
+              </div>
+
               {/* Price rows */}
               <div className="space-y-3.5 text-sm font-medium text-midnight-purple">
                 <div className="flex justify-between">
@@ -557,6 +673,12 @@ export function Checkout() {
                   <div className="flex justify-between text-[#059669] font-semibold">
                     <span>Mã giảm giá</span>
                     <span>-{formatVND(discountAmount)}</span>
+                  </div>
+                )}
+                {pointsApplied > 0 && (
+                  <div className="flex justify-between text-[#059669] font-semibold">
+                    <span>Điểm tích lũy ({pointsApplied})</span>
+                    <span>-{formatVND(pointsDiscount)}</span>
                   </div>
                 )}
                 <div className="h-px bg-crystal-border/40 my-1"></div>
