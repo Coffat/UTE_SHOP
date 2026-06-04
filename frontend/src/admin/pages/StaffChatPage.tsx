@@ -19,6 +19,7 @@ const STATUS_OPTIONS: Array<{ id: ConversationStatus | "all"; label: string }> =
 ];
 
 const createClientMessageId = () => `smsg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+const shouldDisplayMessage = (message: Message) => message.messageType !== "system_event";
 
 function getUserDisplayName(user: Conversation["customerId"]) {
   if (!user || typeof user === "string") return "Khách hàng";
@@ -68,7 +69,38 @@ export function StaffChatPage() {
 
   const scrollToBottom = useCallback(() => {
     if (!messagesRef.current) return;
-    messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    const container = messagesRef.current;
+    const performScroll = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+    performScroll();
+    window.requestAnimationFrame(performScroll);
+    window.setTimeout(performScroll, 60);
+  }, []);
+
+  const upsertMessage = useCallback((incoming: Message) => {
+    if (!shouldDisplayMessage(incoming)) return;
+    setMessages((prev) => {
+      const byIdIndex = prev.findIndex((item) => item._id === incoming._id);
+      if (byIdIndex >= 0) {
+        const next = [...prev];
+        next[byIdIndex] = { ...incoming, deliveryState: "sent" as const };
+        return next;
+      }
+
+      if (incoming.clientMessageId) {
+        const byClientIdIndex = prev.findIndex(
+          (item) => item.clientMessageId != null && item.clientMessageId === incoming.clientMessageId
+        );
+        if (byClientIdIndex >= 0) {
+          const next = [...prev];
+          next[byClientIdIndex] = { ...incoming, deliveryState: "sent" as const };
+          return next;
+        }
+      }
+
+      return [...prev, { ...incoming, deliveryState: "sent" as const }];
+    });
   }, []);
 
   const loadMessages = useCallback(
@@ -78,13 +110,22 @@ export function StaffChatPage() {
       try {
         const result = await getStaffMessages(conversationId, before, 30);
         if (before) {
-          setMessages((prev) => [...result.items.map((msg) => ({ ...msg, deliveryState: "sent" })), ...prev]);
+          setMessages((prev) => [
+            ...result.items
+              .filter(shouldDisplayMessage)
+              .map((msg) => ({ ...msg, deliveryState: "sent" as const })),
+            ...prev,
+          ]);
         } else {
-          setMessages(result.items.map((msg) => ({ ...msg, deliveryState: "sent" })));
+          setMessages(
+            result.items
+              .filter(shouldDisplayMessage)
+              .map((msg) => ({ ...msg, deliveryState: "sent" as const }))
+          );
         }
         setHasMore(result.pagination.hasMore);
         setNextBefore(result.pagination.nextBefore);
-        setTimeout(scrollToBottom, 0);
+        scrollToBottom();
       } catch {
         setMessageError("Không thể tải tin nhắn. Vui lòng thử lại.");
       } finally {
@@ -133,11 +174,8 @@ export function StaffChatPage() {
         })
       );
       if (payload.conversationId !== activeConversationId) return;
-      setMessages((prev) => {
-        if (prev.some((item) => item._id === payload.message._id)) return prev;
-        return [...prev, { ...payload.message, deliveryState: "sent" }];
-      });
-      setTimeout(scrollToBottom, 0);
+      upsertMessage(payload.message);
+      scrollToBottom();
     };
 
     chatSocket.on("conversation_updated", handleConversationUpdated);
@@ -146,7 +184,7 @@ export function StaffChatPage() {
       chatSocket.off("conversation_updated", handleConversationUpdated);
       chatSocket.off("new_message", handleNewMessage);
     };
-  }, [activeConversationId, scrollToBottom]);
+  }, [activeConversationId, scrollToBottom, upsertMessage]);
 
   const handleAssign = useCallback(async () => {
     if (!activeConversationId) return;
@@ -182,16 +220,10 @@ export function StaffChatPage() {
     setInput("");
     setMessages((prev) => [...prev, optimistic]);
     setSending(true);
-    setTimeout(scrollToBottom, 0);
+    scrollToBottom();
     try {
       const response = await sendStaffMessage(activeConversationId, { content, clientMessageId });
-      setMessages((prev) =>
-        prev.map((item) =>
-          item.clientMessageId === clientMessageId || item._id === optimistic._id
-            ? { ...response.message, deliveryState: "sent" }
-            : item
-        )
-      );
+      upsertMessage(response.message);
       setConversations((prev) =>
         prev.map((item) => (item._id === activeConversationId ? response.conversation : item))
       );
@@ -206,7 +238,7 @@ export function StaffChatPage() {
     } finally {
       setSending(false);
     }
-  }, [activeConversationId, input, user?.id, scrollToBottom]);
+  }, [activeConversationId, input, user?.id, scrollToBottom, upsertMessage]);
 
   const retryMessage = useCallback(
     async (message: Message) => {
@@ -216,18 +248,14 @@ export function StaffChatPage() {
           content: message.content,
           clientMessageId: message.clientMessageId ?? createClientMessageId(),
         });
-        setMessages((prev) =>
-          prev.map((item) =>
-            item._id === message._id ? { ...response.message, deliveryState: "sent" } : item
-          )
-        );
+        upsertMessage(response.message);
       } catch {
         setMessages((prev) =>
           prev.map((item) => (item._id === message._id ? { ...item, deliveryState: "failed" } : item))
         );
       }
     },
-    [activeConversationId]
+    [activeConversationId, upsertMessage]
   );
 
   return (

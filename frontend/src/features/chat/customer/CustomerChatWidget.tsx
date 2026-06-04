@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { hasAuthSessionFlag } from "@/lib/authSession";
 import { useAppSelector } from "@/store/hooks";
 import {
@@ -10,6 +10,7 @@ import type { Conversation, Message } from "../shared/chat.types";
 import { chatSocket } from "../shared/chat.socket";
 
 const createClientMessageId = () => `cmsg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+const shouldDisplayMessage = (message: Message) => message.messageType !== "system_event";
 
 export function CustomerChatWidget() {
   const profile = useAppSelector((state) => state.profile.profile);
@@ -31,7 +32,39 @@ export function CustomerChatWidget() {
 
   const scrollToBottom = useCallback(() => {
     if (!listRef.current) return;
-    listRef.current.scrollTop = listRef.current.scrollHeight;
+    const container = listRef.current;
+    const performScroll = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+    performScroll();
+    window.requestAnimationFrame(performScroll);
+    window.setTimeout(performScroll, 60);
+  }, []);
+
+  const upsertMessage = useCallback((incoming: Message) => {
+    if (!shouldDisplayMessage(incoming)) return;
+    setMessages((prev) => {
+      const byIdIndex = prev.findIndex((item) => item._id === incoming._id);
+      if (byIdIndex >= 0) {
+        const next = [...prev];
+        next[byIdIndex] = { ...incoming, deliveryState: "sent" as const };
+        return next;
+      }
+
+      // Handle optimistic entry replacement (same clientMessageId, different _id)
+      if (incoming.clientMessageId) {
+        const byClientIdIndex = prev.findIndex(
+          (item) => item.clientMessageId != null && item.clientMessageId === incoming.clientMessageId
+        );
+        if (byClientIdIndex >= 0) {
+          const next = [...prev];
+          next[byClientIdIndex] = { ...incoming, deliveryState: "sent" as const };
+          return next;
+        }
+      }
+
+      return [...prev, { ...incoming, deliveryState: "sent" as const }];
+    });
   }, []);
 
   const loadCurrentConversation = useCallback(async () => {
@@ -41,11 +74,15 @@ export function CustomerChatWidget() {
       const conv = await createOrGetCustomerConversation();
       setConversation(conv);
       const page = await getCustomerMessages(conv._id, undefined, 30);
-      setMessages(page.items.map((item) => ({ ...item, deliveryState: "sent" as const })));
+      setMessages(
+        page.items
+          .filter(shouldDisplayMessage)
+          .map((item) => ({ ...item, deliveryState: "sent" as const }))
+      );
       setHasMore(page.pagination.hasMore);
       setNextBefore(page.pagination.nextBefore);
       chatSocket.emit("join_conversation", { conversationId: conv._id });
-      setTimeout(scrollToBottom, 0);
+      scrollToBottom();
     } catch {
       setError("Không thể tải cuộc trò chuyện. Vui lòng thử lại.");
     } finally {
@@ -69,13 +106,14 @@ export function CustomerChatWidget() {
   useEffect(() => {
     if (!open || !conversation) return;
 
+    const joinConversation = () => {
+      chatSocket.emit("join_conversation", { conversationId: conversation._id });
+    };
+
     const handleNewMessage = (payload: { conversationId: string; message: Message }) => {
       if (payload.conversationId !== conversation._id) return;
-      setMessages((prev) => {
-        if (prev.some((item) => item._id === payload.message._id)) return prev;
-        return [...prev, { ...payload.message, deliveryState: "sent" as const }];
-      });
-      setTimeout(scrollToBottom, 0);
+      upsertMessage(payload.message);
+      scrollToBottom();
     };
 
     const handleTypingStarted = (payload: { conversationId: string; role: string }) => {
@@ -90,23 +128,28 @@ export function CustomerChatWidget() {
       setTyping(false);
     };
 
+    chatSocket.on("connect", joinConversation);
+    joinConversation();
     chatSocket.on("new_message", handleNewMessage);
     chatSocket.on("typing_started", handleTypingStarted);
     chatSocket.on("typing_stopped", handleTypingStopped);
 
     return () => {
+      chatSocket.off("connect", joinConversation);
       chatSocket.off("new_message", handleNewMessage);
       chatSocket.off("typing_started", handleTypingStarted);
       chatSocket.off("typing_stopped", handleTypingStopped);
       chatSocket.emit("leave_conversation", { conversationId: conversation._id });
     };
-  }, [open, conversation, scrollToBottom]);
+  }, [open, conversation, scrollToBottom, upsertMessage]);
 
   const loadOlder = useCallback(async () => {
     if (!conversation || !hasMore || !nextBefore) return;
     const page = await getCustomerMessages(conversation._id, nextBefore, 30);
     setMessages((prev) => [
-      ...page.items.map((item) => ({ ...item, deliveryState: "sent" as const })),
+      ...page.items
+        .filter(shouldDisplayMessage)
+        .map((item) => ({ ...item, deliveryState: "sent" as const })),
       ...prev,
     ]);
     setHasMore(page.pagination.hasMore);
@@ -131,18 +174,11 @@ export function CustomerChatWidget() {
     setInput("");
     setMessages((prev) => [...prev, optimistic]);
     setSending(true);
-    setTimeout(scrollToBottom, 0);
+    scrollToBottom();
     try {
       const response = await sendCustomerMessage(conversation._id, { content, clientMessageId });
       setConversation(response.conversation);
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.clientMessageId === clientMessageId || msg._id === optimistic._id) {
-            return { ...response.message, deliveryState: "sent" as const };
-          }
-          return msg;
-        })
-      );
+      upsertMessage(response.message);
     } catch {
       setMessages((prev) =>
         prev.map((msg) => {
@@ -155,7 +191,7 @@ export function CustomerChatWidget() {
     } finally {
       setSending(false);
     }
-  }, [conversation, input, profile?._id, scrollToBottom]);
+  }, [conversation, input, profile?._id, scrollToBottom, upsertMessage]);
 
   const retryMessage = useCallback(
     async (msg: Message) => {
@@ -166,36 +202,15 @@ export function CustomerChatWidget() {
           clientMessageId: msg.clientMessageId ?? createClientMessageId(),
         });
         setConversation(response.conversation);
-        setMessages((prev) =>
-          prev.map((item) =>
-            item._id === msg._id ? { ...response.message, deliveryState: "sent" as const } : item
-          )
-        );
+        upsertMessage(response.message);
       } catch {
         setMessages((prev) =>
           prev.map((item) => (item._id === msg._id ? { ...item, deliveryState: "failed" } : item))
         );
       }
     },
-    [conversation]
+    [conversation, upsertMessage]
   );
-
-  const title = useMemo(() => {
-    if (!canUseChat) return "Đăng nhập để chat";
-    if (!conversation) return "Hỗ trợ khách hàng";
-    if (conversation.status === "waiting_staff") return "Đang chờ nhân viên";
-    if (conversation.status === "staff_handling") return "Nhân viên đang hỗ trợ";
-    if (conversation.status === "resolved") return "Đã xử lý, bạn có thể nhắn thêm";
-    return "Cuộc trò chuyện đã đóng";
-  }, [canUseChat, conversation]);
-
-  const statusPillClass = useMemo(() => {
-    if (!conversation) return "bg-slate-100 text-slate-700";
-    if (conversation.status === "waiting_staff") return "bg-amber-100 text-amber-700";
-    if (conversation.status === "staff_handling") return "bg-emerald-100 text-emerald-700";
-    if (conversation.status === "resolved") return "bg-sky-100 text-sky-700";
-    return "bg-slate-200 text-slate-700";
-  }, [conversation]);
 
   return (
     <div className="fixed bottom-4 right-4 z-50 md:bottom-5 md:right-5">
@@ -205,13 +220,7 @@ export function CustomerChatWidget() {
         >
           <div className="flex items-start justify-between border-b border-crystal-border bg-white px-3 py-2.5">
             <div>
-              <p className="font-home-heading text-sm font-bold text-midnight-purple">{title}</p>
-              <p className="mt-0.5 text-[11px] text-dusk-gray">Trò chuyện trực tiếp với nhân viên tư vấn</p>
-              <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusPillClass}`}
-              >
-                {conversation?.status ?? "offline"}
-              </span>
+              <p className="font-home-heading text-sm font-bold text-midnight-purple">CSKH-UTESHOP</p>
             </div>
             <button
               type="button"

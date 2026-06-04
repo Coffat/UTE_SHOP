@@ -175,9 +175,14 @@ export const initializeChatSocket = (httpServer: HttpServer) => {
 
 export const getChatSocket = () => io;
 
-export const emitNewMessage = (conversationId: string, message: unknown) => {
+export const emitNewMessage = (conversationId: string, message: unknown, participantUserIds: string[] = []) => {
   if (!io) return;
-  io.to(getConversationRoom(conversationId)).emit('new_message', { conversationId, message });
+  let emitter = io.to(getConversationRoom(conversationId));
+  for (const userId of participantUserIds) {
+    if (!userId) continue;
+    emitter = emitter.to(getUserRoom(userId));
+  }
+  emitter.emit('new_message', { conversationId, message });
 };
 
 export const emitConversationUpdated = (conversationId: string, conversation: unknown) => {
