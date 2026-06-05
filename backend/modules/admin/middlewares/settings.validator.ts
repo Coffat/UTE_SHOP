@@ -25,5 +25,7 @@ export const validateUpdateSettings = [
   body('webhookUrl').optional().isString().trim().isLength({ max: 500 }),
   body('webhookEnabled').optional().isBoolean(),
   body('logoUrl').optional().isString().trim().isLength({ max: 500 }),
+  body('aiProvider').optional().isIn(['ollama', 'openrouter']),
+  body('aiModelId').optional().isString().trim().isLength({ min: 1, max: 120 }),
   validateRequest,
 ];

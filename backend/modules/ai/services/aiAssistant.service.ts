@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { aiConfig } from '../../../config/ai.js';
 import Conversation from '../../chat/models/Conversation.js';
 import Message, { type IMessage } from '../../chat/models/Message.js';
+import { truncateChatMessageContent } from '../../chat/utils/messageContent.util.js';
 import { ChatHttpError } from '../../chat/services/chat.errors.js';
 import {
   emitConversationUpdated,
@@ -17,8 +18,23 @@ import {
   buildSafeHandoffMessage,
   evaluatePrecheckHandoff,
   extractHandoffMarker,
+  isSensitivePass1Handoff,
 } from './aiHandoff.service.js';
-import { checkOllamaHealth, completeOllamaResponse, streamOllamaResponse } from '../providers/ollama.provider.js';
+import {
+  checkActiveProviderHealth,
+  completeActiveProviderResponse,
+  streamActiveProviderResponse,
+} from '../providers/aiProvider.router.js';
+import { getEffectiveAiRuntime, buildAiMessageMetadata } from './aiRuntimeConfig.service.js';
+import {
+  buildProductAdviceFromSuggestions,
+  detectProductSearchIntentFromHistory,
+  EMPTY_PRODUCT_SEARCH_REPLY,
+  intentToSearchToolArguments,
+  PRODUCT_SEARCH_FAILED_REPLY,
+  type ProductSuggestionCard,
+} from './aiProductIntent.service.js';
+import type { EffectiveAiRuntime } from '../types/ai.types.js';
 import { parsePass1Decision } from '../tools/toolParser.js';
 import { executeToolFromDecision } from '../tools/toolRegistry.js';
 import { recordAiToolCall } from './aiToolCall.service.js';
@@ -42,6 +58,8 @@ interface StreamAiReplyResult {
   aiMessageId: string;
   conversationId: string;
   handoffReason: string | null;
+  finalContent: string;
+  metadata: Record<string, unknown> | null;
 }
 
 interface ManualHandoffResult {
@@ -51,16 +69,6 @@ interface ManualHandoffResult {
 
 interface StreamLockState {
   startedAt: number;
-}
-
-interface ProductSuggestionCard {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  mainImageUrl?: string;
-  priceFrom?: number;
-  inStock?: boolean;
 }
 
 const streamLocks = new Map<string, StreamLockState>();
@@ -194,16 +202,17 @@ const persistAiMessage = async (
   metadata: Record<string, unknown> | null,
   handoffReason: string | null
 ) => {
+  const safeContent = truncateChatMessageContent(content);
   const aiMessage = await Message.create({
     conversationId: conversation._id,
     senderType: 'ai',
     senderId: null,
     clientMessageId: null,
     messageType: 'text',
-    content,
+    content: safeContent,
     metadata,
   });
-  const updatedConversation = await updateConversationForAiMessage(conversation, content, handoffReason);
+  const updatedConversation = await updateConversationForAiMessage(conversation, safeContent, handoffReason);
   emitNewMessage(conversation._id.toString(), aiMessage, getParticipantUserIds(updatedConversation), {
     includeStaffInbox: updatedConversation.status === 'waiting_staff',
   });
@@ -258,11 +267,14 @@ const buildFallbackDecision = (reason: string): AiPass1Decision => ({
 });
 
 const resolvePass1Decision = async (
+  runtime: EffectiveAiRuntime,
   historyRows: IMessage[],
   abortSignal?: AbortSignal
 ): Promise<{
   parsed: ParsedPass1Decision;
   decision: AiPass1Decision;
+  usedModelId?: string;
+  wasFallback?: boolean;
 }> => {
   if (!aiConfig.toolCallingEnabled) {
     const decision: AiPass1Decision = { type: 'no_tool', reason: 'tool_calling_disabled' };
@@ -279,9 +291,9 @@ const resolvePass1Decision = async (
   }
 
   const decisionPrompt = buildPass1DecisionPromptMessages(historyRows);
-  const pass1Result = await completeOllamaResponse(decisionPrompt, {
-    temperature: aiConfig.toolDecisionTemperature,
-    maxPredictTokens: aiConfig.toolDecisionMaxPredictTokens,
+  const pass1Result = await completeActiveProviderResponse(runtime, decisionPrompt, {
+    temperature: runtime.toolDecisionTemperature,
+    maxPredictTokens: runtime.toolDecisionMaxPredictTokens,
     signal: abortSignal,
   });
   const parsed = parsePass1Decision(pass1Result.fullText);
@@ -289,9 +301,228 @@ const resolvePass1Decision = async (
     return {
       parsed,
       decision: buildFallbackDecision(FALLBACK_HANDOFF_REASON),
+      usedModelId: pass1Result.usedModelId,
+      wasFallback: pass1Result.wasFallback,
     };
   }
-  return { parsed, decision: parsed.decision };
+  return {
+    parsed,
+    decision: parsed.decision,
+    usedModelId: pass1Result.usedModelId,
+    wasFallback: pass1Result.wasFallback,
+  };
+};
+
+const getRecentCustomerTexts = (historyRows: IMessage[], limit = 5): string[] =>
+  historyRows
+    .filter((row) => row.senderType === 'customer')
+    .map((row) => row.content)
+    .slice(-limit);
+
+const shouldAutoSearchProducts = (decision: AiPass1Decision, historyRows: IMessage[]) => {
+  if (!aiConfig.enabledToolNames.includes('searchProducts')) return false;
+  const recentCustomerTexts = getRecentCustomerTexts(historyRows);
+  if (!detectProductSearchIntentFromHistory(recentCustomerTexts)) return false;
+  if (decision.type === 'tool_call' && decision.toolName === 'searchProducts') return false;
+  if (decision.type === 'tool_call' && decision.toolName === 'handoffToStaff') return true;
+  if (decision.type === 'handoff') {
+    return !isSensitivePass1Handoff(decision.reason);
+  }
+  return decision.type === 'no_tool';
+};
+
+const applyAutoSearchOverride = (
+  decision: AiPass1Decision,
+  parsed: ParsedPass1Decision,
+  historyRows: IMessage[]
+): { decision: AiPass1Decision; parsed: ParsedPass1Decision } => {
+  if (!shouldAutoSearchProducts(decision, historyRows)) {
+    return { decision, parsed };
+  }
+  const autoDecision = buildAutoSearchDecision(historyRows);
+  if (!autoDecision) return { decision, parsed };
+  return {
+    decision: autoDecision,
+    parsed: {
+      ok: true,
+      strategy: 'strict_json',
+      decision: autoDecision,
+      error: null,
+      rawText: JSON.stringify(autoDecision),
+    },
+  };
+};
+
+const isExplicitStaffHandoffDecision = (decision: AiPass1Decision) =>
+  (decision.type === 'tool_call' && decision.toolName === 'handoffToStaff') ||
+  (decision.type === 'handoff' && isSensitivePass1Handoff(decision.reason));
+
+const buildAutoSearchDecision = (historyRows: IMessage[]): AiPass1Decision | null => {
+  const intent = detectProductSearchIntentFromHistory(getRecentCustomerTexts(historyRows));
+  if (!intent) return null;
+  return {
+    type: 'tool_call',
+    toolName: 'searchProducts',
+    arguments: intentToSearchToolArguments(intent),
+  };
+};
+
+const isSearchProductsToolDecision = (decision: AiPass1Decision) =>
+  decision.type === 'tool_call' && decision.toolName === 'searchProducts';
+
+const getSearchDebugFromToolPayload = (toolResultPayload: Record<string, unknown> | null) => {
+  if (!toolResultPayload || toolResultPayload.status !== 'SUCCESS') return null;
+  const result = toolResultPayload.result as Record<string, unknown> | undefined;
+  if (!result) return null;
+  return {
+    returnedCount: typeof result.returnedCount === 'number' ? result.returnedCount : 0,
+    budgetRelaxed: result.budgetRelaxed === true,
+    searchStrategy: typeof result.searchStrategy === 'string' ? result.searchStrategy : undefined,
+    originalQuery: typeof result.originalQuery === 'string' ? result.originalQuery : undefined,
+    normalizedQuery: typeof result.normalizedQuery === 'string' ? result.normalizedQuery : undefined,
+    detectedStyle: typeof result.detectedStyle === 'string' ? result.detectedStyle : null,
+    detectedBudget: typeof result.detectedBudget === 'number' ? result.detectedBudget : null,
+    originalMaxPrice: typeof result.originalMaxPrice === 'number' ? result.originalMaxPrice : null,
+    effectiveMaxPrice: typeof result.effectiveMaxPrice === 'number' ? result.effectiveMaxPrice : null,
+  };
+};
+
+const streamDeterministicTokens = (content: string, onToken: (text: string) => void) => {
+  if (!content) return;
+  const chunks = content.split(/(?<=[.!?…\n])\s+/).filter(Boolean);
+  if (chunks.length <= 1) {
+    onToken(content);
+    return;
+  }
+  for (const chunk of chunks) {
+    onToken(chunk.endsWith('\n') ? chunk : `${chunk} `);
+  }
+};
+
+const persistDeterministicSearchReply = async ({
+  conversation,
+  finalContent,
+  handoffReason,
+  buildChatMetadata,
+  productSuggestions,
+  searchDebug,
+  latencyMs,
+}: {
+  conversation: any;
+  finalContent: string;
+  handoffReason: string | null;
+  buildChatMetadata: (extra?: Record<string, unknown>) => Record<string, unknown>;
+  productSuggestions: ProductSuggestionCard[];
+  searchDebug: ReturnType<typeof getSearchDebugFromToolPayload>;
+  latencyMs?: number;
+}) => {
+  const messageMetadata = buildChatMetadata({
+    latencyMs,
+    handoffReason,
+    templateType: productSuggestions.length > 0 ? 'product_suggestions' : 'plain_text',
+    productSuggestions: productSuggestions.length > 0 ? productSuggestions : undefined,
+    searchStrategy: searchDebug?.searchStrategy,
+    originalQuery: searchDebug?.originalQuery,
+    normalizedQuery: searchDebug?.normalizedQuery,
+    detectedStyle: searchDebug?.detectedStyle,
+    detectedBudget: searchDebug?.detectedBudget,
+    originalMaxPrice: searchDebug?.originalMaxPrice,
+    effectiveMaxPrice: searchDebug?.effectiveMaxPrice,
+    budgetRelaxed: searchDebug?.budgetRelaxed,
+    returnedCount: searchDebug?.returnedCount,
+  });
+  const aiMessage = await persistAiMessage(
+    conversation,
+    finalContent,
+    messageMetadata,
+    handoffReason
+  );
+  return { aiMessage, messageMetadata };
+};
+
+const runToolCallDecision = async (
+  decision: AiPass1Decision,
+  context: {
+    conversation: any;
+    customerMessage: IMessage;
+    actor: Actor;
+    parsed: ParsedPass1Decision;
+    runtime: EffectiveAiRuntime;
+  }
+): Promise<{
+  toolResultPayload: Record<string, unknown> | null;
+  handoffReason: string | null;
+}> => {
+  let handoffReason: string | null =
+    decision.type === 'handoff'
+      ? decision.reason
+      : decision.type === 'tool_call' && decision.toolName === 'handoffToStaff'
+        ? 'model_requested_handoff'
+        : null;
+  let toolResultPayload: Record<string, unknown> | null = null;
+
+  if (decision.type !== 'tool_call') {
+    return { toolResultPayload, handoffReason };
+  }
+
+  const toolStartedAt = Date.now();
+  if (aiConfig.maxToolCallsPerResponse < 1) {
+    toolResultPayload = {
+      status: 'DENIED',
+      errorCode: 'TOOL_CALL_LIMIT_REACHED',
+      message: 'Tool calling limit reached.',
+    };
+    handoffReason = handoffReason ?? 'tool_call_limit_reached';
+    await recordAiToolCall({
+      conversationId: context.conversation._id.toString(),
+      messageId: context.customerMessage._id.toString(),
+      actorId: context.actor.id,
+      actorRole: context.actor.role,
+      toolName: decision.toolName,
+      status: 'DENIED',
+      parserStrategy: context.parsed.strategy,
+      argumentsPayload: decision.arguments,
+      resultPayload: null,
+      errorCode: 'TOOL_CALL_LIMIT_REACHED',
+      errorMessage: 'Tool calling limit reached.',
+      durationMs: Date.now() - toolStartedAt,
+      provider: context.runtime.provider,
+      modelName: context.runtime.modelId,
+    });
+    return { toolResultPayload, handoffReason };
+  }
+
+  const toolResult = await executeToolFromDecision(decision, {
+    actorId: context.actor.id,
+    actorRole: context.actor.role,
+    conversationId: context.conversation._id.toString(),
+    messageId: context.customerMessage._id.toString(),
+  });
+  toolResultPayload = {
+    status: toolResult.status,
+    result: toolResult.result,
+    errorCode: toolResult.errorCode,
+    errorMessage: toolResult.errorMessage,
+  };
+  handoffReason = handoffReason ?? toolResult.handoffReason;
+  await recordAiToolCall({
+    conversationId: context.conversation._id.toString(),
+    messageId: context.customerMessage._id.toString(),
+    actorId: context.actor.id,
+    actorRole: context.actor.role,
+    toolName: decision.toolName,
+    status: toolResult.status,
+    parserStrategy: context.parsed.strategy,
+    argumentsPayload: decision.arguments,
+    resultPayload: toolResult.result,
+    errorCode: toolResult.errorCode,
+    errorMessage: toolResult.errorMessage,
+    durationMs: Date.now() - toolStartedAt,
+    provider: context.runtime.provider,
+    modelName: context.runtime.modelId,
+  });
+
+  return { toolResultPayload, handoffReason };
 };
 
 export const streamAiReplyForCustomer = async ({
@@ -310,14 +541,29 @@ export const streamAiReplyForCustomer = async ({
   validateAutoReplyEligibility(conversation);
   acquireConversationStreamLock(conversationId);
 
+  const runtime = await getEffectiveAiRuntime();
+  const requestedModelId = runtime.modelId;
+  let activeRuntime = runtime;
+  const buildChatMetadata = (extra: Record<string, unknown> = {}) =>
+    buildAiMessageMetadata(activeRuntime, {
+      requestedModel: requestedModelId,
+      isFallback: activeRuntime.modelId !== requestedModelId,
+      ...extra,
+    });
+
   try {
-    const health = await checkOllamaHealth();
+    const health = await checkActiveProviderHealth(activeRuntime, { mode: 'chat_preflight' });
     if (!health.ok) {
       await incrementAiFailureCount(conversation, 'provider_unavailable');
-      throw new ChatHttpError(503, health.message);
+      const customerMessage =
+        health.statusCode === 'rate_limited'
+          ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
+          : health.message;
+      throw new ChatHttpError(503, customerMessage);
     }
 
     const precheck = evaluatePrecheckHandoff(customerMessage.content);
+    const customerQuery = customerMessage.content;
     if (precheck.required) {
       const safeMessage = buildSafeHandoffMessage();
       onToken(safeMessage);
@@ -325,18 +571,17 @@ export const streamAiReplyForCustomer = async ({
       const message = await persistAiMessage(
         conversation,
         safeMessage,
-        {
-          aiProvider: 'ollama',
-          model: aiConfig.ollamaModel,
+        buildChatMetadata({
           handoffReason: precheck.reason,
-          isFallback: true,
-        },
+        }),
         precheck.reason
       );
       return {
         aiMessageId: message._id.toString(),
         conversationId: conversation._id.toString(),
         handoffReason: precheck.reason,
+        finalContent: safeMessage,
+        metadata: buildChatMetadata({ handoffReason: precheck.reason }),
       };
     }
 
@@ -349,80 +594,106 @@ export const streamAiReplyForCustomer = async ({
 
     const orderedHistoryRows = [...historyRows].reverse();
 
-    const { parsed, decision } = await resolvePass1Decision(orderedHistoryRows, abortSignal);
+    const pass1Outcome = await resolvePass1Decision(activeRuntime, orderedHistoryRows, abortSignal);
+    if (pass1Outcome.usedModelId && pass1Outcome.usedModelId !== activeRuntime.modelId) {
+      activeRuntime = { ...activeRuntime, modelId: pass1Outcome.usedModelId };
+    }
+    const overridden = applyAutoSearchOverride(
+      pass1Outcome.decision,
+      pass1Outcome.parsed,
+      orderedHistoryRows
+    );
+    let { parsed, decision } = overridden;
 
-    let handoffReason: string | null =
-      decision.type === 'handoff' ? decision.reason : decision.type === 'tool_call' && decision.toolName === 'handoffToStaff'
-        ? 'model_requested_handoff'
-        : null;
     let handoffEmitted = false;
     const notifyHandoff = (reason: string) => {
       if (handoffEmitted) return;
       handoffEmitted = true;
       onHandoff(reason);
     };
-    let toolResultPayload: Record<string, unknown> | null = null;
 
-    if (decision.type === 'tool_call') {
-      const toolStartedAt = Date.now();
-      if (aiConfig.maxToolCallsPerResponse < 1) {
-        toolResultPayload = {
-          status: 'DENIED',
-          errorCode: 'TOOL_CALL_LIMIT_REACHED',
-          message: 'Tool calling limit reached.',
-        };
-        handoffReason = handoffReason ?? 'tool_call_limit_reached';
-        await recordAiToolCall({
-          conversationId: conversation._id.toString(),
-          messageId: customerMessage._id.toString(),
-          actorId: actor.id,
-          actorRole: actor.role,
-          toolName: decision.toolName,
-          status: 'DENIED',
-          parserStrategy: parsed.strategy,
-          argumentsPayload: decision.arguments,
-          resultPayload: null,
-          errorCode: 'TOOL_CALL_LIMIT_REACHED',
-          errorMessage: 'Tool calling limit reached.',
-          durationMs: Date.now() - toolStartedAt,
-          provider: aiConfig.provider,
-          modelName: aiConfig.ollamaModel,
-        });
-      } else {
-        const toolResult = await executeToolFromDecision(decision, {
-          actorId: actor.id,
-          actorRole: actor.role,
-          conversationId: conversation._id.toString(),
-          messageId: customerMessage._id.toString(),
-        });
-        toolResultPayload = {
-          status: toolResult.status,
-          result: toolResult.result,
-          errorCode: toolResult.errorCode,
-          errorMessage: toolResult.errorMessage,
-        };
-        handoffReason = handoffReason ?? toolResult.handoffReason;
-        await recordAiToolCall({
-          conversationId: conversation._id.toString(),
-          messageId: customerMessage._id.toString(),
-          actorId: actor.id,
-          actorRole: actor.role,
-          toolName: decision.toolName,
-          status: toolResult.status,
-          parserStrategy: parsed.strategy,
-          argumentsPayload: decision.arguments,
-          resultPayload: toolResult.result,
-          errorCode: toolResult.errorCode,
-          errorMessage: toolResult.errorMessage,
-          durationMs: Date.now() - toolStartedAt,
-          provider: aiConfig.provider,
-          modelName: aiConfig.ollamaModel,
-        });
-      }
+    const toolOutcome = await runToolCallDecision(decision, {
+      conversation,
+      customerMessage,
+      actor,
+      parsed,
+      runtime: activeRuntime,
+    });
+    let handoffReason = toolOutcome.handoffReason;
+    let toolResultPayload = toolOutcome.toolResultPayload;
+
+    if (isExplicitStaffHandoffDecision(decision) && handoffReason) {
+      notifyHandoff(handoffReason);
+      const safeMessage = buildSafeHandoffMessage();
+      onToken(safeMessage);
+      const handoffMetadata = buildChatMetadata({ handoffReason });
+      const handoffMessage = await persistAiMessage(
+        conversation,
+        safeMessage,
+        handoffMetadata,
+        handoffReason
+      );
+      return {
+        aiMessageId: handoffMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason,
+        finalContent: safeMessage,
+        metadata: handoffMetadata,
+      };
     }
 
     if (handoffReason) {
-      notifyHandoff(handoffReason);
+      handoffReason = null;
+    }
+
+    if (isSearchProductsToolDecision(decision) && toolResultPayload) {
+      const toolStatus = toolResultPayload.status as string | undefined;
+      if (toolStatus === 'FAILED') {
+        const failedContent = PRODUCT_SEARCH_FAILED_REPLY;
+        streamDeterministicTokens(failedContent, onToken);
+        const failedMetadata = buildChatMetadata({ handoffReason: null });
+        const failedMessage = await persistAiMessage(
+          conversation,
+          failedContent,
+          failedMetadata,
+          null
+        );
+        return {
+          aiMessageId: failedMessage._id.toString(),
+          conversationId: conversation._id.toString(),
+          handoffReason: null,
+          finalContent: failedContent,
+          metadata: failedMetadata,
+        };
+      }
+
+      if (toolStatus === 'SUCCESS') {
+        const searchDebug = getSearchDebugFromToolPayload(toolResultPayload);
+        const productSuggestions = toProductSuggestionsFromToolPayload(decision, toolResultPayload);
+        const returnedCount = searchDebug?.returnedCount ?? productSuggestions.length;
+        const finalContent =
+          returnedCount > 0
+            ? buildProductAdviceFromSuggestions(productSuggestions, customerQuery, {
+                budgetRelaxed: searchDebug?.budgetRelaxed,
+              })
+            : EMPTY_PRODUCT_SEARCH_REPLY;
+        streamDeterministicTokens(finalContent, onToken);
+        const { aiMessage, messageMetadata } = await persistDeterministicSearchReply({
+          conversation,
+          finalContent,
+          handoffReason: null,
+          buildChatMetadata,
+          productSuggestions,
+          searchDebug,
+        });
+        return {
+          aiMessageId: aiMessage._id.toString(),
+          conversationId: conversation._id.toString(),
+          handoffReason: null,
+          finalContent,
+          metadata: messageMetadata,
+        };
+      }
     }
 
     const promptMessages =
@@ -435,7 +706,8 @@ export const streamAiReplyForCustomer = async ({
     let latencyMs = 0;
 
     try {
-      const result = await streamOllamaResponse(
+      const result = await streamActiveProviderResponse(
+        activeRuntime,
         promptMessages,
         (text) => {
           if (!text) return;
@@ -447,10 +719,17 @@ export const streamAiReplyForCustomer = async ({
       );
       latencyMs = result.latencyMs;
       accumulated = result.fullText || accumulated;
+      if (result.usedModelId && result.usedModelId !== activeRuntime.modelId) {
+        activeRuntime = { ...activeRuntime, modelId: result.usedModelId };
+      }
     } catch (error) {
       if (!hasAnyToken) {
         await incrementAiFailureCount(conversation, 'provider_stream_error_no_token');
-        throw new ChatHttpError(503, 'AI đang gặp sự cố, mình sẽ chuyển bạn đến nhân viên hỗ trợ.');
+        const streamMessage =
+          error instanceof Error && error.message.includes('rate limit')
+            ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
+            : 'AI đang gặp sự cố, mình sẽ chuyển bạn đến nhân viên hỗ trợ.';
+        throw new ChatHttpError(503, streamMessage);
       }
 
       const fallbackTail = '\n\nTin nhắn AI bị gián đoạn, mình đã chuyển bạn tới nhân viên hỗ trợ.';
@@ -460,43 +739,91 @@ export const streamAiReplyForCustomer = async ({
       const partialMessage = await persistAiMessage(
         conversation,
         partialContent,
-        {
-          aiProvider: 'ollama',
-          model: aiConfig.ollamaModel,
+        buildChatMetadata({
           latencyMs,
           handoffReason,
           isPartial: true,
-          isFallback: true,
-        },
+        }),
         handoffReason
       );
+      const partialMetadata = buildChatMetadata({
+        latencyMs,
+        handoffReason,
+        isPartial: true,
+      });
       return {
         aiMessageId: partialMessage._id.toString(),
         conversationId: conversation._id.toString(),
         handoffReason,
+        finalContent: partialContent,
+        metadata: partialMetadata,
       };
     }
 
     const markerParsed = extractHandoffMarker(accumulated);
-    const finalContent = markerParsed.cleanedContent || 'Mình đã nhận được câu hỏi của bạn.';
+    let finalContent = markerParsed.cleanedContent.trim();
+    const productSuggestions = toProductSuggestionsFromToolPayload(decision, toolResultPayload);
+
+    if (!finalContent) {
+      if (productSuggestions.length > 0) {
+        finalContent = buildProductAdviceFromSuggestions(
+          productSuggestions,
+          customerQuery
+        );
+        if (!hasAnyToken) {
+          onToken(finalContent);
+        }
+      } else {
+        try {
+          const retry = await completeActiveProviderResponse(activeRuntime, promptMessages, {
+            temperature: activeRuntime.temperature,
+            maxPredictTokens: activeRuntime.maxPredictTokens,
+            signal: abortSignal,
+          });
+          finalContent = retry.fullText.trim();
+          if (finalContent && !hasAnyToken) {
+            onToken(finalContent);
+          }
+          if (retry.usedModelId && retry.usedModelId !== activeRuntime.modelId) {
+            activeRuntime = { ...activeRuntime, modelId: retry.usedModelId };
+          }
+        } catch {
+          finalContent = '';
+        }
+      }
+    }
+
+    if (!finalContent) {
+      finalContent =
+        productSuggestions.length > 0
+          ? buildProductAdviceFromSuggestions(productSuggestions, customerQuery)
+          : 'Mình chưa tạo được câu trả lời đầy đủ. Bạn thử hỏi lại hoặc bấm Gặp nhân viên để được hỗ trợ trực tiếp nhé.';
+      if (!hasAnyToken) {
+        onToken(finalContent);
+      }
+    }
+
     handoffReason = handoffReason ?? markerParsed.reason;
     if (handoffReason) {
       notifyHandoff(handoffReason);
     }
 
-    const productSuggestions = toProductSuggestionsFromToolPayload(decision, toolResultPayload);
+    const messageMetadata = buildChatMetadata({
+      latencyMs,
+      handoffReason,
+      templateType: productSuggestions.length > 0 ? 'product_suggestions' : 'plain_text',
+      productSuggestions: productSuggestions.length > 0 ? productSuggestions : undefined,
+    });
+
+    const persistedContent = truncateChatMessageContent(finalContent);
+    if (persistedContent !== finalContent && !hasAnyToken) {
+      onToken(persistedContent);
+    }
 
     const aiMessage = await persistAiMessage(
       conversation,
-      finalContent,
-      {
-        aiProvider: 'ollama',
-        model: aiConfig.ollamaModel,
-        latencyMs,
-        handoffReason,
-        templateType: productSuggestions.length > 0 ? 'product_suggestions' : 'plain_text',
-        productSuggestions: productSuggestions.length > 0 ? productSuggestions : undefined,
-      },
+      persistedContent,
+      messageMetadata,
       handoffReason
     );
 
@@ -504,6 +831,8 @@ export const streamAiReplyForCustomer = async ({
       aiMessageId: aiMessage._id.toString(),
       conversationId: conversation._id.toString(),
       handoffReason,
+      finalContent: persistedContent,
+      metadata: messageMetadata,
     };
   } finally {
     releaseConversationStreamLock(conversationId);
@@ -524,16 +853,12 @@ export const handoffToStaffByCustomer = async (
     throw new ChatHttpError(409, 'Hội thoại đã đóng, không thể chuyển nhân viên.');
   }
 
+  const runtime = await getEffectiveAiRuntime();
   const safeMessage = buildSafeHandoffMessage();
   const aiMessage = await persistAiMessage(
     conversation,
     safeMessage,
-    {
-      aiProvider: 'ollama',
-      model: aiConfig.ollamaModel,
-      handoffReason: reason,
-      isFallback: true,
-    },
+    buildAiMessageMetadata(runtime, { handoffReason: reason }),
     reason
   );
 

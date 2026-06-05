@@ -1,9 +1,12 @@
 import { aiConfig } from '../../../config/ai.js';
 import type {
+  AiAdminHealthResult,
+  AiCompleteOptions,
   AiHealthResult,
   AiModelTag,
   AiPromptMessage,
   AiProviderFinal,
+  EffectiveAiRuntime,
 } from '../types/ai.types.js';
 
 interface OllamaTagResponse {
@@ -21,12 +24,6 @@ interface OllamaChatResponse {
   message?: {
     content?: string;
   };
-}
-
-interface OllamaCompleteOptions {
-  temperature?: number;
-  maxPredictTokens?: number;
-  signal?: AbortSignal;
 }
 
 const parseJsonSafely = <T>(line: string): T | null => {
@@ -48,50 +45,85 @@ const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs: numbe
   }
 };
 
-export const checkOllamaHealth = async (): Promise<AiHealthResult> => {
+export const checkOllamaHealthForRuntime = async (
+  runtime: EffectiveAiRuntime
+): Promise<AiAdminHealthResult> => {
   const url = `${aiConfig.ollamaBaseUrl}/api/tags`;
+  const base = {
+    provider: runtime.provider,
+    modelId: runtime.modelId,
+    runtimeSource: runtime.runtimeSource,
+  };
+
   try {
-    const response = await fetchWithTimeout(url, { method: 'GET' }, aiConfig.requestTimeoutMs);
+    const response = await fetchWithTimeout(url, { method: 'GET' }, runtime.requestTimeoutMs);
     if (!response.ok) {
       return {
+        ...base,
         ok: false,
+        statusCode: 'unreachable',
+        message: 'Không kết nối được Ollama service.',
         reachable: false,
         modelAvailable: false,
-        checkedModel: aiConfig.ollamaModel,
-        message: 'Không kết nối được Ollama service.',
       };
     }
     const body = (await response.json()) as OllamaTagResponse;
     const models = body.models ?? [];
-    const modelAvailable = models.some((model) => model.name === aiConfig.ollamaModel);
+    const modelAvailable = models.some((model) => model.name === runtime.modelId);
     if (!modelAvailable) {
       return {
+        ...base,
         ok: false,
+        statusCode: 'model_missing',
+        message: `Model ${runtime.modelId} chưa tồn tại trên máy.`,
         reachable: true,
         modelAvailable: false,
-        checkedModel: aiConfig.ollamaModel,
-        message: `Model ${aiConfig.ollamaModel} chưa tồn tại trên máy.`,
       };
     }
     return {
+      ...base,
       ok: true,
+      statusCode: 'ready',
+      message: 'Ollama sẵn sàng.',
       reachable: true,
       modelAvailable: true,
-      checkedModel: aiConfig.ollamaModel,
-      message: 'Ollama sẵn sàng.',
     };
   } catch {
     return {
+      ...base,
       ok: false,
+      statusCode: 'unreachable',
+      message: 'Không thể kết nối Ollama. Vui lòng kiểm tra dịch vụ local.',
       reachable: false,
       modelAvailable: false,
-      checkedModel: aiConfig.ollamaModel,
-      message: 'Không thể kết nối Ollama. Vui lòng kiểm tra dịch vụ local.',
     };
   }
 };
 
+/** @deprecated Use checkOllamaHealthForRuntime with effective runtime */
+export const checkOllamaHealth = async (): Promise<AiHealthResult> => {
+  const runtime: EffectiveAiRuntime = {
+    provider: 'ollama',
+    modelId: aiConfig.ollamaModel,
+    runtimeSource: 'env_default',
+    requestTimeoutMs: aiConfig.requestTimeoutMs,
+    maxPredictTokens: aiConfig.maxPredictTokens,
+    temperature: aiConfig.temperature,
+    toolDecisionMaxPredictTokens: aiConfig.toolDecisionMaxPredictTokens,
+    toolDecisionTemperature: aiConfig.toolDecisionTemperature,
+  };
+  const result = await checkOllamaHealthForRuntime(runtime);
+  return {
+    ok: result.ok,
+    reachable: result.reachable ?? false,
+    modelAvailable: result.modelAvailable ?? false,
+    checkedModel: runtime.modelId,
+    message: result.message,
+  };
+};
+
 export const streamOllamaResponse = async (
+  runtime: EffectiveAiRuntime,
   promptMessages: AiPromptMessage[],
   onToken: (text: string) => void,
   signal?: AbortSignal
@@ -101,7 +133,7 @@ export const streamOllamaResponse = async (
   let finished = false;
   const timeout = setTimeout(() => {
     if (!finished) timeoutController.abort();
-  }, aiConfig.requestTimeoutMs);
+  }, runtime.requestTimeoutMs);
   const compositeController = new AbortController();
   const abortComposite = () => compositeController.abort();
   timeoutController.signal.addEventListener('abort', abortComposite, { once: true });
@@ -112,12 +144,12 @@ export const streamOllamaResponse = async (
       headers: { 'Content-Type': 'application/json' },
       signal: compositeController.signal,
       body: JSON.stringify({
-        model: aiConfig.ollamaModel,
+        model: runtime.modelId,
         messages: promptMessages,
         stream: true,
         options: {
-          temperature: aiConfig.temperature,
-          num_predict: aiConfig.maxPredictTokens,
+          temperature: runtime.temperature,
+          num_predict: runtime.maxPredictTokens,
         },
       }),
     });
@@ -168,15 +200,16 @@ export const streamOllamaResponse = async (
 };
 
 export const completeOllamaResponse = async (
+  runtime: EffectiveAiRuntime,
   promptMessages: AiPromptMessage[],
-  options: OllamaCompleteOptions = {}
+  options: AiCompleteOptions = {}
 ): Promise<AiProviderFinal> => {
   const start = Date.now();
   const timeoutController = new AbortController();
   let finished = false;
   const timeout = setTimeout(() => {
     if (!finished) timeoutController.abort();
-  }, aiConfig.requestTimeoutMs);
+  }, runtime.requestTimeoutMs);
   const compositeController = new AbortController();
   const abortComposite = () => compositeController.abort();
   timeoutController.signal.addEventListener('abort', abortComposite, { once: true });
@@ -188,12 +221,12 @@ export const completeOllamaResponse = async (
       headers: { 'Content-Type': 'application/json' },
       signal: compositeController.signal,
       body: JSON.stringify({
-        model: aiConfig.ollamaModel,
+        model: runtime.modelId,
         messages: promptMessages,
         stream: false,
         options: {
-          temperature: options.temperature ?? aiConfig.temperature,
-          num_predict: options.maxPredictTokens ?? aiConfig.maxPredictTokens,
+          temperature: options.temperature ?? runtime.toolDecisionTemperature,
+          num_predict: options.maxPredictTokens ?? runtime.toolDecisionMaxPredictTokens,
         },
       }),
     });
@@ -213,4 +246,3 @@ export const completeOllamaResponse = async (
     clearTimeout(timeout);
   }
 };
-

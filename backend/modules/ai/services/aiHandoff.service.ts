@@ -17,6 +17,21 @@ const HANDOFF_RULES: RuleMatcher[] = [
 
 const HANDOFF_MARKER_REGEX = /\[HANDOFF_REQUIRED:\s*([a-zA-Z0-9_\-]+)\s*\]/g;
 
+/** Handoff từ Pass1 — không được ghi đè bằng auto searchProducts. */
+export const SENSITIVE_PASS1_HANDOFF_REASONS = new Set([
+  'customer_requested_staff',
+  'order_cancellation',
+  'refund_request',
+  'change_shipping_address',
+  'payment_issue',
+  'complaint_or_angry',
+  'order_status_needs_tool',
+  'model_requested_handoff',
+]);
+
+export const isSensitivePass1Handoff = (reason: string | undefined | null) =>
+  Boolean(reason && SENSITIVE_PASS1_HANDOFF_REASONS.has(reason));
+
 export const evaluatePrecheckHandoff = (content: string): AiHandoffDecision => {
   const normalized = content.trim();
   for (const rule of HANDOFF_RULES) {

@@ -1,8 +1,16 @@
+export type AiProviderId = 'ollama' | 'openrouter';
+
 export interface AiRuntimeConfig {
   enabled: boolean;
-  provider: 'ollama';
+  defaultProvider: AiProviderId;
+  defaultModelId: string;
   ollamaBaseUrl: string;
   ollamaModel: string;
+  openrouterBaseUrl: string;
+  openrouterApiKey: string;
+  openrouterSiteUrl: string;
+  openrouterAppName: string;
+  healthPingEnabled: boolean;
   toolCallingEnabled: boolean;
   maxToolCallsPerResponse: number;
   toolDecisionMaxPredictTokens: number;
@@ -26,14 +34,20 @@ const toNumber = (value: string | undefined, fallback: number, min: number, max:
   return Math.min(max, Math.max(min, parsed));
 };
 
-const normalizeBaseUrl = (value: string | undefined) => {
-  const raw = value?.trim() || 'http://localhost:11434';
+const normalizeBaseUrl = (value: string | undefined, fallback: string) => {
+  const raw = value?.trim() || fallback;
   return raw.replace(/\/+$/, '');
 };
 
-const normalizeModel = (value: string | undefined) => {
+const normalizeModel = (value: string | undefined, fallback: string) => {
   const raw = value?.trim();
-  return raw && raw.length > 0 ? raw : 'gemma4:e4b';
+  return raw && raw.length > 0 ? raw : fallback;
+};
+
+const parseProvider = (value: string | undefined, fallback: AiProviderId): AiProviderId => {
+  const raw = value?.trim().toLowerCase();
+  if (raw === 'openrouter' || raw === 'ollama') return raw;
+  return fallback;
 };
 
 const ALLOWED_TOOL_NAMES = ['handoffToStaff', 'searchProducts', 'getProductDetail', 'checkOrderStatus'] as const;
@@ -50,11 +64,19 @@ const parseEnabledToolNames = (value: string | undefined): AllowedToolName[] => 
   return unique.size > 0 ? [...unique] : [...ALLOWED_TOOL_NAMES];
 };
 
+const DEFAULT_MODEL_ID = 'gemma4:e4b';
+
 export const aiConfig: AiRuntimeConfig = {
   enabled: toBoolean(process.env.AI_ENABLED, true),
-  provider: 'ollama',
-  ollamaBaseUrl: normalizeBaseUrl(process.env.OLLAMA_BASE_URL),
-  ollamaModel: normalizeModel(process.env.OLLAMA_MODEL),
+  defaultProvider: parseProvider(process.env.AI_DEFAULT_PROVIDER, 'ollama'),
+  defaultModelId: normalizeModel(process.env.AI_DEFAULT_MODEL_ID, DEFAULT_MODEL_ID),
+  ollamaBaseUrl: normalizeBaseUrl(process.env.OLLAMA_BASE_URL, 'http://localhost:11434'),
+  ollamaModel: normalizeModel(process.env.OLLAMA_MODEL, DEFAULT_MODEL_ID),
+  openrouterBaseUrl: normalizeBaseUrl(process.env.OPENROUTER_BASE_URL, 'https://openrouter.ai/api/v1'),
+  openrouterApiKey: process.env.OPENROUTER_API_KEY?.trim() ?? '',
+  openrouterSiteUrl: process.env.OPENROUTER_SITE_URL?.trim() ?? '',
+  openrouterAppName: process.env.OPENROUTER_APP_NAME?.trim() ?? 'UTESHOP',
+  healthPingEnabled: toBoolean(process.env.AI_HEALTH_PING_ENABLED, true),
   toolCallingEnabled: toBoolean(process.env.AI_TOOL_CALLING_ENABLED, true),
   maxToolCallsPerResponse: toNumber(process.env.MAX_TOOL_CALLS_PER_AI_RESPONSE, 1, 0, 1),
   toolDecisionMaxPredictTokens: toNumber(process.env.AI_TOOL_DECISION_MAX_PREDICT_TOKENS, 180, 32, 512),
@@ -63,7 +85,7 @@ export const aiConfig: AiRuntimeConfig = {
   requestTimeoutMs: toNumber(process.env.AI_REQUEST_TIMEOUT_MS, 45_000, 5_000, 120_000),
   streamLockMaxMs: toNumber(process.env.AI_STREAM_LOCK_MAX_MS, 120_000, 10_000, 300_000),
   maxHistoryMessages: toNumber(process.env.AI_MAX_HISTORY_MESSAGES, 12, 1, 30),
-  maxPredictTokens: toNumber(process.env.AI_MAX_PREDICT_TOKENS, 700, 64, 2048),
+  // ~500 tokens ≈ dưới giới hạn tin nhắn chat 2000 ký tự
+  maxPredictTokens: toNumber(process.env.AI_MAX_PREDICT_TOKENS, 500, 64, 1024),
   temperature: toNumber(process.env.AI_TEMPERATURE, 0.4, 0, 1.5),
 };
-

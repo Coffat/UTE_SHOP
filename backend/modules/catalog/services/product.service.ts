@@ -14,6 +14,10 @@ import {
   type PaginatedAdminProducts,
   type GetAdminProductsParams,
 } from '../repositories/product.repository.js';
+import {
+  buildProductMongoFilter,
+  type ProductTextSearchInput,
+} from './productSearchQuery.service.js';
 
 // ─── Product CRUD ─────────────────────────────────────────────────────────────
 
@@ -26,9 +30,13 @@ interface GetProductsParams {
   status?: string;
   categoryId?: string;
   categorySlug?: string;
+  /** @deprecated Prefer textSearch — kept for backward compatibility */
   search?: string;
   color?: string;
+  /** @deprecated Prefer textSearch.mode styleOnly */
   style?: string;
+  textSearch?: ProductTextSearchInput;
+  excludeProductIds?: string[];
   minPrice?: string | number;
   maxPrice?: string | number;
   sortBy?: string;
@@ -55,45 +63,60 @@ export const getProducts = async ({
   search,
   color,
   style,
+  textSearch,
+  excludeProductIds,
   minPrice,
   maxPrice,
   sortBy,
   page = 1,
   limit = 20
 }: GetProductsParams = {}): Promise<PaginatedProducts> => {
-  const filter: Record<string, any> = {};
-  if (status) filter.status = status;
-  
+  let resolvedCategorySlug = categorySlug;
   if (categoryId) {
-    filter.category = categoryId;
-  } else if (categorySlug) {
-    const category = await Category.findOne({ slug: categorySlug });
+    const category = await Category.findById(categoryId);
+    if (category) resolvedCategorySlug = category.slug;
+  }
+
+  const legacyTextSearch: ProductTextSearchInput | undefined = textSearch
+    ? textSearch
+    : search
+      ? { mode: 'keyword', keyword: search }
+      : style
+        ? { mode: 'styleOnly', style }
+        : undefined;
+
+  const filter = buildProductMongoFilter({
+    status,
+    minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+    maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+    textSearch: legacyTextSearch,
+    excludeProductIds,
+  });
+
+  if (resolvedCategorySlug) {
+    const category = await Category.findOne({ slug: resolvedCategorySlug });
     if (category) filter.category = category._id;
   }
-  
-  if (search) filter.name = { $regex: search, $options: 'i' };
-  
+
   if (color) {
-    filter.$or = [
-      { name: { $regex: color, $options: 'i' } },
-      { description: { $regex: color, $options: 'i' } }
-    ];
-  }
-  
-  if (style) {
-    const styleRegex = { $regex: style, $options: 'i' };
-    if (filter.$or) {
-      filter.$and = [{ $or: filter.$or }, { $or: [{ name: styleRegex }, { description: styleRegex }] }];
+    const colorClause = {
+      $or: [
+        { name: { $regex: color, $options: 'i' } },
+        { description: { $regex: color, $options: 'i' } },
+      ],
+    };
+    if (filter.$and) {
+      (filter.$and as Record<string, unknown>[]).push(colorClause);
+    } else if (filter.$or) {
+      filter.$and = [{ $or: filter.$or }, colorClause];
       delete filter.$or;
     } else {
-      filter.$or = [{ name: styleRegex }, { description: styleRegex }];
+      Object.assign(filter, colorClause);
     }
   }
 
-  if (minPrice !== undefined || maxPrice !== undefined) {
-    filter['minifiedVariants.price'] = {};
-    if (minPrice !== undefined) filter['minifiedVariants.price'].$gte = Number(minPrice);
-    if (maxPrice !== undefined) filter['minifiedVariants.price'].$lte = Number(maxPrice);
+  if (categoryId && !resolvedCategorySlug) {
+    filter.category = categoryId;
   }
 
   let sortOption: Record<string, any> = { createdAt: -1 };

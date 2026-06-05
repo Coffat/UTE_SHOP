@@ -4,7 +4,12 @@ interface StartAiStreamInput {
   conversationId: string;
   messageId: string;
   onToken: (text: string) => void;
-  onDone: (payload: { messageId: string; conversationId: string }) => void;
+  onDone: (payload: {
+    messageId: string;
+    conversationId: string;
+    content?: string;
+    metadata?: Record<string, unknown> | null;
+  }) => void;
   onHandoff: (payload: { required: true; reason: string }) => void;
   onError: (message: string) => void;
 }
@@ -61,7 +66,17 @@ export const startCustomerAiStream = ({
       eventSource.close();
       return;
     }
-    onDone({ messageId: doneMessageId, conversationId: doneConversationId });
+    const content = typeof payload.content === "string" ? payload.content : undefined;
+    const metadata =
+      payload.metadata && typeof payload.metadata === "object"
+        ? (payload.metadata as Record<string, unknown>)
+        : undefined;
+    onDone({
+      messageId: doneMessageId,
+      conversationId: doneConversationId,
+      content,
+      metadata,
+    });
     eventSource.close();
   });
 

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
-import { sendSuccess } from '../../../shared/utils/apiResponse.js';
+import { sendError, sendSuccess } from '../../../shared/utils/apiResponse.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
+import { AppError } from '../../../shared/utils/AppError.js';
 import {
   getAdminSettings,
   putAdminSettings,
@@ -13,8 +14,15 @@ export const getSettings = asyncHandler(async (_req: Request, res: Response) => 
 });
 
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
-  const data = await putAdminSettings(req.body);
-  sendSuccess(res, 200, 'Lưu cấu hình thành công', data);
+  try {
+    const data = await putAdminSettings(req.body);
+    sendSuccess(res, 200, 'Lưu cấu hình thành công', data);
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, err.statusCode, err.message);
+    }
+    throw err;
+  }
 });
 
 export const rotateApiKey = asyncHandler(async (_req: Request, res: Response) => {

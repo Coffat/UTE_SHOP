@@ -148,16 +148,29 @@ export function CustomerChatWidget() {
         onHandoff: () => {
           setTyping(false);
         },
-        onDone: ({ messageId: aiMessageId }) => {
+        onDone: ({ messageId: aiMessageId, content, metadata }) => {
           setMessages((prev) => {
             const tempIdx = prev.findIndex((msg) => msg._id === tempId);
             if (tempIdx < 0) return prev;
             const existingIdx = prev.findIndex((msg) => msg._id === aiMessageId);
             if (existingIdx >= 0) {
-              return prev.filter((msg) => msg._id !== tempId);
+              const next = [...prev];
+              next[existingIdx] = {
+                ...next[existingIdx],
+                content: content ?? next[existingIdx].content,
+                metadata: (metadata as Message["metadata"]) ?? next[existingIdx].metadata,
+                deliveryState: "sent",
+              };
+              return next.filter((msg) => msg._id !== tempId);
             }
             const next = [...prev];
-            next[tempIdx] = { ...next[tempIdx], _id: aiMessageId, deliveryState: "sent" as const };
+            next[tempIdx] = {
+              ...next[tempIdx],
+              _id: aiMessageId,
+              content: content ?? next[tempIdx].content,
+              metadata: (metadata as Message["metadata"]) ?? next[tempIdx].metadata,
+              deliveryState: "sent",
+            };
             return next;
           });
           aiTempMessageIdRef.current = aiMessageId;

@@ -18,6 +18,7 @@ const handoffLimiter = createRateLimiter(
   'Bạn thao tác chuyển nhân viên quá nhanh. Vui lòng thử lại.'
 );
 
+router.get('/health/ai', aiController.publicCheckAiHealth);
 router.get('/health/ollama', aiController.publicCheckOllamaHealth);
 
 router.get(
@@ -39,6 +40,20 @@ router.post(
 );
 
 router.get(
+  '/admin/ai/model-catalog',
+  authenticate,
+  authorize('ADMIN'),
+  aiController.adminGetModelCatalog
+);
+
+router.get(
+  '/system/health/ai',
+  authenticate,
+  authorize('ADMIN'),
+  aiController.adminCheckAiHealth
+);
+
+router.get(
   '/system/health/ollama',
   authenticate,
   authorize('ADMIN'),
@@ -46,4 +61,3 @@ router.get(
 );
 
 export default router;
-

@@ -2,10 +2,11 @@ import type { Request, Response } from 'express';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { sendError, sendSuccess } from '../../../shared/utils/apiResponse.js';
 import { isChatHttpError } from '../../chat/services/chat.errors.js';
+import { getEnabledCatalog } from '../config/aiModelCatalog.js';
+import { checkActiveProviderHealth } from '../providers/aiProvider.router.js';
 import { closeSse, initializeSse, writeSseEvent } from '../services/aiStream.service.js';
 import { handoffToStaffByCustomer, streamAiReplyForCustomer } from '../services/aiAssistant.service.js';
-import { aiConfig } from '../../../config/ai.js';
-import { checkOllamaHealth } from '../providers/ollama.provider.js';
+import { getEffectiveAiRuntime } from '../services/aiRuntimeConfig.service.js';
 
 const getActor = (req: Request) => {
   if (!req.user) throw new Error('Unauthorized');
@@ -44,7 +45,12 @@ export const customerStreamAiReply = asyncHandler(async (req: Request, res: Resp
       onToken: (text) => writeSseEvent(res, 'token', { text }),
       onHandoff: (reason) => writeSseEvent(res, 'handoff', { required: true, reason }),
     });
-    writeSseEvent(res, 'done', { messageId: result.aiMessageId, conversationId: result.conversationId });
+    writeSseEvent(res, 'done', {
+      messageId: result.aiMessageId,
+      conversationId: result.conversationId,
+      content: result.finalContent,
+      metadata: result.metadata,
+    });
   } catch (error) {
     const mapped = toUserMessage(error);
     writeSseEvent(res, 'error', {
@@ -67,23 +73,31 @@ export const customerManualHandoff = asyncHandler(async (req: Request, res: Resp
   }
 });
 
-export const adminCheckOllamaHealth = asyncHandler(async (_req: Request, res: Response) => {
-  const health = await checkOllamaHealth();
-  const statusCode = health.ok ? 200 : 503;
-  return sendSuccess(res, statusCode, health.message, {
-    provider: aiConfig.provider,
-    baseUrl: aiConfig.ollamaBaseUrl,
-    configuredModel: aiConfig.ollamaModel,
-    reachable: health.reachable,
-    modelAvailable: health.modelAvailable,
-  });
+export const adminGetModelCatalog = asyncHandler(async (_req: Request, res: Response) => {
+  return sendSuccess(res, 200, 'OK', { items: getEnabledCatalog() });
 });
 
-export const publicCheckOllamaHealth = asyncHandler(async (_req: Request, res: Response) => {
-  const health = await checkOllamaHealth();
+export const adminCheckAiHealth = asyncHandler(async (req: Request, res: Response) => {
+  const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
+  const modelId = typeof req.query.modelId === 'string' ? req.query.modelId : undefined;
+  const mode = req.query.mode === 'chat_preflight' ? 'chat_preflight' : 'full';
+  const runtime = await getEffectiveAiRuntime({ provider, modelId });
+  const health = await checkActiveProviderHealth(runtime, { mode });
+  const statusCode = health.ok ? 200 : 503;
+  return sendSuccess(res, statusCode, health.message, health);
+});
+
+export const publicCheckAiHealth = asyncHandler(async (_req: Request, res: Response) => {
+  const runtime = await getEffectiveAiRuntime();
+  const health = await checkActiveProviderHealth(runtime);
   const statusCode = health.ok ? 200 : 503;
   return sendSuccess(res, statusCode, health.ok ? 'AI service ready.' : 'AI service unavailable.', {
     ok: health.ok,
   });
 });
 
+/** @deprecated Use publicCheckAiHealth */
+export const publicCheckOllamaHealth = publicCheckAiHealth;
+
+/** @deprecated Use adminCheckAiHealth */
+export const adminCheckOllamaHealth = adminCheckAiHealth;

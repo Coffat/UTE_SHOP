@@ -26,6 +26,8 @@ export interface IStoreSettings extends Document {
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;
+  aiProvider: 'ollama' | 'openrouter';
+  aiModelId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +58,8 @@ const storeSettingsSchema = new Schema<IStoreSettings>(
     webhookUrl: { type: String, default: '' },
     webhookEnabled: { type: Boolean, default: false },
     logoUrl: { type: String, default: '' },
+    aiProvider: { type: String, enum: ['ollama', 'openrouter'], default: 'ollama' },
+    aiModelId: { type: String, default: 'gemma4:e4b' },
   },
   { timestamps: true }
 );
