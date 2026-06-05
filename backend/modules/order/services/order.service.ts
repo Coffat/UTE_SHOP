@@ -21,6 +21,8 @@ import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
 import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
+import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
+import crypto from 'crypto';
 import {
   mapOrderToAdminListItem,
   type AdminOrderListItemDto,
@@ -191,6 +193,17 @@ export const placeOrderWithoutTransaction = async ({
   // ── STEP 6: Convert cart ──────────────────────────────────────────────────
   await Cart.findByIdAndUpdate(cartId, { status: 'CONVERTED' });
 
+  // Emit event
+  eventBus.emitAsync(AppEvent.ORDER_CREATED, {
+    eventId: crypto.randomUUID(),
+    occurredAt: new Date(),
+    entityId: (order._id as mongoose.Types.ObjectId).toString(),
+    actorId: customerId,
+    orderId: (order._id as mongoose.Types.ObjectId).toString(),
+    orderCode: order.orderCode,
+    totalAmount: calcResult.finalTotal,
+  }).catch(err => console.error('[EventBus] Error emitting ORDER_CREATED:', err));
+
   return order;
 };
 
@@ -309,6 +322,18 @@ export const placeOrder = async ({
     await Cart.findByIdAndUpdate(cartId, { status: 'CONVERTED' }, { session });
 
     await session.commitTransaction();
+
+    // Emit event
+    eventBus.emitAsync(AppEvent.ORDER_CREATED, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: (order._id as mongoose.Types.ObjectId).toString(),
+      actorId: customerId,
+      orderId: (order._id as mongoose.Types.ObjectId).toString(),
+      orderCode: order.orderCode,
+      totalAmount: calcResult.finalTotal,
+    }).catch(err => console.error('[EventBus] Error emitting ORDER_CREATED:', err));
+
     return order;
   } catch (err: any) {
     if (session) {
@@ -408,7 +433,21 @@ export const updateOrderStatus = async (
     }
   }
 
-  return order.save();
+  await order.save();
+
+  // Emit event
+  eventBus.emitAsync(AppEvent.ORDER_STATUS_CHANGED, {
+    eventId: crypto.randomUUID(),
+    occurredAt: new Date(),
+    entityId: (order._id as mongoose.Types.ObjectId).toString(),
+    actorId: changedById,
+    orderId: (order._id as mongoose.Types.ObjectId).toString(),
+    orderCode: order.orderCode,
+    oldStatus: currentStatus,
+    newStatus,
+  }).catch(err => console.error('[EventBus] Error emitting ORDER_STATUS_CHANGED:', err));
+
+  return order;
 };
 
 export const assertOrderAccess = (
@@ -448,6 +487,18 @@ export const cancelOrderWithoutTransaction = async (
   for (const item of order.items) {
     await increaseStock((item.productVariant as any)._id, item.quantity, cancelledById, reason);
   }
+
+  // Emit event
+  eventBus.emitAsync(AppEvent.ORDER_STATUS_CHANGED, {
+    eventId: crypto.randomUUID(),
+    occurredAt: new Date(),
+    entityId: (order._id as mongoose.Types.ObjectId).toString(),
+    actorId: cancelledById,
+    orderId: (order._id as mongoose.Types.ObjectId).toString(),
+    orderCode: order.orderCode,
+    oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
+    newStatus: OrderStatus.CANCELLED,
+  }).catch(err => console.error('[EventBus] Error emitting ORDER_STATUS_CHANGED:', err));
 
   return order;
 };
@@ -498,6 +549,18 @@ export const cancelOrder = async (
       await increaseStock((item.productVariant as any)._id, item.quantity, cancelledById, reason, session);
     }
 
+    // Emit event
+    eventBus.emitAsync(AppEvent.ORDER_STATUS_CHANGED, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: (order._id as mongoose.Types.ObjectId).toString(),
+      actorId: cancelledById,
+      orderId: (order._id as mongoose.Types.ObjectId).toString(),
+      orderCode: order.orderCode,
+      oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
+      newStatus: OrderStatus.CANCELLED,
+    }).catch(err => console.error('[EventBus] Error emitting ORDER_STATUS_CHANGED:', err));
+
     return order;
   }
 
@@ -528,6 +591,19 @@ export const cancelOrder = async (
     }
 
     await newSession.commitTransaction();
+
+    // Emit event
+    eventBus.emitAsync(AppEvent.ORDER_STATUS_CHANGED, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: (order._id as mongoose.Types.ObjectId).toString(),
+      actorId: cancelledById,
+      orderId: (order._id as mongoose.Types.ObjectId).toString(),
+      orderCode: order.orderCode,
+      oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
+      newStatus: OrderStatus.CANCELLED,
+    }).catch(err => console.error('[EventBus] Error emitting ORDER_STATUS_CHANGED:', err));
+
     return order;
   } catch (err: any) {
     if (newSession) {

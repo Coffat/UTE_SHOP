@@ -11,6 +11,10 @@ import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
 import { UPLOADS_DIR } from './shared/middlewares/uploadImage.js';
 import { initializeChatSocket } from './modules/chat/socket/chat.socket.js';
+import { registerNotificationEventHandlers } from './modules/notification/services/notification.orchestrator.js';
+
+// Initialize event bus handlers
+registerNotificationEventHandlers();
 
 // Connect to database
 connectDB();

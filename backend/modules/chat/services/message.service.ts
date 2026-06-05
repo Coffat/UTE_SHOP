@@ -13,6 +13,8 @@ import {
   canSendAsStaff,
 } from './chatPermission.service.js';
 import { ChatHttpError } from './chat.errors.js';
+import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
+import crypto from 'crypto';
 
 interface Actor {
   id: string;
@@ -127,6 +129,25 @@ export const sendMessage = async ({
   }
 
   await conversation.save();
+
+  // Emit chat message received event
+  if (senderType === 'staff' || senderType === 'customer') {
+    const recipientId = senderType === 'staff' ? conversation.customerId.toString() : conversation.assignedStaffId?.toString();
+    
+    // Only emit if there is a recipient to notify (e.g., if staff sends to customer, or customer sends to an assigned staff)
+    // If a customer sends to an unassigned conversation, notification orchestration will handle notifying all online staffs or admins.
+    eventBus.emitAsync(AppEvent.CHAT_MESSAGE_RECEIVED, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: conversation._id.toString(),
+      actorId: actor.id,
+      conversationId: conversation._id.toString(),
+      messageId: messageDoc._id.toString(),
+      senderType,
+      contentPreview: normalized.substring(0, 50) + (normalized.length > 50 ? '...' : ''),
+      recipientId: recipientId || 'UNASSIGNED',
+    }).catch(err => console.error('[EventBus] Error emitting CHAT_MESSAGE_RECEIVED:', err));
+  }
 
   return { message: messageDoc, conversation };
 };
