@@ -24,6 +24,8 @@ export interface StoreSettings {
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;
+  aiProvider: "ollama" | "openrouter";
+  aiModelId: string;
 }
 
 export interface RotateApiKeyResult {

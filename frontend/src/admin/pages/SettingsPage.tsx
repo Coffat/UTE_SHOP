@@ -6,6 +6,13 @@ import {
   type StoreSettings,
 } from "../services/adminSettings.api";
 import { uploadAdminImage, resolveAssetUrl } from "../services/adminUpload.api";
+import {
+  checkAiHealth,
+  fetchAiModelCatalog,
+  type AiAdminHealthResult,
+  type AiModelCatalogEntry,
+  type AiProviderId,
+} from "../services/adminAi.api";
 
 const SETTING_SECTIONS = [
   { key: "general",   label: "Thông tin cửa hàng",   icon: "🏪" },
@@ -40,6 +47,8 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setWebhookUrl: (v: string) => void;
   setWebhookEnabled: (v: boolean) => void;
   setLogoUrl: (v: string) => void;
+  setAiProvider: (v: AiProviderId) => void;
+  setAiModelId: (v: string) => void;
 }) {
   setters.setStoreName(settings.storeName);
   setters.setSupportEmail(settings.supportEmail);
@@ -64,6 +73,8 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setters.setWebhookUrl(settings.webhookUrl);
   setters.setWebhookEnabled(settings.webhookEnabled);
   setters.setLogoUrl(settings.logoUrl);
+  setters.setAiProvider(settings.aiProvider);
+  setters.setAiModelId(settings.aiModelId);
 }
 
 export function SettingsPage() {
@@ -104,6 +115,14 @@ export function SettingsPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  const [aiProvider, setAiProvider] = useState<AiProviderId>("ollama");
+  const [aiModelId, setAiModelId] = useState("gemma4:e4b");
+  const [savedAiProvider, setSavedAiProvider] = useState<AiProviderId>("ollama");
+  const [savedAiModelId, setSavedAiModelId] = useState("gemma4:e4b");
+  const [aiCatalog, setAiCatalog] = useState<AiModelCatalogEntry[]>([]);
+  const [aiHealth, setAiHealth] = useState<AiAdminHealthResult | null>(null);
+  const [aiHealthLoading, setAiHealthLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -134,7 +153,11 @@ export function SettingsPage() {
           setWebhookUrl,
           setWebhookEnabled,
           setLogoUrl,
+          setAiProvider,
+          setAiModelId,
         });
+        setSavedAiProvider(settings.aiProvider);
+        setSavedAiModelId(settings.aiModelId);
       })
       .catch((err) => {
         console.error("Failed to load settings:", err);
@@ -147,6 +170,54 @@ export function SettingsPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAiModelCatalog()
+      .then((items) => {
+        if (!cancelled) setAiCatalog(items);
+      })
+      .catch((err) => {
+        console.error("Failed to load AI catalog:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const modelsForProvider = aiCatalog.filter((entry) => entry.provider === aiProvider);
+
+  const handleAiProviderChange = (nextProvider: AiProviderId) => {
+    setAiProvider(nextProvider);
+    const firstModel = aiCatalog.find((entry) => entry.provider === nextProvider);
+    if (firstModel) setAiModelId(firstModel.modelId);
+    setAiHealth(null);
+  };
+
+  const aiSelectionUnsaved =
+    savedAiProvider !== aiProvider || savedAiModelId !== aiModelId;
+
+  const handleCheckAiHealth = async (mode: "full" | "chat_preflight" = "full") => {
+    setAiHealthLoading(true);
+    setError(null);
+    try {
+      const result =
+        mode === "chat_preflight"
+          ? await checkAiHealth({ mode: "chat_preflight" })
+          : await checkAiHealth({ provider: aiProvider, modelId: aiModelId, mode: "full" });
+      setAiHealth(result);
+      if (!result.ok) {
+        setError(result.message);
+      }
+    } catch (err) {
+      console.error("Failed to check AI health:", err);
+      const message = err instanceof Error ? err.message : "Không thể kiểm tra kết nối AI.";
+      setError(message);
+      setAiHealth(null);
+    } finally {
+      setAiHealthLoading(false);
+    }
+  };
 
   const buildPayload = (): Partial<StoreSettings> => ({
     storeName,
@@ -171,6 +242,8 @@ export function SettingsPage() {
     webhookUrl,
     webhookEnabled,
     logoUrl,
+    aiProvider,
+    aiModelId,
   });
 
   const handleSave = async () => {
@@ -202,7 +275,11 @@ export function SettingsPage() {
         setWebhookUrl,
         setWebhookEnabled,
         setLogoUrl,
+        setAiProvider,
+        setAiModelId,
       });
+      setSavedAiProvider(updated.aiProvider);
+      setSavedAiModelId(updated.aiModelId);
       setRevealedApiKey(null);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -1415,6 +1492,120 @@ export function SettingsPage() {
           )}
 
           {activeNav === "backup" && (
+          <>
+          <div
+            className="admin-card"
+            style={{
+              padding: "24px",
+              marginBottom: "20px",
+              background: "rgba(13, 21, 38, 0.6)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid var(--adm-border)",
+              borderRadius: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ color: "#a78bfa", display: "flex", alignItems: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7v1h1a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h1v-1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Chatbot AI — Model</h3>
+            </div>
+            <p style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--adm-text-muted)", lineHeight: 1.5 }}>
+              Chat khách đang dùng: <strong style={{ color: "#e2e8f0" }}>{savedAiProvider}</strong> /{" "}
+              <code style={{ color: "#93c5fd" }}>{savedAiModelId}</code>
+              {aiSelectionUnsaved ? (
+                <span style={{ color: "#fbbf24" }}> — form chưa lưu, khác với cấu hình chat thực tế.</span>
+              ) : null}
+            </p>
+            <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#fbbf24", lineHeight: 1.5 }}>
+              OpenRouter free có thể bị rate limit theo từng model. Chat sẽ tự thử model free khác khi 429. Admin ping
+              đầy đủ có thể vẫn OK trong khi model đang giới hạn — dùng nút &quot;Kiểm tra cấu hình đã lưu&quot; và{" "}
+              <strong>Lưu thay đổi</strong> sau khi đổi model.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "640px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Provider</label>
+                <select
+                  value={aiProvider}
+                  onChange={(e) => handleAiProviderChange(e.target.value as AiProviderId)}
+                  style={inputStyle}
+                >
+                  <option value="ollama">Ollama (local)</option>
+                  <option value="openrouter">OpenRouter (cloud)</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Model</label>
+                <select
+                  value={aiModelId}
+                  onChange={(e) => {
+                    setAiModelId(e.target.value);
+                    setAiHealth(null);
+                  }}
+                  style={inputStyle}
+                >
+                  {modelsForProvider.map((entry) => (
+                    <option key={`${entry.provider}_${entry.modelId}`} value={entry.modelId}>
+                      {entry.label} ({entry.priceTier})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={() => void handleCheckAiHealth("full")}
+                  disabled={aiHealthLoading}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(96,165,250,0.35)",
+                    background: "rgba(59,130,246,0.15)",
+                    color: "#93c5fd",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: aiHealthLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {aiHealthLoading ? "Đang kiểm tra..." : "Kiểm tra model trên form"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCheckAiHealth("chat_preflight")}
+                  disabled={aiHealthLoading}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(52,211,153,0.35)",
+                    background: "rgba(16,185,129,0.12)",
+                    color: "#6ee7b7",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: aiHealthLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Kiểm tra cấu hình đã lưu (chat)
+                </button>
+                {aiHealth && (
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: aiHealth.ok
+                        ? "#4ade80"
+                        : aiHealth.statusCode === "rate_limited"
+                          ? "#fbbf24"
+                          : "#f87171",
+                    }}
+                  >
+                    {aiHealth.statusCode}: {aiHealth.message}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
           <div
             className="admin-card"
             style={{
@@ -1453,6 +1644,7 @@ export function SettingsPage() {
               </div>
             </div>
           </div>
+          </>
           )}
 
         </div>

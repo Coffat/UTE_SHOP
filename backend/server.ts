@@ -1,6 +1,6 @@
+import './config/loadEnv.js';
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'node:http';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -11,9 +11,10 @@ import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
 import { UPLOADS_DIR } from './shared/middlewares/uploadImage.js';
 import { initializeChatSocket } from './modules/chat/socket/chat.socket.js';
+import { registerNotificationEventHandlers } from './modules/notification/services/notification.orchestrator.js';
 
-// Load environment variables BEFORE anything else
-dotenv.config();
+// Initialize event bus handlers
+registerNotificationEventHandlers();
 
 // Connect to database
 connectDB();

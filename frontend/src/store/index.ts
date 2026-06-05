@@ -7,6 +7,8 @@ import { categoriesReducer } from "@/features/catalog/categoriesSlice";
 import { wishlistReducer } from "@/features/wishlist/wishlistSlice";
 import { registerUnauthorizedHandler } from "@/lib/unauthorizedHandler";
 
+import { notificationReducer, resetNotifications } from "@/features/notification/notificationSlice";
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -15,12 +17,14 @@ export const store = configureStore({
     catalog: catalogReducer,
     categories: categoriesReducer,
     wishlist: wishlistReducer,
+    notification: notificationReducer,
   },
 });
 
 registerUnauthorizedHandler(() => {
   store.dispatch(resetProfile());
   store.dispatch(resetAuth());
+  store.dispatch(resetNotifications());
 });
 
 export type RootState = ReturnType<typeof store.getState>;

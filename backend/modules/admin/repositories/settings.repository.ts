@@ -43,6 +43,8 @@ export const updateSettings = async (
     'webhookUrl',
     'webhookEnabled',
     'logoUrl',
+    'aiProvider',
+    'aiModelId',
   ];
 
   for (const key of allowedKeys) {

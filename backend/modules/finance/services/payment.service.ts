@@ -4,6 +4,7 @@ import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
 import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
 import { PaymentStrategyFactory } from './strategies/PaymentStrategyFactory.js';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 
 interface CreatePaymentRecordParams {
   orderId: string;
@@ -58,6 +59,9 @@ const handleWebhookWithoutTransaction = async (payment: any, paymentMethod: stri
 
   if (status === PaymentStatus.SUCCESS) {
     await eventBus.emitAsync(AppEvent.PAYMENT_SUCCESS, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: payment.order.toString(),
       orderId: payment.order.toString(),
       paymentId: payment._id.toString(),
       paymentMethod,
@@ -65,6 +69,9 @@ const handleWebhookWithoutTransaction = async (payment: any, paymentMethod: stri
     });
   } else if (status === PaymentStatus.FAILED) {
     await eventBus.emitAsync(AppEvent.PAYMENT_FAILED, {
+      eventId: crypto.randomUUID(),
+      occurredAt: new Date(),
+      entityId: payment.order.toString(),
       orderId: payment.order.toString(),
       paymentId: payment._id.toString(),
       paymentMethod,
@@ -105,6 +112,9 @@ export const handleWebhook = async (paymentMethod: string, payload: any) => {
       // 2. Emit event inside the transaction session
       if (status === PaymentStatus.SUCCESS) {
         await eventBus.emitAsync(AppEvent.PAYMENT_SUCCESS, {
+          eventId: crypto.randomUUID(),
+          occurredAt: new Date(),
+          entityId: payment.order.toString(),
           orderId: payment.order.toString(),
           paymentId: payment._id.toString(),
           paymentMethod,
@@ -113,6 +123,9 @@ export const handleWebhook = async (paymentMethod: string, payload: any) => {
         });
       } else if (status === PaymentStatus.FAILED) {
         await eventBus.emitAsync(AppEvent.PAYMENT_FAILED, {
+          eventId: crypto.randomUUID(),
+          occurredAt: new Date(),
+          entityId: payment.order.toString(),
           orderId: payment.order.toString(),
           paymentId: payment._id.toString(),
           paymentMethod,

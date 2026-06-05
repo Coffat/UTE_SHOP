@@ -5,10 +5,15 @@ import NotificationType from '../../../shared/enums/NotificationType.js';
 export interface INotification extends Document {
   title: string;
   body: string;
-  type: NotificationType;
-  channel: NotificationChannel;
+  type: string; // Changed from enum to string to support more types flexibly
+  channel?: string; // Kept for legacy compatibility if needed
   referenceType?: string | null;
   referenceId?: string | null;
+  actionUrl?: string;
+  priority?: 'LOW' | 'NORMAL' | 'HIGH';
+  data: Record<string, any>;
+  dedupeKey?: string;
+  sourceEventId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,10 +31,15 @@ const notificationSchema = new Schema<INotification>(
   {
     title: { type: String, required: true },
     body: { type: String, required: true },
-    type: { type: String, enum: Object.values(NotificationType), required: true },
-    channel: { type: String, enum: Object.values(NotificationChannel), required: true },
+    type: { type: String, required: true },
+    channel: { type: String, required: false },
     referenceType: { type: String, default: null }, // 'ORDER', 'REFUND', ...
     referenceId: { type: String, default: null },
+    actionUrl: { type: String, default: null },
+    priority: { type: String, enum: ['LOW', 'NORMAL', 'HIGH'], default: 'NORMAL' },
+    data: { type: Schema.Types.Mixed, default: {} },
+    dedupeKey: { type: String, sparse: true, unique: true },
+    sourceEventId: { type: String, required: true },
   },
   { timestamps: true }
 );
@@ -43,6 +53,9 @@ const userNotificationSchema = new Schema<IUserNotification>(
   },
   { timestamps: true }
 );
+
+userNotificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+userNotificationSchema.index({ user: 1, notification: 1 }, { unique: true });
 
 export const Notification = mongoose.model<INotification>('Notification', notificationSchema);
 export const UserNotification = mongoose.model<IUserNotification>('UserNotification', userNotificationSchema);

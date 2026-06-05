@@ -10,6 +10,7 @@ import {
   fetchUserOrders,
   UNAUTH,
   updateProfile,
+} from "@/features/profile/profileSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { api } from "@/lib/api";
 

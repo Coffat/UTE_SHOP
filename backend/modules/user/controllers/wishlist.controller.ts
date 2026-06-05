@@ -19,7 +19,12 @@ export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
 // Thêm/Xóa sản phẩm khỏi wishlist
 export const toggleWishlist = asyncHandler(async (req: Request, res: Response) => {
   const customerId = req.user!.id;
-  const { productId } = req.params;
+  const productIdParam = req.params.productId;
+  const productId = Array.isArray(productIdParam) ? productIdParam[0] : productIdParam;
+
+  if (!productId) {
+    return sendError(res, 400, 'Thiếu ID sản phẩm');
+  }
 
   if (!mongoose.Types.ObjectId.isValid(productId)) {
     return sendError(res, 400, 'ID sản phẩm không hợp lệ');

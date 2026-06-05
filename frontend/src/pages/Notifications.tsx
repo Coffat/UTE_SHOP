@@ -1,92 +1,53 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
-import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/ToastContext";
-
-interface NotificationDetail {
-  _id: string;
-  title: string;
-  body: string;
-  type: "INFO" | "ORDER" | "PROMOTION" | "SYSTEM";
-  channel: "IN_APP" | "EMAIL" | "BOTH";
-  referenceType?: string | null;
-  referenceId?: string | null;
-  createdAt: string;
-}
-
-interface UserNotification {
-  _id: string;
-  isRead: boolean;
-  readAt?: string | null;
-  notification: NotificationDetail;
-}
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/store";
+import { fetchNotifications, markAsRead, markAllAsRead, UserNotification } from "@/features/notification/notificationSlice";
 
 export function Notifications() {
   const { showToast } = useToast();
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: notifications, status, nextCursor } = useSelector((state: RootState) => state.notification);
+  
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
-  const fetchNotifications = async () => {
-    try {
-      const { data } = await api.get("/api/v1/notifications");
-      if (data.success) {
-        setNotifications(data.data || []);
-      } else {
-        showToast(data.message || "Không tải được thông báo", "error");
-      }
-    } catch (err: any) {
-      console.error(err);
-      showToast("Lỗi kết nối khi tải danh sách thông báo.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void fetchNotifications();
-  }, []);
+    if (status === 'idle') {
+      dispatch(fetchNotifications());
+    }
+  }, [status, dispatch]);
 
-  const markAsRead = async (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
     try {
-      const { data } = await api.patch(`/api/v1/notifications/${id}/read`);
-      if (data.success) {
-        setNotifications((prev) =>
-          prev.map((n) => (n._id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n))
-        );
-        showToast("Đã đánh dấu là đã đọc", "success");
-        // Dispatch custom event to notify Header component
-        window.dispatchEvent(new CustomEvent("notification-updated"));
-      } else {
-        showToast(data.message || "Không thể cập nhật trạng thái thông báo", "error");
-      }
+      await dispatch(markAsRead(id)).unwrap();
+      showToast("Đã đánh dấu là đã đọc", "success");
     } catch (err: any) {
       console.error(err);
       showToast("Lỗi kết nối khi cập nhật thông báo.", "error");
     }
   };
 
-  const markAllAsRead = async () => {
+  const handleMarkAllAsRead = async () => {
     const unread = notifications.filter((n) => !n.isRead);
     if (unread.length === 0) {
       showToast("Tất cả thông báo đã được đọc", "info");
       return;
     }
     
-    setLoading(true);
     try {
-      // Mark each unread notification as read
-      await Promise.all(unread.map((n) => api.patch(`/api/v1/notifications/${n._id}/read`)));
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
+      await dispatch(markAllAsRead()).unwrap();
       showToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
-      // Dispatch custom event to notify Header component
-      window.dispatchEvent(new CustomEvent("notification-updated"));
     } catch (err: any) {
       console.error(err);
       showToast("Lỗi khi cập nhật danh sách thông báo.", "error");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (nextCursor && status !== 'loading') {
+      dispatch(fetchNotifications(nextCursor));
     }
   };
 
@@ -131,8 +92,8 @@ export function Notifications() {
 
         {notifications.some((n) => !n.isRead) && (
           <button
-            onClick={markAllAsRead}
-            disabled={loading}
+            onClick={handleMarkAllAsRead}
+            disabled={status === 'loading'}
             className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-soft-amethyst/30 px-4 py-2 text-xs font-bold text-primary transition-[background-color,color,box-shadow] duration-300 hover:bg-primary hover:text-pure-ivory hover:shadow-md disabled:opacity-50"
           >
             <MaterialIcon name="done_all" className="text-sm" />
@@ -179,7 +140,7 @@ export function Notifications() {
 
       {/* Notifications grid list */}
       <AnimatePresence mode="wait">
-        {loading && notifications.length === 0 ? (
+        {status === 'loading' && notifications.length === 0 ? (
           <motion.div
             key="loading"
             initial={{ opacity: 0 }}
@@ -271,7 +232,7 @@ export function Notifications() {
                     {/* Action buttons */}
                     {!notif.isRead && (
                       <button
-                        onClick={() => markAsRead(notif._id)}
+                        onClick={() => handleMarkAsRead(notif._id)}
                         className="opacity-0 group-hover:opacity-100 absolute top-4 right-4 flex size-7 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory text-primary shadow-sm transition-[opacity,background-color,color,transform] duration-300 hover:bg-primary hover:text-pure-ivory hover:scale-105"
                         title="Đánh dấu đã đọc"
                       >
@@ -282,6 +243,18 @@ export function Notifications() {
                 </motion.div>
               );
             })}
+            
+            {nextCursor && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={loadMore}
+                  disabled={status === 'loading'}
+                  className="rounded-full bg-primary px-6 py-2 text-xs font-bold text-pure-ivory shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {status === 'loading' ? 'Đang tải...' : 'Tải thêm'}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

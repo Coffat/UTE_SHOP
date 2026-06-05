@@ -11,6 +11,18 @@ router.get(
   asyncHandler(notifController.getUserNotifications)
 );
 
+router.get(
+  '/unread-count',
+  authenticate,
+  asyncHandler(notifController.getUnreadCount)
+);
+
+router.patch(
+  '/read-all',
+  authenticate,
+  asyncHandler(notifController.markAllAsRead)
+);
+
 router.patch(
   '/:id/read',
   authenticate,

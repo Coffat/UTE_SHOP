@@ -4,6 +4,8 @@ import {
   rotateApiKey as rotateApiKeyInDb,
 } from '../repositories/settings.repository.js';
 import type { IStoreSettings } from '../models/StoreSettings.js';
+import { assertValidModelSelection } from '../../ai/config/aiModelCatalog.js';
+import { AppError } from '../../../shared/utils/AppError.js';
 
 export interface StoreSettingsDto {
   storeName: string;
@@ -29,6 +31,8 @@ export interface StoreSettingsDto {
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;
+  aiProvider: 'ollama' | 'openrouter';
+  aiModelId: string;
 }
 
 export interface RotateApiKeyResult {
@@ -67,6 +71,8 @@ const mapToDto = (doc: IStoreSettings): StoreSettingsDto => ({
   webhookUrl: doc.webhookUrl,
   webhookEnabled: doc.webhookEnabled,
   logoUrl: doc.logoUrl,
+  aiProvider: doc.aiProvider,
+  aiModelId: doc.aiModelId,
 });
 
 export const getAdminSettings = async (): Promise<StoreSettingsDto> => {
@@ -77,6 +83,16 @@ export const getAdminSettings = async (): Promise<StoreSettingsDto> => {
 export const putAdminSettings = async (
   payload: Partial<StoreSettingsDto> & { apiKey?: string }
 ): Promise<StoreSettingsDto> => {
+  if (payload.aiProvider !== undefined || payload.aiModelId !== undefined) {
+    const current = await getOrCreateSettings();
+    const provider = payload.aiProvider ?? current.aiProvider;
+    const modelId = payload.aiModelId ?? current.aiModelId;
+    try {
+      assertValidModelSelection(provider, modelId);
+    } catch {
+      throw new AppError('Cấu hình AI provider/model không hợp lệ.', 422);
+    }
+  }
   const doc = await updateSettings(payload);
   return mapToDto(doc);
 };

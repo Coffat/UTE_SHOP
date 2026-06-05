@@ -55,8 +55,8 @@ export function ProductDetail() {
     (state) => state.catalog
   );
 
-  const { items: wishlistItems, status: wishlistStatus } = useAppSelector((state) => state.wishlist);
-  const { user } = useAppSelector((state) => state.auth);
+  const { items: wishlistItems } = useAppSelector((state) => state.wishlist);
+  const profile = useAppSelector((state) => state.profile.profile);
 
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
@@ -224,7 +224,7 @@ export function ProductDetail() {
   const isFavorite = wishlistItems.some((item) => item._id === selectedProduct?._id);
   
   const handleToggleFavorite = () => {
-    if (!user) {
+    if (!profile) {
       navigate("/auth/login");
       return;
     }

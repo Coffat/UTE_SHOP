@@ -10,6 +10,7 @@ import { fetchProfile, resetProfile } from "@/features/profile/profileSlice";
 import { fetchWishlist } from "@/features/wishlist/wishlistSlice";
 import { fetchCategories } from "@/features/catalog/categoriesSlice";
 import { resetAuth } from "@/features/auth/authSlice";
+import { fetchNotifications, fetchUnreadCount, markAsRead } from "@/features/notification/notificationSlice";
 import { clearAuthSessionFlag, hasAuthSessionFlag } from "@/lib/authSession";
 import { getAvatarInitial, getDisplayName, isStorefrontCustomer } from "@/lib/userDisplay";
 
@@ -42,43 +43,30 @@ export function Header() {
   const { profile, fetchStatus } = useSelector((state: RootState) => state.profile);
   const { items: wishlistItems, status: wishlistStatus } = useSelector((state: RootState) => state.wishlist);
   const categories = useSelector((state: RootState) => state.categories?.items || []);
+  const { items: notifications, unreadCount } = useSelector((state: RootState) => state.notification);
 
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
-    if (!profile) return;
-    try {
-      const { data } = await api.get("/api/v1/notifications");
-      if (data.success && data.data) {
-        setNotifications(data.data || []);
-        const unread = data.data.filter((n: any) => !n.isRead).length;
-        setUnreadCount(unread);
-      }
-    } catch (err) {
-      console.error("Error fetching notifications in header", err);
-    }
-  };
-
   useEffect(() => {
     if (profile) {
-      void fetchNotifications();
+      dispatch(fetchNotifications());
+      dispatch(fetchUnreadCount());
     }
-  }, [profile]);
+  }, [profile, dispatch]);
 
   useEffect(() => {
     const handleUpdate = () => {
-      void fetchNotifications();
+      dispatch(fetchNotifications());
+      dispatch(fetchUnreadCount());
     };
     window.addEventListener("notification-updated", handleUpdate);
     return () => {
       window.removeEventListener("notification-updated", handleUpdate);
     };
-  }, [profile]);
+  }, [dispatch]);
 
   // Tải danh mục hoa từ database khi khởi chạy
   useEffect(() => {
@@ -306,8 +294,7 @@ export function Header() {
                             setIsNotifDropdownOpen(false);
                             if (!notif.isRead) {
                               try {
-                                await api.patch(`/api/v1/notifications/${notif._id}/read`);
-                                void fetchNotifications();
+                                await dispatch(markAsRead(notif._id)).unwrap();
                                 window.dispatchEvent(new CustomEvent("notification-updated"));
                               } catch (err) {
                                 console.error(err);

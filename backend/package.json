@@ -38,7 +38,8 @@
     "nodemailer": "^8.0.7",
     "redis": "^5.12.1",
     "socket.io": "^4.8.3",
-    "vnpay": "^2.4.0"
+    "vnpay": "^2.4.0",
+    "zod": "^4.4.3"
   },
   "homepage": "https://github.com/Coffat/BaiTap2#readme",
   "devDependencies": {
