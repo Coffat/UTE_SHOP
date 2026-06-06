@@ -171,7 +171,7 @@ export const getAdminDashboard = async (
     },
     {
       id: 'rate',
-      label: 'Tỷ lệ chuyển đổi',
+      label: 'Tỷ lệ hoàn thành đơn',
       value: `${conversionCurrent.toFixed(2)}%`,
       change: calcChangePercent(conversionCurrent, conversionPrevious),
       changeLabel: prevLabel,

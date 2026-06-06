@@ -44,8 +44,8 @@ export async function fetchStaffOrders(
   };
 }
 
-export async function fetchStaffOrderById(orderId: string) {
-  const response = await api.get(`/api/v1/staff/orders/${orderId}`);
+export async function fetchStaffOrderById(orderId: string, signal?: AbortSignal) {
+  const response = await api.get(`/api/v1/staff/orders/${orderId}`, { signal });
   return response.data.data;
 }
 

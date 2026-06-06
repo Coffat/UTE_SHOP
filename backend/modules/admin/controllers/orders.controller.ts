@@ -81,3 +81,15 @@ export const deleteOrder = asyncHandler(async (req: Request, res: Response) => {
   if (!order) return sendError(res, 404, 'Không tìm thấy đơn hàng');
   sendSuccess(res, 200, 'Xóa đơn hàng thành công (soft delete)', null);
 });
+
+// POST /api/v1/admin/orders/preview
+export const previewOrder = asyncHandler(async (req: Request, res: Response) => {
+  const result = await orderService.previewAdminOrder(req.body);
+  sendSuccess(res, 200, 'OK', result);
+});
+
+// POST /api/v1/admin/orders
+export const createOrder = asyncHandler(async (req: Request, res: Response) => {
+  const order = await orderService.createAdminOrder(req.body, req.user!.id);
+  sendSuccess(res, 201, 'Tạo đơn hàng thành công', order);
+});

@@ -5,6 +5,8 @@ import {
   validateListOrders,
   validateChangeStatus,
   validateCancelOrder,
+  validateAdminPreviewOrder,
+  validateAdminCreateOrder,
 } from '../../order/middlewares/order.validator.js';
 import { param } from 'express-validator';
 import mongoose from 'mongoose';
@@ -27,6 +29,12 @@ router.use(authenticate, authorize('ADMIN'));
 
 // GET /admin/orders
 router.get('/', validateListOrders, adminOrdersController.listOrders);
+
+// POST /admin/orders/preview
+router.post('/preview', validateAdminPreviewOrder, adminOrdersController.previewOrder);
+
+// POST /admin/orders
+router.post('/', validateAdminCreateOrder, adminOrdersController.createOrder);
 
 // GET /admin/orders/:id
 router.get('/:id', validateOrderId, adminOrdersController.getOrder);

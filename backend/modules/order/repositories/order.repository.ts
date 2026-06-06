@@ -26,6 +26,8 @@ export interface GetOrdersParams {
 export interface OrdersSummaryDto {
   total: number;
   pending: number;
+  confirmed: number;
+  ready: number;
   shipping: number;
   completed: number;
   cancelled: number;
@@ -144,17 +146,19 @@ export class OrderRepository {
   }
 
   async computeOrdersSummary(baseFilter: Record<string, unknown>): Promise<OrdersSummaryDto> {
-    const [total, pending, shipping, completed, cancelled, attentionCount, attentionOrders] =
+    const [total, pending, confirmed, ready, shipping, completed, cancelled, attentionCount, attentionOrders] =
       await Promise.all([
         Order.countDocuments(baseFilter),
         Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.pending } }),
+        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.confirmed } }),
+        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.ready } }),
         Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.shipping } }),
         Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.completed } }),
         Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.cancelled } }),
         this.getAttentionOrdersCount(),
         this.getAttentionOrders(5),
       ]);
-    return { total, pending, shipping, completed, cancelled, attentionCount, attentionOrders };
+    return { total, pending, confirmed, ready, shipping, completed, cancelled, attentionCount, attentionOrders };
   }
 
   async findOrders(

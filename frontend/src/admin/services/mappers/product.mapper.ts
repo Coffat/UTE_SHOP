@@ -32,6 +32,7 @@ export interface AdminProductRow {
   backendStatus: BackendProductStatus;
   sales: number;
   mainImageUrl: string;
+  primaryVariantId: string | null;
   iconType: "headphones" | "sneaker" | "backpack" | "hoodie" | "keyboard" | "mouse" | "earbuds" | "default";
 }
 
@@ -61,6 +62,7 @@ export const mapBackendProductToRow = (item: BackendAdminProduct): AdminProductR
     backendStatus: item.status,
     sales: item.soldCount,
     mainImageUrl: item.mainImageUrl ?? "",
+    primaryVariantId: item.primaryVariantId,
     iconType: "default",
   };
 };

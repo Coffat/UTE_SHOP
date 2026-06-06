@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
+import { fetchPendingOrdersCount } from "../services/adminOrders.api";
 import type { NavItem } from "../types/admin.types";
 
 // ── Nav configs ──────────────────────────────────────────────────────────────
@@ -18,7 +20,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: "",
     path: "/admin/orders",
     allowedRoles: ["ADMIN"],
-    badge: 8,
   },
   {
     key: "chat",
@@ -99,7 +100,6 @@ const STAFF_NAV_ITEMS: NavItem[] = [
     icon: "",
     path: "/staff/orders",
     allowedRoles: ["SALES", "STORE_STAFF"],
-    badge: 8,
   },
   {
     key: "chat",
@@ -344,13 +344,51 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const { user, role } = useAdminAuth();
   const location = useLocation();
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
 
   const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : STAFF_NAV_ITEMS;
   const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
 
-  const visibleItems = navItems.filter((item) =>
-    item.allowedRoles.includes(role)
-  );
+  const visibleItems = navItems
+    .filter((item) => item.allowedRoles.includes(role))
+    .map((item) =>
+      item.key === "orders"
+        ? { ...item, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined }
+        : item
+    );
+
+  const canSeeOrdersNav =
+    role === "ADMIN" || role === "SALES" || role === "STORE_STAFF";
+
+  useEffect(() => {
+    if (!canSeeOrdersNav) return;
+
+    const abortController = new AbortController();
+
+    async function loadPendingOrdersCount() {
+      try {
+        const count = await fetchPendingOrdersCount(abortController.signal);
+        if (!abortController.signal.aborted) {
+          setPendingOrdersCount(count);
+        }
+      } catch (err) {
+        if (!abortController.signal.aborted) {
+          console.error("Failed to fetch pending orders count:", err);
+          setPendingOrdersCount(0);
+        }
+      }
+    }
+
+    loadPendingOrdersCount();
+
+    const handleOrdersUpdated = () => loadPendingOrdersCount();
+    window.addEventListener("admin-orders-updated", handleOrdersUpdated);
+
+    return () => {
+      abortController.abort();
+      window.removeEventListener("admin-orders-updated", handleOrdersUpdated);
+    };
+  }, [location.pathname, canSeeOrdersNav]);
 
   const visibleBottomItems = bottomItems.filter((item) =>
     item.allowedRoles.includes(role)
