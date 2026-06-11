@@ -5,6 +5,12 @@ interface CheckOrderStatusArguments {
   orderCode: string;
 }
 
+const maskOrderReference = (orderCode: string): string => {
+  const normalized = orderCode.trim();
+  if (normalized.length <= 4) return normalized;
+  return `${normalized.slice(0, 2)}***${normalized.slice(-3)}`;
+};
+
 export const checkOrderStatusTool: AiToolHandler<CheckOrderStatusArguments> = {
   name: 'checkOrderStatus',
   async execute(args, context): Promise<AiToolExecutionResult> {
@@ -36,10 +42,8 @@ export const checkOrderStatusTool: AiToolHandler<CheckOrderStatusArguments> = {
       toolName: 'checkOrderStatus',
       status: 'SUCCESS',
       result: {
-        orderId: order.orderId,
-        orderCode: order.orderCode,
+        orderReference: maskOrderReference(order.orderCode),
         status: order.status,
-        paymentStatus: order.paymentStatus,
         updatedAt: order.updatedAt,
       },
       errorCode: null,

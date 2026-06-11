@@ -751,13 +751,9 @@ export const getOrderById = (orderId: string): Promise<IOrder | null> =>
   orderRepository.findById(orderId);
 
 export interface CustomerOrderStatusLookup {
-  orderId: string;
   orderCode: string;
   status: OrderStatus;
-  paymentStatus: string;
-  createdAt: string;
   updatedAt: string;
-  recipientName: string;
 }
 
 export const getCustomerOrderStatusByCode = async (
@@ -778,24 +774,20 @@ export const getCustomerOrderStatusByCode = async (
     ...baseFilter,
     orderCode: normalizedCode,
   })
-    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .select('orderCode status updatedAt')
     .lean() || await Order.findOne({
     ...baseFilter,
     orderCode: normalizedCode.toUpperCase(),
   })
-    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .select('orderCode status updatedAt')
     .lean();
 
   if (!order) return null;
 
   return {
-    orderId: String(order._id),
     orderCode: String(order.orderCode),
     status: order.status as OrderStatus,
-    paymentStatus: String(order.paymentStatus),
-    createdAt: new Date(order.createdAt as string | Date).toISOString(),
     updatedAt: new Date(order.updatedAt as string | Date).toISOString(),
-    recipientName: String((order.recipient as { fullName?: string } | undefined)?.fullName ?? ''),
   };
 };
 

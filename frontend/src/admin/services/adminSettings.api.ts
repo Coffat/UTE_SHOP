@@ -5,6 +5,7 @@ export interface StoreSettings {
   supportEmail: string;
   phone: string;
   address: string;
+  openingHours: string;
   timezone: string;
   vnpayActive: boolean;
   codActive: boolean;

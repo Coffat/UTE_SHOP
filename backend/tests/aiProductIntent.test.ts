@@ -32,4 +32,15 @@ describe('aiProductIntent', () => {
     assert.equal(intent?.keyword, 'hoa tươi');
     assert.equal(intent?.isGeneralConsultation, true);
   });
+
+  it('does not classify store-info as product intent', () => {
+    const intent = detectProductSearchIntent('cho mình xin địa chỉ shop ở đâu');
+    assert.equal(intent, null);
+  });
+
+  it('keeps money span and ignores phone number in mixed message', () => {
+    const intent = detectProductSearchIntent('số điện thoại 0901234567 và ngân sách 1tr5');
+    assert.ok(intent);
+    assert.equal(intent?.filters?.maxPrice, 1_500_000);
+  });
 });

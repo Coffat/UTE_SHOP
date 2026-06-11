@@ -6,6 +6,7 @@ export const validateUpdateSettings = [
   body('supportEmail').optional().isEmail().withMessage('Email hỗ trợ không hợp lệ'),
   body('phone').optional().isString().trim().isLength({ max: 30 }),
   body('address').optional().isString().trim().isLength({ max: 500 }),
+  body('openingHours').optional().isString().trim().isLength({ max: 200 }),
   body('timezone').optional().isString().trim().isLength({ max: 120 }),
   body('vnpayActive').optional().isBoolean(),
   body('codActive').optional().isBoolean(),
