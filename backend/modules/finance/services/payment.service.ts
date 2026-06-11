@@ -171,3 +171,22 @@ export const getPaymentsByOrderIds = async (orderIds: string[]): Promise<IPaymen
   if (orderIds.length === 0) return [];
   return Payment.find({ order: { $in: orderIds } }).sort({ createdAt: -1 });
 };
+
+/** Order IDs whose latest payment record matches the given status. */
+export const getOrderIdsByPaymentStatus = async (status: string): Promise<string[]> => {
+  const payments = await Payment.find({ status })
+    .select('order createdAt')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const seen = new Set<string>();
+  const orderIds: string[] = [];
+  for (const payment of payments) {
+    const orderId = String(payment.order);
+    if (!seen.has(orderId)) {
+      seen.add(orderId);
+      orderIds.push(orderId);
+    }
+  }
+  return orderIds;
+};

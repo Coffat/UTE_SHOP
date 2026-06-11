@@ -57,7 +57,7 @@ export const validateListOrders = [
     .withMessage(`status phải là: ${Object.values(OrderStatus).join(', ')}`),
   query('statusGroup')
     .optional()
-    .isIn(['pending', 'shipping', 'completed', 'cancelled'])
+    .isIn(['pending', 'confirmed', 'ready', 'shipping', 'completed', 'cancelled'])
     .withMessage('statusGroup không hợp lệ'),
   query('orderType')
     .optional()
@@ -85,6 +85,54 @@ export const validateChangeStatus = [
     .isIn(Object.values(OrderStatus))
     .withMessage(`status phải là: ${Object.values(OrderStatus).join(', ')}`),
   body('note').optional().trim().isLength({ max: 500 }),
+  handleValidationErrors,
+];
+
+// ─── Admin create / preview order ─────────────────────────────────────────────
+
+const adminOrderItemsValidation = [
+  body('customerId').notEmpty().withMessage('customerId là bắt buộc').custom(isObjectId),
+  body('items').isArray({ min: 1 }).withMessage('Phải có ít nhất một sản phẩm'),
+  body('items.*.variantId').custom(isObjectId).withMessage('variantId không hợp lệ'),
+  body('items.*.quantity').isInt({ min: 1 }).withMessage('Số lượng phải >= 1'),
+  body('recipientInfo').notEmpty().withMessage('Thông tin người nhận là bắt buộc'),
+  body('recipientInfo.fullName').notEmpty().trim().isLength({ max: 100 }),
+  body('recipientInfo.phone')
+    .notEmpty()
+    .withMessage('Số điện thoại là bắt buộc')
+    .customSanitizer((value) => normalizeVietnamesePhone(String(value)))
+    .custom((value) => {
+      if (!isValidVietnameseMobilePhone(String(value))) {
+        throw new Error('Số điện thoại không hợp lệ (vd: 0901234567)');
+      }
+      return true;
+    }),
+  body('recipientInfo.deliveryNote').optional().trim().isLength({ max: 500 }),
+  body('deliveryAddressId').optional().custom(isObjectId),
+  body('orderType')
+    .optional()
+    .isIn(Object.values(OrderType))
+    .withMessage(`orderType phải là: ${Object.values(OrderType).join(', ')}`),
+  body('voucherCode')
+    .optional()
+    .trim()
+    .toUpperCase()
+    .isLength({ min: 3, max: 30 }),
+  body('pointsToUse').optional().isInt({ min: 0 }),
+  body('note').optional().trim().isLength({ max: 500 }),
+];
+
+export const validateAdminPreviewOrder = [
+  ...adminOrderItemsValidation,
+  handleValidationErrors,
+];
+
+export const validateAdminCreateOrder = [
+  ...adminOrderItemsValidation,
+  body('paymentMethod')
+    .notEmpty()
+    .isIn(['MOMO', 'COD', 'CASH', 'VNPAY'])
+    .withMessage('paymentMethod phải là MOMO, COD, CASH hoặc VNPAY'),
   handleValidationErrors,
 ];
 

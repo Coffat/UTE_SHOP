@@ -42,19 +42,35 @@ export const parseVndAmount = (raw: string): number | undefined => {
   return undefined;
 };
 
+const PHONE_PATTERN = /(?:\+?84|0)(?:[\s.-]?\d){8,10}\b/g;
+const ORDER_CODE_PATTERN = /\b(?:ORD-[A-Z0-9-]{4,}|DH[0-9A-Z-]{2,})\b/gi;
+const MONEY_CONTEXT_PATTERN =
+  /\b(tầm|tam|khoảng|khoang|dưới|duoi|<=|tối đa|toi da|ngân sách|ngan sach|vnd|đ|dong|đồng)\b/i;
+
+const maskSensitiveSpans = (content: string): string =>
+  content.replace(PHONE_PATTERN, ' ').replace(ORDER_CODE_PATTERN, ' ');
+
 export const extractBudgetMaxFromText = (content: string): number | undefined => {
+  const sanitizedContent = maskSensitiveSpans(content);
   const patterns = [
     /(\d+(?:[.,]\d+)?\s*(?:tr|trieu|triệu)(?:\s*\d)?)/gi,
     /(\d+(?:[.,]\d+)?\s*k\b)/gi,
-    /(?:tầm|tam|khoảng|khoang|dưới|duoi|<=|tối đa|toi da)\s*([^\n]{2,24})/gi,
-    /(\d{6,})/g,
+    /(?:tầm|tam|khoảng|khoang|dưới|duoi|<=|tối đa|toi da|ngân sách|ngan sach)\s*([^\n]{2,24})/gi,
+    /(\d{5,9})\s*(?:vnd|đ|dong|đồng)\b/gi,
   ];
   for (const pattern of patterns) {
-    for (const match of content.matchAll(pattern)) {
+    for (const match of sanitizedContent.matchAll(pattern)) {
       const chunk = match[1] ?? match[0];
       const parsed = parseVndAmount(chunk);
       if (parsed && parsed > 0) return parsed;
     }
+  }
+  if (!MONEY_CONTEXT_PATTERN.test(sanitizedContent)) {
+    return undefined;
+  }
+  for (const match of sanitizedContent.matchAll(/(\d{5,9})/g)) {
+    const parsed = parseVndAmount(match[1] ?? match[0]);
+    if (parsed && parsed > 0) return parsed;
   }
   return undefined;
 };

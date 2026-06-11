@@ -85,6 +85,12 @@ export const AI_MODEL_CATALOG: AiModelCatalogEntry[] = [
 export const getEnabledCatalog = (): AiModelCatalogEntry[] =>
   AI_MODEL_CATALOG.filter((entry) => entry.enabled);
 
+const normalizeProvider = (provider: string): string => provider.trim().toLowerCase();
+const normalizeModelId = (modelId: string): string => modelId.trim();
+
+export const createOllamaCatalogEntry = (modelId: string): AiModelCatalogEntry =>
+  ollamaEntry(modelId, `${modelId} — Local Ollama`);
+
 /** Thứ tự thử khi model chính bị OpenRouter 429 (chỉ free). */
 export const getOpenRouterFreeFallbackModelIds = (primaryModelId: string): string[] => {
   const freeIds = AI_MODEL_CATALOG.filter(
@@ -108,9 +114,16 @@ export const findCatalogEntry = (
   provider: string,
   modelId: string
 ): AiModelCatalogEntry | undefined =>
-  AI_MODEL_CATALOG.find(
-    (entry) => entry.enabled && entry.provider === provider && entry.modelId === modelId
-  );
+  normalizeProvider(provider) === 'ollama'
+    ? normalizeModelId(modelId)
+      ? createOllamaCatalogEntry(normalizeModelId(modelId))
+      : undefined
+    : AI_MODEL_CATALOG.find(
+        (entry) =>
+          entry.enabled &&
+          entry.provider === normalizeProvider(provider) &&
+          entry.modelId === normalizeModelId(modelId)
+      );
 
 export const assertValidModelSelection = (provider: string, modelId: string): AiModelCatalogEntry => {
   const entry = findCatalogEntry(provider, modelId);

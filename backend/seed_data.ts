@@ -6,6 +6,21 @@
  * Tạo:
  *  - 1 Admin account
  *  - 1 Customer account (đã verify email)
+ *
+ * --- openingHours workaround (Phase 0) ---
+ * WebsiteInfo is a singleton document created lazily on first request.
+ * If the chatbot shows "shop hiện chưa cập nhật giờ mở cửa" after deployment,
+ * the Admin must visit /admin/settings and click Save once to populate
+ * WebsiteInfo.openingHours in MongoDB.
+ *
+ * TODO (Phase 7 — DEFER): Add WebsiteInfo initialization here once a
+ * representative default value is agreed with the team:
+ *   import WebsiteInfo from './modules/admin/models/WebsiteInfo.js';
+ *   await WebsiteInfo.findOneAndUpdate(
+ *     { key: 'default' },
+ *     { $setOnInsert: { key: 'default', openingHours: '' } },
+ *     { upsert: true, setDefaultsOnInsert: true }
+ *   );
  */
 
 import mongoose from 'mongoose';

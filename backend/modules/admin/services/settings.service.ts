@@ -3,6 +3,10 @@ import {
   updateSettings,
   rotateApiKey as rotateApiKeyInDb,
 } from '../repositories/settings.repository.js';
+import {
+  getOrCreateWebsiteInfo,
+  updateWebsiteInfo,
+} from '../repositories/websiteInfo.repository.js';
 import type { IStoreSettings } from '../models/StoreSettings.js';
 import { assertValidModelSelection } from '../../ai/config/aiModelCatalog.js';
 import { AppError } from '../../../shared/utils/AppError.js';
@@ -12,6 +16,7 @@ export interface StoreSettingsDto {
   supportEmail: string;
   phone: string;
   address: string;
+  openingHours: string;
   timezone: string;
   vnpayActive: boolean;
   codActive: boolean;
@@ -47,11 +52,12 @@ export const maskApiKey = (apiKey: string): string => {
   return `${prefix}****...${suffix}`;
 };
 
-const mapToDto = (doc: IStoreSettings): StoreSettingsDto => ({
+const mapToDto = (doc: IStoreSettings, websiteInfo?: { address?: string; hotline?: string; supportEmail?: string; openingHours?: string }): StoreSettingsDto => ({
   storeName: doc.storeName,
-  supportEmail: doc.supportEmail,
-  phone: doc.phone,
-  address: doc.address,
+  supportEmail: websiteInfo?.supportEmail?.trim() || doc.supportEmail,
+  phone: websiteInfo?.hotline?.trim() || doc.phone,
+  address: websiteInfo?.address?.trim() || doc.address,
+  openingHours: websiteInfo?.openingHours?.trim() || '',
   timezone: doc.timezone,
   vnpayActive: doc.vnpayActive,
   codActive: doc.codActive,
@@ -76,8 +82,8 @@ const mapToDto = (doc: IStoreSettings): StoreSettingsDto => ({
 });
 
 export const getAdminSettings = async (): Promise<StoreSettingsDto> => {
-  const doc = await getOrCreateSettings();
-  return mapToDto(doc);
+  const [doc, websiteInfo] = await Promise.all([getOrCreateSettings(), getOrCreateWebsiteInfo()]);
+  return mapToDto(doc, websiteInfo);
 };
 
 export const putAdminSettings = async (
@@ -94,7 +100,14 @@ export const putAdminSettings = async (
     }
   }
   const doc = await updateSettings(payload);
-  return mapToDto(doc);
+  await updateWebsiteInfo({
+    address: payload.address,
+    hotline: payload.phone,
+    supportEmail: payload.supportEmail,
+    openingHours: typeof payload.openingHours === 'string' ? payload.openingHours : undefined,
+  });
+  const websiteInfo = await getOrCreateWebsiteInfo();
+  return mapToDto(doc, websiteInfo);
 };
 
 export const rotateAdminApiKey = async (): Promise<RotateApiKeyResult> => {

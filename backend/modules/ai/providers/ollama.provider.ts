@@ -45,6 +45,17 @@ const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs: numbe
   }
 };
 
+export const listOllamaModelTags = async (timeoutMs = aiConfig.requestTimeoutMs): Promise<AiModelTag[]> => {
+  try {
+    const response = await fetchWithTimeout(`${aiConfig.ollamaBaseUrl}/api/tags`, { method: 'GET' }, timeoutMs);
+    if (!response.ok) return [];
+    const body = (await response.json()) as OllamaTagResponse;
+    return body.models ?? [];
+  } catch {
+    return [];
+  }
+};
+
 export const checkOllamaHealthForRuntime = async (
   runtime: EffectiveAiRuntime
 ): Promise<AiAdminHealthResult> => {

@@ -12,7 +12,6 @@ const HANDOFF_RULES: RuleMatcher[] = [
   { reason: 'change_shipping_address', patterns: [/\b(đổi|thay đổi|sửa)\b.{0,12}\b(địa chỉ|dia chi)\b/i] },
   { reason: 'payment_issue', patterns: [/\b(lỗi|loi|không được|that bai)\b.{0,12}\b(thanh toán|thanh toan|payment)\b/i] },
   { reason: 'complaint_or_angry', patterns: [/\b(khiếu nại|khieu nai|bực|tức|tuc|không hài lòng|khong hai long)\b/i] },
-  { reason: 'order_status_needs_tool', patterns: [/\b(trạng thái|trang thai|đơn hàng|don hang)\b.{0,15}\b(mã|ma|#|id)\b/i] },
 ];
 
 const HANDOFF_MARKER_REGEX = /\[HANDOFF_REQUIRED:\s*([a-zA-Z0-9_\-]+)\s*\]/g;
@@ -25,7 +24,6 @@ export const SENSITIVE_PASS1_HANDOFF_REASONS = new Set([
   'change_shipping_address',
   'payment_issue',
   'complaint_or_angry',
-  'order_status_needs_tool',
   'model_requested_handoff',
 ]);
 

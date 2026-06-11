@@ -15,6 +15,17 @@ import {
   buildPass2AnswerPromptMessages,
 } from './aiPromptBuilder.js';
 import {
+  buildDeterministicStoreInfoReply,
+  extractRequestedStoreInfoFields,
+  isStoreInfoIntent,
+  loadPublicStoreInfo,
+} from './aiStoreInfo.service.js';
+import {
+  buildSecondaryIntentHint,
+  canAiRespondDuringHandoff,
+  resolveIntentWithPrecedence,
+} from './aiIntentResolver.service.js';
+import {
   buildSafeHandoffMessage,
   evaluatePrecheckHandoff,
   extractHandoffMarker,
@@ -39,6 +50,15 @@ import { parsePass1Decision } from '../tools/toolParser.js';
 import { executeToolFromDecision } from '../tools/toolRegistry.js';
 import { recordAiToolCall } from './aiToolCall.service.js';
 import type { AiPass1Decision, ParsedPass1Decision } from '../tools/tool.types.js';
+import {
+  acquireConversationStreamLock,
+  isConversationAiFinalizeAllowed,
+  releaseConversationStreamLock,
+} from './aiStreamState.service.js';
+import {
+  sanitizeProviderPayload,
+  sanitizeToolPayloadForProvider,
+} from '../utils/providerPayloadSanitizer.js';
 
 interface Actor {
   id: string;
@@ -67,11 +87,6 @@ interface ManualHandoffResult {
   message: IMessage;
 }
 
-interface StreamLockState {
-  startedAt: number;
-}
-
-const streamLocks = new Map<string, StreamLockState>();
 const MAX_CONVERSATION_PREVIEW_LENGTH = 300;
 const FALLBACK_HANDOFF_REASON = 'invalid_tool_protocol';
 
@@ -105,18 +120,6 @@ const ensureCustomerAccess = (actor: Actor, conversation: any) => {
   if (customerId !== actor.id) {
     throw new ChatHttpError(403, 'Bạn không có quyền truy cập hội thoại này.');
   }
-};
-
-const acquireConversationStreamLock = (conversationId: string) => {
-  const current = streamLocks.get(conversationId);
-  if (current && Date.now() - current.startedAt < aiConfig.streamLockMaxMs) {
-    throw new ChatHttpError(409, 'Cuộc trò chuyện đang có AI stream hoạt động. Vui lòng thử lại sau.');
-  }
-  streamLocks.set(conversationId, { startedAt: Date.now() });
-};
-
-const releaseConversationStreamLock = (conversationId: string) => {
-  streamLocks.delete(conversationId);
 };
 
 const toProductSuggestionsFromToolPayload = (
@@ -246,6 +249,16 @@ const validateAutoReplyEligibility = (conversation: any) => {
   }
 };
 
+const assertAiFinalizeEligibility = async (conversationId: string) => {
+  const isAllowed = await isConversationAiFinalizeAllowed(conversationId);
+  if (!isAllowed) {
+    throw new ChatHttpError(
+      409,
+      'Nhân viên đã tiếp nhận cuộc trò chuyện. AI tạm dừng phản hồi để tránh chồng chéo.'
+    );
+  }
+};
+
 const getConversationAndMessage = async (conversationId: string, messageId: string) => {
   const conversation = await Conversation.findById(toObjectId(conversationId));
   if (!conversation) {
@@ -291,7 +304,7 @@ const resolvePass1Decision = async (
   }
 
   const decisionPrompt = buildPass1DecisionPromptMessages(historyRows);
-  const pass1Result = await completeActiveProviderResponse(runtime, decisionPrompt, {
+  const pass1Result = await completeActiveProviderResponse(runtime, sanitizeProviderPayload(decisionPrompt), {
     temperature: runtime.toolDecisionTemperature,
     maxPredictTokens: runtime.toolDecisionMaxPredictTokens,
     signal: abortSignal,
@@ -322,6 +335,8 @@ const getRecentCustomerTexts = (historyRows: IMessage[], limit = 5): string[] =>
 const shouldAutoSearchProducts = (decision: AiPass1Decision, historyRows: IMessage[]) => {
   if (!aiConfig.enabledToolNames.includes('searchProducts')) return false;
   const recentCustomerTexts = getRecentCustomerTexts(historyRows);
+  const latest = recentCustomerTexts[recentCustomerTexts.length - 1] ?? '';
+  if (isStoreInfoIntent(latest)) return false;
   if (!detectProductSearchIntentFromHistory(recentCustomerTexts)) return false;
   if (decision.type === 'tool_call' && decision.toolName === 'searchProducts') return false;
   if (decision.type === 'tool_call' && decision.toolName === 'handoffToStaff') return true;
@@ -498,9 +513,10 @@ const runToolCallDecision = async (
     conversationId: context.conversation._id.toString(),
     messageId: context.customerMessage._id.toString(),
   });
+  const safeToolResult = sanitizeToolPayloadForProvider(toolResult.result);
   toolResultPayload = {
     status: toolResult.status,
-    result: toolResult.result,
+    result: (safeToolResult as Record<string, unknown> | null) ?? null,
     errorCode: toolResult.errorCode,
     errorMessage: toolResult.errorMessage,
   };
@@ -514,7 +530,7 @@ const runToolCallDecision = async (
     status: toolResult.status,
     parserStrategy: context.parsed.strategy,
     argumentsPayload: decision.arguments,
-    resultPayload: toolResult.result,
+    resultPayload: (safeToolResult as Record<string, unknown> | null) ?? null,
     errorCode: toolResult.errorCode,
     errorMessage: toolResult.errorMessage,
     durationMs: Date.now() - toolStartedAt,
@@ -539,7 +555,17 @@ export const streamAiReplyForCustomer = async ({
   const { conversation, customerMessage } = await getConversationAndMessage(conversationId, messageId);
   ensureCustomerAccess(actor, conversation);
   validateAutoReplyEligibility(conversation);
-  acquireConversationStreamLock(conversationId);
+  try {
+    acquireConversationStreamLock(conversationId, aiConfig.streamLockMaxMs);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'STREAM_ALREADY_RUNNING') {
+      throw new ChatHttpError(
+        409,
+        'Cuộc trò chuyện đang có AI stream hoạt động. Vui lòng thử lại sau.'
+      );
+    }
+    throw error;
+  }
 
   const runtime = await getEffectiveAiRuntime();
   const requestedModelId = runtime.modelId;
@@ -552,16 +578,6 @@ export const streamAiReplyForCustomer = async ({
     });
 
   try {
-    const health = await checkActiveProviderHealth(activeRuntime, { mode: 'chat_preflight' });
-    if (!health.ok) {
-      await incrementAiFailureCount(conversation, 'provider_unavailable');
-      const customerMessage =
-        health.statusCode === 'rate_limited'
-          ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
-          : health.message;
-      throw new ChatHttpError(503, customerMessage);
-    }
-
     const precheck = evaluatePrecheckHandoff(customerMessage.content);
     const customerQuery = customerMessage.content;
     if (precheck.required) {
@@ -593,17 +609,147 @@ export const streamAiReplyForCustomer = async ({
       .limit(aiConfig.maxHistoryMessages);
 
     const orderedHistoryRows = [...historyRows].reverse();
+    const resolvedIntent = resolveIntentWithPrecedence(customerQuery, orderedHistoryRows);
+    const inHandoffQueue =
+      conversation.status === 'waiting_staff' &&
+      conversation.assignedStaffId == null &&
+      Boolean(conversation.handoffReason);
 
-    const pass1Outcome = await resolvePass1Decision(activeRuntime, orderedHistoryRows, abortSignal);
-    if (pass1Outcome.usedModelId && pass1Outcome.usedModelId !== activeRuntime.modelId) {
-      activeRuntime = { ...activeRuntime, modelId: pass1Outcome.usedModelId };
+    if (inHandoffQueue && !canAiRespondDuringHandoff(resolvedIntent.primaryIntent)) {
+      const waitContent =
+        'Mình đã gửi yêu cầu đến nhân viên hỗ trợ rồi ạ. Trong lúc chờ, mình vẫn có thể giúp bạn với các thông tin chung về cửa hàng.';
+      streamDeterministicTokens(waitContent, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const waitMetadata = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'handoff_wait_notice',
+      });
+      const waitMessage = await persistAiMessage(conversation, waitContent, waitMetadata, null);
+      return {
+        aiMessageId: waitMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent: waitContent,
+        metadata: waitMetadata,
+      };
     }
-    const overridden = applyAutoSearchOverride(
-      pass1Outcome.decision,
-      pass1Outcome.parsed,
-      orderedHistoryRows
-    );
-    let { parsed, decision } = overridden;
+
+    if (resolvedIntent.primaryIntent === 'store_info') {
+      const storeInfo = await loadPublicStoreInfo();
+      const requestedFields = extractRequestedStoreInfoFields(customerQuery);
+      const storeReply = buildDeterministicStoreInfoReply(requestedFields, storeInfo);
+      const secondaryHint = buildSecondaryIntentHint(resolvedIntent.secondaryIntents);
+      const finalContent = secondaryHint ? `${storeReply.content}\n\n${secondaryHint}` : storeReply.content;
+      streamDeterministicTokens(finalContent, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const metadata = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'store_settings',
+        provider: null,
+        model: null,
+        requestedFields,
+        resolvedFields: storeReply.resolved,
+      });
+      const aiMessage = await persistAiMessage(conversation, finalContent, metadata, null);
+      return {
+        aiMessageId: aiMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent,
+        metadata,
+      };
+    }
+
+    if (resolvedIntent.primaryIntent === 'store_policy_unknown') {
+      const fallback =
+        'Dạ, mình chưa có đủ thông tin chính sách để xác nhận chính xác. Mình sẽ hỗ trợ kết nối bạn với nhân viên nhé.';
+      streamDeterministicTokens(fallback, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const metadata = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'policy_fallback',
+      });
+      const aiMessage = await persistAiMessage(conversation, fallback, metadata, null);
+      return {
+        aiMessageId: aiMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent: fallback,
+        metadata,
+      };
+    }
+
+    if (resolvedIntent.primaryIntent === 'order_policy') {
+      const guidance =
+        'Dạ, bạn có thể đặt đơn trực tiếp tại trang sản phẩm, sau đó vào mục đơn hàng để theo dõi tiến trình. Nếu cần mình kiểm tra một đơn cụ thể, bạn gửi giúp mã đơn nhé.';
+      streamDeterministicTokens(guidance, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const metadata = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'order_guidance',
+      });
+      const aiMessage = await persistAiMessage(conversation, guidance, metadata, null);
+      return {
+        aiMessageId: aiMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent: guidance,
+        metadata,
+      };
+    }
+
+    let parsed: ParsedPass1Decision;
+    let decision: AiPass1Decision;
+    if (resolvedIntent.primaryIntent === 'order_specific' && resolvedIntent.orderCode) {
+      decision = {
+        type: 'tool_call',
+        toolName: 'checkOrderStatus',
+        arguments: {
+          orderCode: resolvedIntent.orderCode,
+        },
+      };
+      parsed = {
+        ok: true,
+        strategy: 'strict_json',
+        decision,
+        error: null,
+        rawText: JSON.stringify(decision),
+      };
+    } else if (resolvedIntent.primaryIntent === 'explicit_handoff_or_sensitive') {
+      decision = {
+        type: 'handoff',
+        reason: 'customer_requested_staff',
+      };
+      parsed = {
+        ok: true,
+        strategy: 'strict_json',
+        decision,
+        error: null,
+        rawText: JSON.stringify(decision),
+      };
+    } else {
+      const health = await checkActiveProviderHealth(activeRuntime, { mode: 'chat_preflight' });
+      if (!health.ok) {
+        await incrementAiFailureCount(conversation, 'provider_unavailable');
+        const streamErrorMessage =
+          health.statusCode === 'rate_limited'
+            ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
+            : health.message;
+        throw new ChatHttpError(503, streamErrorMessage);
+      }
+
+      const pass1Outcome = await resolvePass1Decision(activeRuntime, orderedHistoryRows, abortSignal);
+      if (pass1Outcome.usedModelId && pass1Outcome.usedModelId !== activeRuntime.modelId) {
+        activeRuntime = { ...activeRuntime, modelId: pass1Outcome.usedModelId };
+      }
+      const overridden = applyAutoSearchOverride(
+        pass1Outcome.decision,
+        pass1Outcome.parsed,
+        orderedHistoryRows
+      );
+      parsed = overridden.parsed;
+      decision = overridden.decision;
+    }
 
     let handoffEmitted = false;
     const notifyHandoff = (reason: string) => {
@@ -622,11 +768,52 @@ export const streamAiReplyForCustomer = async ({
     let handoffReason = toolOutcome.handoffReason;
     let toolResultPayload = toolOutcome.toolResultPayload;
 
+    if (
+      decision.type === 'tool_call' &&
+      decision.toolName === 'checkOrderStatus' &&
+      toolResultPayload
+    ) {
+      const toolStatus = toolResultPayload.status as string | undefined;
+      const resultPayload =
+        toolResultPayload.result && typeof toolResultPayload.result === 'object'
+          ? (toolResultPayload.result as Record<string, unknown>)
+          : null;
+      const deterministicOrderReply =
+        toolStatus === 'SUCCESS' && resultPayload
+          ? [
+              `Mình đã kiểm tra đơn ${String(resultPayload.orderReference ?? 'của bạn')}.`,
+              `Trạng thái hiện tại: ${String(resultPayload.status ?? 'Đang xử lý')}.`,
+              `Cập nhật gần nhất: ${String(resultPayload.updatedAt ?? 'vừa xong')}.`,
+            ].join('\n')
+          : 'Mình chưa tìm thấy đơn phù hợp cho tài khoản hiện tại. Bạn kiểm tra lại mã đơn giúp mình nhé.';
+      streamDeterministicTokens(deterministicOrderReply, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const metadata = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'check_order_status_tool',
+        toolStatus,
+      });
+      const aiMessage = await persistAiMessage(
+        conversation,
+        deterministicOrderReply,
+        metadata,
+        null
+      );
+      return {
+        aiMessageId: aiMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent: deterministicOrderReply,
+        metadata,
+      };
+    }
+
     if (isExplicitStaffHandoffDecision(decision) && handoffReason) {
       notifyHandoff(handoffReason);
       const safeMessage = buildSafeHandoffMessage();
       onToken(safeMessage);
       const handoffMetadata = buildChatMetadata({ handoffReason });
+      await assertAiFinalizeEligibility(conversation._id.toString());
       const handoffMessage = await persistAiMessage(
         conversation,
         safeMessage,
@@ -652,6 +839,7 @@ export const streamAiReplyForCustomer = async ({
         const failedContent = PRODUCT_SEARCH_FAILED_REPLY;
         streamDeterministicTokens(failedContent, onToken);
         const failedMetadata = buildChatMetadata({ handoffReason: null });
+        await assertAiFinalizeEligibility(conversation._id.toString());
         const failedMessage = await persistAiMessage(
           conversation,
           failedContent,
@@ -678,6 +866,7 @@ export const streamAiReplyForCustomer = async ({
               })
             : EMPTY_PRODUCT_SEARCH_REPLY;
         streamDeterministicTokens(finalContent, onToken);
+        await assertAiFinalizeEligibility(conversation._id.toString());
         const { aiMessage, messageMetadata } = await persistDeterministicSearchReply({
           conversation,
           finalContent,
@@ -696,10 +885,19 @@ export const streamAiReplyForCustomer = async ({
       }
     }
 
+    // Load store name for LLM context so the model can reference the actual shop name.
+    // This is a lightweight read (2 MongoDB findOne calls); no cache per project constraints.
+    // TODO: consider hoisting loadPublicStoreInfo to a shared pre-load if the overhead
+    // becomes measurable across high-traffic non-deterministic paths.
+    const llmStoreInfo = await loadPublicStoreInfo();
     const promptMessages =
       aiConfig.toolCallingEnabled
-        ? buildPass2AnswerPromptMessages(orderedHistoryRows, decision, toolResultPayload)
+        ? buildPass2AnswerPromptMessages(orderedHistoryRows, decision, toolResultPayload, {
+            secondaryHint: buildSecondaryIntentHint(resolvedIntent.secondaryIntents),
+            storeContext: llmStoreInfo.storeName ? { storeName: llmStoreInfo.storeName } : undefined,
+          })
         : buildAiPromptMessages(orderedHistoryRows);
+    const sanitizedPromptMessages = sanitizeProviderPayload(promptMessages);
 
     let hasAnyToken = false;
     let accumulated = '';
@@ -708,7 +906,7 @@ export const streamAiReplyForCustomer = async ({
     try {
       const result = await streamActiveProviderResponse(
         activeRuntime,
-        promptMessages,
+        sanitizedPromptMessages,
         (text) => {
           if (!text) return;
           hasAnyToken = true;
@@ -736,6 +934,7 @@ export const streamAiReplyForCustomer = async ({
       const partialContent = `${accumulated}${fallbackTail}`.trim();
       handoffReason = 'partial_stream_error';
       onHandoff(handoffReason);
+      await assertAiFinalizeEligibility(conversation._id.toString());
       const partialMessage = await persistAiMessage(
         conversation,
         partialContent,
@@ -775,7 +974,7 @@ export const streamAiReplyForCustomer = async ({
         }
       } else {
         try {
-          const retry = await completeActiveProviderResponse(activeRuntime, promptMessages, {
+          const retry = await completeActiveProviderResponse(activeRuntime, sanitizedPromptMessages, {
             temperature: activeRuntime.temperature,
             maxPredictTokens: activeRuntime.maxPredictTokens,
             signal: abortSignal,
@@ -820,6 +1019,7 @@ export const streamAiReplyForCustomer = async ({
       onToken(persistedContent);
     }
 
+    await assertAiFinalizeEligibility(conversation._id.toString());
     const aiMessage = await persistAiMessage(
       conversation,
       persistedContent,
@@ -851,6 +1051,22 @@ export const handoffToStaffByCustomer = async (
   ensureCustomerAccess(actor, conversation);
   if (conversation.status === 'closed') {
     throw new ChatHttpError(409, 'Hội thoại đã đóng, không thể chuyển nhân viên.');
+  }
+  if (
+    conversation.status === 'waiting_staff' &&
+    conversation.assignedStaffId == null &&
+    conversation.handoffReason === reason
+  ) {
+    const existingNotice = await Message.findOne({
+      conversationId: conversation._id,
+      senderType: 'ai',
+      'metadata.handoffReason': reason,
+    })
+      .sort({ _id: -1 })
+      .lean();
+    if (existingNotice) {
+      return { conversation, message: existingNotice as unknown as IMessage };
+    }
   }
 
   const runtime = await getEffectiveAiRuntime();

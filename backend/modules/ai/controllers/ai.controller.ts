@@ -2,8 +2,9 @@ import type { Request, Response } from 'express';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { sendError, sendSuccess } from '../../../shared/utils/apiResponse.js';
 import { isChatHttpError } from '../../chat/services/chat.errors.js';
-import { getEnabledCatalog } from '../config/aiModelCatalog.js';
+import { createOllamaCatalogEntry, getEnabledCatalog } from '../config/aiModelCatalog.js';
 import { checkActiveProviderHealth } from '../providers/aiProvider.router.js';
+import { listOllamaModelTags } from '../providers/ollama.provider.js';
 import { closeSse, initializeSse, writeSseEvent } from '../services/aiStream.service.js';
 import { handoffToStaffByCustomer, streamAiReplyForCustomer } from '../services/aiAssistant.service.js';
 import { getEffectiveAiRuntime } from '../services/aiRuntimeConfig.service.js';
@@ -74,7 +75,11 @@ export const customerManualHandoff = asyncHandler(async (req: Request, res: Resp
 });
 
 export const adminGetModelCatalog = asyncHandler(async (_req: Request, res: Response) => {
-  return sendSuccess(res, 200, 'OK', { items: getEnabledCatalog() });
+  const staticCatalog = getEnabledCatalog().filter((entry) => entry.provider !== 'ollama');
+  const dynamicOllamaCatalog = (await listOllamaModelTags()).map((model) => createOllamaCatalogEntry(model.name));
+  const fallbackOllamaCatalog = getEnabledCatalog().filter((entry) => entry.provider === 'ollama');
+  const ollamaCatalog = dynamicOllamaCatalog.length > 0 ? dynamicOllamaCatalog : fallbackOllamaCatalog;
+  return sendSuccess(res, 200, 'OK', { items: [...ollamaCatalog, ...staticCatalog] });
 });
 
 export const adminCheckAiHealth = asyncHandler(async (req: Request, res: Response) => {

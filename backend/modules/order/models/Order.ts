@@ -88,7 +88,7 @@ const orderSchema = new Schema<IOrder>(
     discountAmount: { type: Schema.Types.Decimal128, default: 0 },
     pointsUsed: { type: Number, default: 0 },
     pointsDiscount: { type: Schema.Types.Decimal128, default: 0 },
-    finalTotal: { type: Schema.Types.Decimal128, required: true },
+    finalTotal: { type: Schema.Types.Decimal128 },
     totalAmount: { type: Schema.Types.Decimal128, required: true }, // Legacy
     note: { type: String, default: '' },
     paymentMethod: { type: String, enum: Object.values(PaymentMethod), default: PaymentMethod.COD },

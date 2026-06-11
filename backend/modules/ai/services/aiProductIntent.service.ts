@@ -96,14 +96,14 @@ export const detectProductSearchIntentFromHistory = (
   if (recent.length === 0) return null;
 
   const latest = recent[recent.length - 1] ?? '';
-  const originalQuery = recent.join(' | ');
+  const originalQuery = latest;
 
   if (OTHER_SUGGESTION_PATTERN.test(latest) && recent.length > 1) {
     const prior = recent.slice(0, -1).join(' ');
     return buildIntentFromMergedText(`${prior} ${latest}`, originalQuery);
   }
 
-  return buildIntentFromMergedText(recent.join(' '), originalQuery);
+  return buildIntentFromMergedText(latest, originalQuery);
 };
 
 export const intentToSearchToolArguments = (intent: ProductSearchIntent) => ({

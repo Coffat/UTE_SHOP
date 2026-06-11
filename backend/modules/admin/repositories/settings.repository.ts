@@ -5,15 +5,18 @@ import StoreSettings, {
 
 const SETTINGS_KEY = 'default';
 
+/**
+ * Atomically finds or creates the singleton StoreSettings document.
+ * Uses findOneAndUpdate with upsert to avoid a race condition between
+ * findOne and create that could cause duplicate-key errors under concurrency.
+ */
 export const getOrCreateSettings = async (): Promise<IStoreSettings> => {
-  let doc = await StoreSettings.findOne({ key: SETTINGS_KEY });
-  if (!doc) {
-    doc = await StoreSettings.create({
-      key: SETTINGS_KEY,
-      apiKey: generateApiKey(),
-    });
-  }
-  return doc;
+  const doc = await StoreSettings.findOneAndUpdate(
+    { key: SETTINGS_KEY },
+    { $setOnInsert: { key: SETTINGS_KEY, apiKey: generateApiKey() } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  return doc!;
 };
 
 export const updateSettings = async (

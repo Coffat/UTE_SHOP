@@ -145,7 +145,16 @@ export function CustomerChatWidget() {
           upsertAiTempToken(text);
           scrollToBottom();
         },
-        onHandoff: () => {
+        onHandoff: ({ reason }) => {
+          setConversation((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  handoffReason: reason,
+                  status: "waiting_staff",
+                }
+              : prev
+          );
           setTyping(false);
         },
         onDone: ({ messageId: aiMessageId, content, metadata }) => {
@@ -277,17 +286,27 @@ export function CustomerChatWidget() {
       setTyping(false);
     };
 
+    const handleConversationUpdated = (payload: {
+      conversationId: string;
+      conversation: Conversation;
+    }) => {
+      if (payload.conversationId !== conversation._id) return;
+      setConversation(payload.conversation);
+    };
+
     chatSocket.on("connect", joinConversation);
     joinConversation();
     chatSocket.on("new_message", handleNewMessage);
     chatSocket.on("typing_started", handleTypingStarted);
     chatSocket.on("typing_stopped", handleTypingStopped);
+    chatSocket.on("conversation_updated", handleConversationUpdated);
 
     return () => {
       chatSocket.off("connect", joinConversation);
       chatSocket.off("new_message", handleNewMessage);
       chatSocket.off("typing_started", handleTypingStarted);
       chatSocket.off("typing_stopped", handleTypingStopped);
+      chatSocket.off("conversation_updated", handleConversationUpdated);
       chatSocket.emit("leave_conversation", { conversationId: conversation._id });
     };
   }, [open, conversation, scrollToBottom, upsertMessage]);
@@ -395,14 +414,22 @@ export function CustomerChatWidget() {
               Đóng
             </button>
           </div>
+          {conversation?.status === "waiting_staff" && conversation?.handoffReason ? (
+            <div className="border-b border-crystal-border bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700">
+              Đang chờ nhân viên tiếp nhận cuộc trò chuyện. Trong lúc chờ, trợ lý chỉ hỗ trợ thông tin chung.
+            </div>
+          ) : null}
           {conversation?.status !== "closed" && (
             <div className="border-b border-crystal-border bg-white px-3 pb-2">
               <button
                 type="button"
                 onClick={() => void requestHandoff()}
-                className="active-press rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                disabled={conversation?.status === "waiting_staff" && Boolean(conversation?.handoffReason)}
+                className="active-press rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Gặp nhân viên
+                {conversation?.status === "waiting_staff" && conversation?.handoffReason
+                  ? "Đã chuyển nhân viên"
+                  : "Gặp nhân viên"}
               </button>
             </div>
           )}

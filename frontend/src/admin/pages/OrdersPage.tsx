@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import {
   fetchAdminOrders,
+  fetchAllAdminOrdersForExport,
   changeOrderStatus,
   type OrdersSummary,
 } from "../services/adminOrders.api";
@@ -16,11 +17,24 @@ import {
   type AdminOrderRow,
   type UiOrderStatus,
 } from "../services/mappers/order.mapper";
+import { OrderDetailModal } from "../components/OrderDetailModal";
+import { OrderFiltersPanel } from "../components/OrderFiltersPanel";
+import { CreateOrderModal } from "../components/CreateOrderModal";
+import {
+  EMPTY_ORDER_FILTERS,
+  countActiveOrderFilters,
+  type OrderAdvancedFilters,
+} from "../types/orderFilters.types";
+import { exportOrdersToExcel } from "../utils/exportOrdersExcel";
 
 function getStatusStyle(status: UiOrderStatus) {
   switch (status) {
     case "pending":
       return { background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.25)" };
+    case "confirmed":
+      return { background: "rgba(14, 165, 233, 0.12)", color: "#0ea5e9", border: "1px solid rgba(14, 165, 233, 0.25)" };
+    case "ready":
+      return { background: "rgba(139, 92, 246, 0.12)", color: "#8b5cf6", border: "1px solid rgba(139, 92, 246, 0.25)" };
     case "shipping":
       return { background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", border: "1px solid rgba(59, 130, 246, 0.25)" };
     case "completed":
@@ -32,14 +46,12 @@ function getStatusStyle(status: UiOrderStatus) {
 
 function getStatusLabel(status: UiOrderStatus) {
   switch (status) {
-    case "pending":
-      return "Chờ xử lý";
-    case "shipping":
-      return "Đang giao";
-    case "completed":
-      return "Hoàn tất";
-    case "cancelled":
-      return "Đã hủy";
+    case "pending": return "Chờ xử lý";
+    case "confirmed": return "Đã xác nhận";
+    case "ready": return "Chờ lấy hàng";
+    case "shipping": return "Đang giao";
+    case "completed": return "Hoàn tất";
+    case "cancelled": return "Đã hủy";
   }
 }
 
@@ -95,50 +107,98 @@ export function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [detailModalOrderId, setDetailModalOrderId] = useState<string | null>(null);
+  const [advancedFilters, setAdvancedFilters] = useState<OrderAdvancedFilters>(EMPTY_ORDER_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<OrderAdvancedFilters>(EMPTY_ORDER_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
+  const activeFilterCount = countActiveOrderFilters(advancedFilters);
+
+  const buildListParams = useCallback(() => ({
+    page: currentPage,
+    limit: 10,
+    search: search.trim() || undefined,
+    statusGroup: statusFilter !== "all" ? uiStatusToStatusGroup(statusFilter) : undefined,
+    dateFrom: advancedFilters.dateFrom || undefined,
+    dateTo: advancedFilters.dateTo || undefined,
+    orderType: advancedFilters.orderType || undefined,
+    paymentStatus: advancedFilters.paymentStatus || undefined,
+  }), [currentPage, search, statusFilter, advancedFilters]);
+
+  const loadOrders = useCallback(async (signal?: AbortSignal, silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
-      const params = {
-        page: currentPage,
-        limit: 10,
-        search: search.trim() || undefined,
-        statusGroup:
-          statusFilter !== "all" ? uiStatusToStatusGroup(statusFilter) : undefined,
-      };
+      const params = buildListParams();
       if (isAdmin) {
         const result = await fetchAdminOrders({
           ...params,
           includeSummary: true,
         });
+        if (signal?.aborted) return;
         setOrders(result.items);
         setTotalPages(result.meta.pages);
         setTotalCount(result.meta.total);
         if (result.meta.summary) setSummary(result.meta.summary);
       } else {
         const result = await fetchStaffOrders(params);
+        if (signal?.aborted) return;
         setOrders(result.items);
         setTotalPages(result.meta.pages);
         setTotalCount(result.meta.total);
         setSummary(null);
       }
     } catch (err) {
+      if (signal?.aborted) return;
       console.error("Failed to fetch orders:", err);
       setError("Không thể tải danh sách đơn hàng. Vui lòng thử lại.");
       setOrders([]);
       setSummary(null);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
-  }, [currentPage, search, statusFilter, isAdmin]);
+  }, [buildListParams, isAdmin]);
+
+  const handleExportExcel = async () => {
+    if (!isAdmin) return;
+    setExporting(true);
+    setActionMessage(null);
+    try {
+      const { items, truncated, total } = await fetchAllAdminOrdersForExport({
+        ...buildListParams(),
+        page: undefined,
+        limit: undefined,
+      });
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      exportOrdersToExcel(items, `don-hang-${dateStamp}.xlsx`);
+      setActionMessage(
+        truncated
+          ? `Đã xuất 2.000 / ${total.toLocaleString("vi-VN")} đơn. Hãy thu hẹp bộ lọc để xuất đầy đủ.`
+          : `Đã xuất ${items.length.toLocaleString("vi-VN")} đơn hàng.`
+      );
+    } catch (err) {
+      console.error("Export failed:", err);
+      setActionMessage("Không thể xuất Excel. Vui lòng thử lại.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
+    const abortController = new AbortController();
     const timer = setTimeout(() => {
-      loadOrders();
+      loadOrders(abortController.signal);
     }, search ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [loadOrders]);
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
+  }, [loadOrders, search]);
 
   const handleAdvanceStatus = async (order: AdminOrderRow) => {
     const next = getNextBackendStatus(order.backendStatus);
@@ -150,7 +210,8 @@ export function OrdersPage() {
       } else {
         await changeStaffOrderStatus(order.id, next);
       }
-      await loadOrders();
+      await loadOrders(undefined, true);
+      window.dispatchEvent(new Event("admin-orders-updated"));
     } catch (err) {
       console.error("Failed to update order status:", err);
       setError("Không thể cập nhật trạng thái đơn hàng.");
@@ -163,12 +224,17 @@ export function OrdersPage() {
   const stats = summary ?? {
     total: displayOrders.length,
     pending: displayOrders.filter((o) => o.status === "pending").length,
+    confirmed: displayOrders.filter((o) => o.status === "confirmed").length,
+    ready: displayOrders.filter((o) => o.status === "ready").length,
     shipping: displayOrders.filter((o) => o.status === "shipping").length,
     completed: displayOrders.filter((o) => o.status === "completed").length,
     cancelled: displayOrders.filter((o) => o.status === "cancelled").length,
     attentionCount: 0,
     attentionOrders: [],
   };
+
+  const pendingGroupCount = stats.pending + (stats.confirmed || 0) + (stats.ready || 0);
+
   const attentionOrders = stats.attentionOrders ?? [];
   const attentionCount = stats.attentionCount ?? 0;
   const pct = (n: number) =>
@@ -194,7 +260,7 @@ export function OrdersPage() {
           <h2 className="admin-page-title">Đơn hàng</h2>
           <p className="admin-page-subtitle">Quản lý và theo dõi tất cả đơn hàng trong hệ thống</p>
         </div>
-        <button className="admin-btn" style={{
+        <button className="admin-btn" onClick={() => isAdmin && setShowCreateModal(true)} disabled={!isAdmin} style={{
           display: "flex",
           alignItems: "center",
           gap: "8px",
@@ -214,26 +280,12 @@ export function OrdersPage() {
         </button>
       </div>
 
-      {/* Filters Row */}
-      <div className="admin-stat-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-        {/* Date Filter */}
-        <div className="admin-filter-select-wrapper">
-          <span style={{ color: "#94a3b8", display: "flex", alignItems: "center" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          </span>
-          <span style={{ fontSize: "13.5px", color: "#e2e8f0", fontWeight: 500 }}>19/05/2024 - 25/05/2024</span>
-          <span style={{ marginLeft: "auto", color: "#64748b", display: "flex", alignItems: "center" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </span>
-        </div>
+      {actionMessage && (
+        <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>{actionMessage}</p>
+      )}
 
+      {/* Filters Row */}
+      <div className="admin-stat-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
         {/* Status Filter */}
         <div className="admin-filter-select-wrapper">
           <select
@@ -255,25 +307,14 @@ export function OrdersPage() {
           >
             <option value="all">Tất cả</option>
             <option value="pending">Chờ xử lý</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="ready">Chờ lấy hàng</option>
             <option value="shipping">Đang giao</option>
             <option value="completed">Hoàn tất</option>
             <option value="cancelled">Đã hủy</option>
           </select>
           <div style={{ display: "none", flexDirection: "column" }}>
             <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.02em" }}>Trạng thái</span>
-            <span style={{ fontSize: "13.5px", color: "#e2e8f0", marginTop: "2px", fontWeight: 500 }}>Tất cả</span>
-          </div>
-          <span style={{ marginLeft: "auto", color: "#64748b", display: "flex", alignItems: "center" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </span>
-        </div>
-
-        {/* Payment Filter */}
-        <div className="admin-filter-select-wrapper">
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.02em" }}>Thanh toán</span>
             <span style={{ fontSize: "13.5px", color: "#e2e8f0", marginTop: "2px", fontWeight: 500 }}>Tất cả</span>
           </div>
           <span style={{ marginLeft: "auto", color: "#64748b", display: "flex", alignItems: "center" }}>
@@ -412,7 +453,7 @@ export function OrdersPage() {
                   <span style={{ fontSize: "13.5px", color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>Chờ xử lý</span>
                   <span style={{ color: "#64748b", fontSize: "11px", cursor: "pointer", display: "flex", alignItems: "center" }} title="Đơn hàng đang chờ duyệt">ⓘ</span>
                 </div>
-                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{stats.pending.toLocaleString("vi-VN")}</p>
+                <p style={{ fontSize: "26px", fontWeight: "700", color: "#fff", margin: 0, fontFamily: "var(--adm-mono)" }}>{pendingGroupCount.toLocaleString("vi-VN")}</p>
               </div>
             </div>
 
@@ -603,11 +644,27 @@ export function OrdersPage() {
                 cursor: "pointer",
                 fontWeight: 500,
                 transition: "all 0.2s"
-              }} className="admin-action-glass-btn">
+              }} className="admin-action-glass-btn" onClick={() => {
+                setDraftFilters(advancedFilters);
+                setShowFilters(true);
+              }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                 </svg>
                 Lọc
+                {activeFilterCount > 0 ? (
+                  <span style={{
+                    marginLeft: "4px",
+                    background: "#6366f1",
+                    color: "#fff",
+                    borderRadius: "999px",
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    fontWeight: 700,
+                  }}>
+                    {activeFilterCount}
+                  </span>
+                ) : null}
               </button>
               <button style={{
                 display: "flex",
@@ -622,13 +679,13 @@ export function OrdersPage() {
                 cursor: "pointer",
                 fontWeight: 500,
                 transition: "all 0.2s"
-              }} className="admin-action-glass-btn">
+              }} className="admin-action-glass-btn" onClick={handleExportExcel} disabled={exporting || !isAdmin}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Xuất Excel
+                {exporting ? "Đang xuất..." : "Xuất Excel"}
               </button>
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                 <span style={{ position: "absolute", left: "10px", color: "#64748b", display: "flex", alignItems: "center" }}>
@@ -757,7 +814,7 @@ export function OrdersPage() {
                           alignItems: "center",
                           justifyContent: "center",
                           transition: "all 0.2s"
-                        }} title="Xem chi tiết" className="admin-action-glass-btn">
+                        }} title="Xem chi tiết" className="admin-action-glass-btn" onClick={() => setDetailModalOrderId(order.id)}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                             <circle cx="12" cy="12" r="3" />
@@ -798,27 +855,27 @@ export function OrdersPage() {
             marginTop: "auto"
           }}>
             <span style={{ color: "#64748b", fontSize: "13px" }}>
-              Trang {currentPage} / {totalPages} — Tổng {totalCount.toLocaleString("vi-VN")} đơn
+              Tổng {totalCount.toLocaleString("vi-VN")} đơn
             </span>
             <div className="admin-pagination-btns" style={{ display: "flex", gap: "6px" }}>
               <button
                 className="admin-pagination-btn"
-                style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage <= 1 ? "#64748b" : "#94a3b8", cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
+                style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage <= 1 ? "#64748b" : "#94a3b8", cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
                 disabled={currentPage <= 1 || loading}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
-                &lt;
+                Prev
               </button>
-              <button className="admin-pagination-btn active" style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "#6366f1", color: "#fff", fontWeight: 600, cursor: "default" }}>
-                {currentPage}
+              <button className="admin-pagination-btn active" style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "#6366f1", color: "#fff", fontWeight: 600, cursor: "default" }}>
+                Trang {currentPage} / {totalPages}
               </button>
               <button
                 className="admin-pagination-btn"
-                style={{ minWidth: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage >= totalPages ? "#64748b" : "#94a3b8", cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
+                style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage >= totalPages ? "#64748b" : "#94a3b8", cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
                 disabled={currentPage >= totalPages || loading}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               >
-                &gt;
+                Next
               </button>
             </div>
             <div style={{
@@ -857,11 +914,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Chờ xử lý</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    {stats.pending} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.pending)}%)</span>
+                    {pendingGroupCount} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(pendingGroupCount)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct(stats.pending)}%`, background: "#f59e0b", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${pct(pendingGroupCount)}%`, background: "#f59e0b", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -992,6 +1049,43 @@ export function OrdersPage() {
           </div>
         </div>
       </div>
+      {/* Order Detail Modal */}
+      <OrderDetailModal 
+        isOpen={!!detailModalOrderId} 
+        onClose={() => setDetailModalOrderId(null)} 
+        orderId={detailModalOrderId} 
+      />
+
+      {isAdmin && (
+        <>
+          <OrderFiltersPanel
+            isOpen={showFilters}
+            filters={draftFilters}
+            onChange={setDraftFilters}
+            onApply={() => {
+              setAdvancedFilters(draftFilters);
+              setCurrentPage(1);
+              setShowFilters(false);
+            }}
+            onReset={() => {
+              setAdvancedFilters(EMPTY_ORDER_FILTERS);
+              setDraftFilters(EMPTY_ORDER_FILTERS);
+              setCurrentPage(1);
+              setShowFilters(false);
+            }}
+            onClose={() => setShowFilters(false)}
+          />
+          <CreateOrderModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onCreated={() => {
+              setActionMessage("Tạo đơn hàng thành công.");
+              loadOrders();
+              window.dispatchEvent(new Event("admin-orders-updated"));
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

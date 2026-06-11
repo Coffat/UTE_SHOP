@@ -14,7 +14,7 @@ export type BackendPaymentStatus =
   | "FAILED"
   | "REFUNDED";
 
-export type UiOrderStatus = "pending" | "shipping" | "completed" | "cancelled";
+export type UiOrderStatus = "pending" | "confirmed" | "ready" | "shipping" | "completed" | "cancelled";
 export type UiPaymentDisplay = "paid" | "cod";
 
 export interface BackendOrderListItem {
@@ -38,6 +38,7 @@ export interface AdminOrderRow {
   customerName: string;
   customerPhone: string;
   date: string;
+  orderType: string;
   payment: UiPaymentDisplay;
   paymentMethod: string;
   paymentStatus: BackendPaymentStatus | null;
@@ -48,8 +49,8 @@ export interface AdminOrderRow {
 
 const STATUS_TO_UI: Record<BackendOrderStatus, UiOrderStatus> = {
   PENDING: "pending",
-  CONFIRMED: "pending",
-  READY: "pending",
+  CONFIRMED: "confirmed",
+  READY: "ready",
   DELIVERING: "shipping",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
@@ -57,6 +58,8 @@ const STATUS_TO_UI: Record<BackendOrderStatus, UiOrderStatus> = {
 
 const UI_TO_STATUS_GROUP: Record<UiOrderStatus, string> = {
   pending: "pending",
+  confirmed: "confirmed",
+  ready: "ready",
   shipping: "shipping",
   completed: "completed",
   cancelled: "cancelled",
@@ -79,6 +82,7 @@ export const mapBackendOrderToRow = (item: BackendOrderListItem): AdminOrderRow 
   orderCode: item.orderCode,
   customerName: item.customerName,
   customerPhone: item.customerPhone || "—",
+  orderType: item.orderType ?? "",
   date: new Date(item.createdAt).toLocaleString("vi-VN", {
     day: "2-digit",
     month: "2-digit",

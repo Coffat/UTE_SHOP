@@ -28,6 +28,7 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setSupportEmail: (v: string) => void;
   setPhone: (v: string) => void;
   setAddress: (v: string) => void;
+  setOpeningHours: (v: string) => void;
   setTimezone: (v: string) => void;
   setVnpayActive: (v: boolean) => void;
   setCodActive: (v: boolean) => void;
@@ -54,6 +55,7 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setters.setSupportEmail(settings.supportEmail);
   setters.setPhone(settings.phone);
   setters.setAddress(settings.address);
+  setters.setOpeningHours(settings.openingHours);
   setters.setTimezone(settings.timezone);
   setters.setVnpayActive(settings.vnpayActive);
   setters.setCodActive(settings.codActive);
@@ -89,6 +91,7 @@ export function SettingsPage() {
   const [supportEmail, setSupportEmail] = useState("support@uteshop.vn");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [openingHours, setOpeningHours] = useState("");
   const [timezone, setTimezone] = useState("(GMT+07:00) Bangkok, Hanoi, Jakarta");
 
   const [vnpayActive, setVnpayActive] = useState(true);
@@ -134,6 +137,7 @@ export function SettingsPage() {
           setSupportEmail,
           setPhone,
           setAddress,
+          setOpeningHours,
           setTimezone,
           setVnpayActive,
           setCodActive,
@@ -224,6 +228,7 @@ export function SettingsPage() {
     supportEmail,
     phone,
     address,
+    openingHours,
     timezone,
     vnpayActive,
     codActive,
@@ -256,6 +261,7 @@ export function SettingsPage() {
         setSupportEmail,
         setPhone,
         setAddress,
+        setOpeningHours,
         setTimezone,
         setVnpayActive,
         setCodActive,
@@ -775,7 +781,26 @@ export function SettingsPage() {
                       }}
                     />
                   </div>
-                  <div />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Giờ mở cửa</label>
+                    <input
+                      type="text"
+                      value={openingHours}
+                      onChange={(e) => setOpeningHours(e.target.value)}
+                      placeholder="VD: 08:00 - 21:00 (Thứ 2 - Chủ nhật)"
+                      style={{
+                        padding: "10px 14px",
+                        background: "rgba(13, 21, 38, 0.4)",
+                        border: "1px solid var(--adm-border)",
+                        borderRadius: "8px",
+                        color: "#fff",
+                        fontSize: "13.5px",
+                        outline: "none",
+                        fontFamily: "inherit",
+                        width: "100%",
+                      }}
+                    />
+                  </div>
                 </div>
 
               </div>

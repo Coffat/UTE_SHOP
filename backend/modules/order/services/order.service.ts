@@ -19,7 +19,10 @@ import OrderType from '../../../shared/enums/OrderType.js';
 import PaymentMethod from '../../../shared/enums/PaymentMethod.js';
 import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 import { AppError } from '../../../shared/utils/AppError.js';
-import { getPaymentsByOrderIds } from '../../finance/services/payment.service.js';
+import {
+  getOrderIdsByPaymentStatus,
+  getPaymentsByOrderIds,
+} from '../../finance/services/payment.service.js';
 import { decreaseStock, increaseStock } from '../../inventory/services/stock.service.js';
 import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
 import crypto from 'crypto';
@@ -395,6 +398,9 @@ export const updateOrderStatus = async (
   if (!Object.values(OrderStatus).includes(newStatus)) {
     throw new AppError('Trạng thái đơn hàng không hợp lệ', 400);
   }
+  if (newStatus === OrderStatus.CANCELLED) {
+    throw new AppError('Không thể cập nhật trạng thái Hủy qua API này. Vui lòng sử dụng API Hủy đơn hàng riêng biệt.', 400);
+  }
   if (currentStatus === newStatus) {
     throw new AppError('Đơn hàng đã ở trạng thái này', 400);
   }
@@ -472,18 +478,30 @@ export const cancelOrderWithoutTransaction = async (
   reason: string,
   cancelledById: string
 ): Promise<IOrder> => {
-  const order = await orderRepository.findByIdWithVariants(orderId);
-  if (!order) throw new Error('Không tìm thấy đơn hàng');
+  // Atomic update to prevent race conditions (double cancellation)
+  const order = await Order.findOneAndUpdate(
+    { 
+      _id: orderId, 
+      status: { $in: [OrderStatus.PENDING, OrderStatus.CONFIRMED] } 
+    },
+    {
+      $set: { status: OrderStatus.CANCELLED },
+      $push: { 
+        statusHistory: { 
+          status: OrderStatus.CANCELLED, 
+          note: reason, 
+          changedBy: cancelledById as any 
+        } 
+      }
+    },
+    { new: true }
+  ).populate('items.productVariant');
 
-  if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
-    throw new Error('Không thể hủy đơn hàng ở trạng thái này');
+  if (!order) {
+    throw new AppError('Không thể hủy đơn hàng ở trạng thái này hoặc đơn hàng không tồn tại', 400);
   }
 
-  order.status = OrderStatus.CANCELLED;
-  order.statusHistory.push({ status: OrderStatus.CANCELLED, note: reason, changedBy: cancelledById as any });
-  await (order as any).save();
-
-  // Hoàn trả kho
+  // Hoàn trả kho (Chỉ thực hiện nếu update thành công)
   for (const item of order.items) {
     await increaseStock((item.productVariant as any)._id, item.quantity, cancelledById, reason);
   }
@@ -651,7 +669,7 @@ export const getOrders = async ({
   paymentStatus,
   includeSummary = false,
 }: GetOrdersParams = {}): Promise<PaginatedOrders> => {
-  const filter = orderRepository.buildOrdersFilter({
+  let filter = orderRepository.buildOrdersFilter({
     customerId,
     status,
     statusGroup,
@@ -660,6 +678,16 @@ export const getOrders = async ({
     dateFrom,
     dateTo,
   });
+
+  if (paymentStatus) {
+    const matchingOrderIds = await getOrderIdsByPaymentStatus(paymentStatus);
+    filter = {
+      ...filter,
+      _id: {
+        $in: matchingOrderIds.map((id) => new mongoose.Types.ObjectId(id)),
+      },
+    };
+  }
 
   const safePage = Math.max(1, page);
   const safeLimit = Math.min(Math.max(1, limit), 100);
@@ -680,16 +708,12 @@ export const getOrders = async ({
     }
   }
 
-  let items = (rawItems as IOrder[]).map((order) =>
+  const items = (rawItems as IOrder[]).map((order) =>
     mapOrderToAdminListItem(
       order as unknown as Record<string, unknown>,
       paymentByOrderId.get(String((order as any)._id)) ?? null
     )
   );
-
-  if (paymentStatus) {
-    items = items.filter((item) => item.payment?.status === paymentStatus);
-  }
 
   return {
     items,
@@ -701,17 +725,111 @@ export const getOrders = async ({
   };
 };
 
+export interface AdminOrderItemInput {
+  variantId: string;
+  quantity: number;
+}
+
+export interface AdminOrderRecipientInput {
+  fullName: string;
+  phone: string;
+  deliveryNote?: string;
+}
+
+export interface AdminPreviewOrderParams {
+  customerId: string;
+  items: AdminOrderItemInput[];
+  voucherCode?: string;
+  pointsToUse?: number;
+}
+
+export interface AdminCreateOrderParams extends AdminPreviewOrderParams {
+  recipientInfo: AdminOrderRecipientInput;
+  deliveryAddressId?: string;
+  orderType?: OrderType;
+  paymentMethod: PlaceOrderParams['paymentMethod'];
+  note?: string;
+}
+
+const computeSubtotalFromCart = async (cartId: string): Promise<number> => {
+  const cart = await Cart.findById(cartId).populate('items.productVariant');
+  if (!cart || cart.items.length === 0) {
+    throw new AppError('Giỏ hàng trống', 400);
+  }
+
+  let subtotal = 0;
+  for (const item of cart.items) {
+    const variant = item.productVariant as { price?: unknown } | null;
+    if (!variant?.price) {
+      throw new AppError('Không tìm thấy biến thể sản phẩm', 400);
+    }
+    subtotal += Number(variant.price) * item.quantity;
+  }
+  return subtotal;
+};
+
+export const previewAdminOrder = async ({
+  customerId,
+  items,
+  voucherCode,
+  pointsToUse,
+}: AdminPreviewOrderParams) => {
+  const cart = await syncCart(customerId, items);
+  const subtotal = await computeSubtotalFromCart(String(cart._id));
+  return calculateOrderTotal({
+    subTotal: subtotal,
+    voucherCode,
+    pointsToUse: pointsToUse || 0,
+    userId: customerId,
+  });
+};
+
+export const createAdminOrder = async (
+  params: AdminCreateOrderParams,
+  adminUserId: string
+): Promise<IOrder> => {
+  const cart = await syncCart(params.customerId, params.items);
+  const order = await placeOrder({
+    customerId: params.customerId,
+    cartId: String(cart._id),
+    recipientInfo: {
+      fullName: params.recipientInfo.fullName,
+      phone: params.recipientInfo.phone,
+      deliveryNote: params.recipientInfo.deliveryNote ?? '',
+    },
+    deliveryAddressId: params.deliveryAddressId,
+    orderType: params.orderType ?? OrderType.AT_STORE,
+    voucherCode: params.voucherCode,
+    pointsToUse: params.pointsToUse,
+    paymentMethod: params.paymentMethod,
+    note: params.note,
+  });
+
+  const updated = await Order.findByIdAndUpdate(
+    order._id,
+    {
+      handledBy: adminUserId,
+      $push: {
+        statusHistory: {
+          status: order.status,
+          note: 'Đơn tạo bởi admin',
+          changedBy: adminUserId,
+        },
+      },
+    },
+    { new: true }
+  );
+
+  return updated ?? order;
+};
+
 export const getOrderById = (orderId: string): Promise<IOrder | null> =>
   orderRepository.findById(orderId);
 
 export interface CustomerOrderStatusLookup {
-  orderId: string;
   orderCode: string;
   status: OrderStatus;
-  paymentStatus: string;
-  createdAt: string;
   updatedAt: string;
-  recipientName: string;
 }
 
 export const getCustomerOrderStatusByCode = async (
@@ -732,24 +850,20 @@ export const getCustomerOrderStatusByCode = async (
     ...baseFilter,
     orderCode: normalizedCode,
   })
-    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .select('orderCode status updatedAt')
     .lean() || await Order.findOne({
     ...baseFilter,
     orderCode: normalizedCode.toUpperCase(),
   })
-    .select('orderCode status paymentStatus createdAt updatedAt recipient')
+    .select('orderCode status updatedAt')
     .lean();
 
   if (!order) return null;
 
   return {
-    orderId: String(order._id),
     orderCode: String(order.orderCode),
     status: order.status as OrderStatus,
-    paymentStatus: String(order.paymentStatus),
-    createdAt: new Date(order.createdAt as string | Date).toISOString(),
     updatedAt: new Date(order.updatedAt as string | Date).toISOString(),
-    recipientName: String((order.recipient as { fullName?: string } | undefined)?.fullName ?? ''),
   };
 };
 
