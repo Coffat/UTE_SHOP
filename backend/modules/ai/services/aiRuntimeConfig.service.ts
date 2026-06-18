@@ -8,7 +8,7 @@ const isValidStoredSelection = (provider: string | undefined, modelId: string | 
   return Boolean(findCatalogEntry(provider, modelId));
 };
 
-const buildRuntimeFromCatalog = (
+export const buildRuntimeFromCatalog = (
   provider: AiProviderId,
   modelId: string,
   runtimeSource: AiRuntimeSource

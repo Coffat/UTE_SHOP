@@ -56,14 +56,12 @@ export function UserProfile() {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
   const [pointsHistory, setPointsHistory] = useState<any[]>([]);
   const [pointsLoading, setPointsLoading] = useState(false);
 
   const fnId = useId();
   const phId = useId();
-  const addrId = useId();
 
   useEffect(() => {
     void dispatch(fetchProfile());
@@ -91,7 +89,6 @@ export function UserProfile() {
     if (profile) {
       setFullName(profile.fullName ?? "");
       setPhone(profile.phone ?? "");
-      setAddress(profile.address ?? "");
     }
   }, [profile]);
 
@@ -99,7 +96,7 @@ export function UserProfile() {
   const displayName = profile?.fullName || "Người dùng";
   const displayEmail = profile?.email || "--";
   const displayPhone = profile?.phone || "0901 234 567";
-  const displayAddress = profile?.address || "Quận 3, TP. Hồ Chí Minh";
+  const displayAddress = "Quản lý tại Sổ địa chỉ";
   const joinedDate = formatJoinDate(profile?.createdAt);
   const membership = useMemo(
     () => (profile?.role === "admin" ? "VIP Admin" : "VIP"),
@@ -299,7 +296,6 @@ export function UserProfile() {
                     updateProfile({
                       fullName: fullName.trim(),
                       phone: phone.trim(),
-                      address: address.trim(),
                     })
                   );
                   if (updateProfile.rejected.match(result) && result.payload === UNAUTH) {
@@ -347,22 +343,6 @@ export function UserProfile() {
                     />
                   </div>
                 </div>
-                <div className="md:col-span-2">
-                  <label htmlFor={addrId} className="mb-1 block text-xs font-medium text-dusk-gray">
-                    Địa chỉ
-                  </label>
-                  <textarea
-                    id={addrId}
-                    rows={2}
-                    value={address}
-                    onChange={(e) => {
-                      setAddress(e.target.value);
-                      dispatch(clearProfileErrors());
-                      dispatch(clearSaveMessage());
-                    }}
-                    className="w-full rounded-xl border border-crystal-border bg-pure-ivory/90 px-3 py-2.5 text-sm text-deep-plum outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
                 <div className="md:col-span-2 flex items-center gap-3">
                   <button
                     type="submit"
@@ -379,7 +359,6 @@ export function UserProfile() {
                       if (profile) {
                         setFullName(profile.fullName ?? "");
                         setPhone(profile.phone ?? "");
-                        setAddress(profile.address ?? "");
                       }
                     }}
                   >

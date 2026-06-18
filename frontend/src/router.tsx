@@ -25,6 +25,8 @@ import { BlogList } from "./pages/BlogList";
 import { BlogDetail } from "./pages/BlogDetail";
 import { Notifications } from "./pages/Notifications";
 import { Support } from "./pages/Support";
+import { Addresses } from "./pages/Addresses";
+import { SocialCallback } from "./pages/SocialCallback";
 
 // Admin & Shared Dashboard Imports
 import { DashboardLayout } from "./admin/layouts/DashboardLayout";
@@ -113,6 +115,11 @@ export const router = createBrowserRouter([
           { path: "profile", element: <AdminProfilePage /> },
         ],
       },
+      // --- Social Auth Callback ---
+      {
+        path: "/auth/social/callback",
+        element: <SocialCallback />,
+      },
       // --- Unauthorized Route ───
       {
         path: "/unauthorized",
@@ -142,6 +149,7 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to="overview" replace /> },
               { path: "overview", element: <ProfileOverview /> },
               { path: "orders", element: <UserOrders /> },
+              { path: "addresses", element: <Addresses /> },
               { path: "favorites", element: <Favorites /> },
               { path: "notifications", element: <Notifications /> },
             ]

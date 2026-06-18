@@ -32,10 +32,16 @@ import {
   isSensitivePass1Handoff,
 } from './aiHandoff.service.js';
 import {
-  checkActiveProviderHealth,
   completeActiveProviderResponse,
   streamActiveProviderResponse,
 } from '../providers/aiProvider.router.js';
+import {
+  invokeWithProviderFallback,
+  PROVIDER_UNAVAILABLE_HANDOFF_REASON,
+  ProviderUnavailableError,
+  resolveHealthyRuntimeWithFallback,
+  STAFF_WAIT_USER_MESSAGE,
+} from '../providers/providerCrossFallback.service.js';
 import { getEffectiveAiRuntime, buildAiMessageMetadata } from './aiRuntimeConfig.service.js';
 import {
   buildProductAdviceFromSuggestions,
@@ -288,6 +294,7 @@ const resolvePass1Decision = async (
   decision: AiPass1Decision;
   usedModelId?: string;
   wasFallback?: boolean;
+  usedRuntime?: EffectiveAiRuntime;
 }> => {
   if (!aiConfig.toolCallingEnabled) {
     const decision: AiPass1Decision = { type: 'no_tool', reason: 'tool_calling_disabled' };
@@ -304,11 +311,13 @@ const resolvePass1Decision = async (
   }
 
   const decisionPrompt = buildPass1DecisionPromptMessages(historyRows);
-  const pass1Result = await completeActiveProviderResponse(runtime, sanitizeProviderPayload(decisionPrompt), {
-    temperature: runtime.toolDecisionTemperature,
-    maxPredictTokens: runtime.toolDecisionMaxPredictTokens,
-    signal: abortSignal,
-  });
+  const pass1Result = await invokeWithProviderFallback(runtime, (attempt) =>
+    completeActiveProviderResponse(attempt, sanitizeProviderPayload(decisionPrompt), {
+      temperature: runtime.toolDecisionTemperature,
+      maxPredictTokens: runtime.toolDecisionMaxPredictTokens,
+      signal: abortSignal,
+    })
+  );
   const parsed = parsePass1Decision(pass1Result.fullText);
   if (!parsed.ok || !parsed.decision) {
     return {
@@ -323,6 +332,7 @@ const resolvePass1Decision = async (
     decision: parsed.decision,
     usedModelId: pass1Result.usedModelId,
     wasFallback: pass1Result.wasFallback,
+    usedRuntime: pass1Result.usedRuntime,
   };
 };
 
@@ -412,6 +422,41 @@ const streamDeterministicTokens = (content: string, onToken: (text: string) => v
   for (const chunk of chunks) {
     onToken(chunk.endsWith('\n') ? chunk : `${chunk} `);
   }
+};
+
+const finalizeProviderUnavailableHandoff = async ({
+  conversation,
+  onToken,
+  onHandoff,
+  buildChatMetadata,
+}: {
+  conversation: any;
+  onToken: (text: string) => void;
+  onHandoff: (reason: string) => void;
+  buildChatMetadata: (extra?: Record<string, unknown>) => Record<string, unknown>;
+}): Promise<StreamAiReplyResult> => {
+  await incrementAiFailureCount(conversation, PROVIDER_UNAVAILABLE_HANDOFF_REASON);
+  streamDeterministicTokens(STAFF_WAIT_USER_MESSAGE, onToken);
+  onHandoff(PROVIDER_UNAVAILABLE_HANDOFF_REASON);
+  await assertAiFinalizeEligibility(conversation._id.toString());
+  const metadata = buildChatMetadata({
+    handoffReason: PROVIDER_UNAVAILABLE_HANDOFF_REASON,
+    responseMode: 'deterministic',
+    source: 'provider_unavailable',
+  });
+  const message = await persistAiMessage(
+    conversation,
+    STAFF_WAIT_USER_MESSAGE,
+    metadata,
+    PROVIDER_UNAVAILABLE_HANDOFF_REASON
+  );
+  return {
+    aiMessageId: message._id.toString(),
+    conversationId: conversation._id.toString(),
+    handoffReason: PROVIDER_UNAVAILABLE_HANDOFF_REASON,
+    finalContent: STAFF_WAIT_USER_MESSAGE,
+    metadata,
+  };
 };
 
 const persistDeterministicSearchReply = async ({
@@ -728,18 +773,38 @@ export const streamAiReplyForCustomer = async ({
         rawText: JSON.stringify(decision),
       };
     } else {
-      const health = await checkActiveProviderHealth(activeRuntime, { mode: 'chat_preflight' });
-      if (!health.ok) {
-        await incrementAiFailureCount(conversation, 'provider_unavailable');
-        const streamErrorMessage =
-          health.statusCode === 'rate_limited'
-            ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
-            : health.message;
-        throw new ChatHttpError(503, streamErrorMessage);
+      const healthyRuntime = await resolveHealthyRuntimeWithFallback(activeRuntime, {
+        mode: 'chat_preflight',
+      });
+      if (!healthyRuntime) {
+        return finalizeProviderUnavailableHandoff({
+          conversation,
+          onToken,
+          onHandoff,
+          buildChatMetadata,
+        });
+      }
+      if (healthyRuntime.usedCrossProviderFallback) {
+        activeRuntime = healthyRuntime.runtime;
       }
 
-      const pass1Outcome = await resolvePass1Decision(activeRuntime, orderedHistoryRows, abortSignal);
-      if (pass1Outcome.usedModelId && pass1Outcome.usedModelId !== activeRuntime.modelId) {
+      let pass1Outcome;
+      try {
+        pass1Outcome = await resolvePass1Decision(activeRuntime, orderedHistoryRows, abortSignal);
+      } catch (error) {
+        if (error instanceof ProviderUnavailableError) {
+          return finalizeProviderUnavailableHandoff({
+            conversation,
+            onToken,
+            onHandoff,
+            buildChatMetadata,
+          });
+        }
+        throw error;
+      }
+      if (pass1Outcome.usedRuntime) {
+        activeRuntime = pass1Outcome.usedRuntime;
+      } else if (pass1Outcome.usedModelId && pass1Outcome.usedModelId !== activeRuntime.modelId) {
         activeRuntime = { ...activeRuntime, modelId: pass1Outcome.usedModelId };
       }
       const overridden = applyAutoSearchOverride(
@@ -904,30 +969,43 @@ export const streamAiReplyForCustomer = async ({
     let latencyMs = 0;
 
     try {
-      const result = await streamActiveProviderResponse(
-        activeRuntime,
-        sanitizedPromptMessages,
-        (text) => {
-          if (!text) return;
-          hasAnyToken = true;
-          accumulated += text;
-          onToken(text);
-        },
-        abortSignal
+      const result = await invokeWithProviderFallback(activeRuntime, (attempt) =>
+        streamActiveProviderResponse(
+          attempt,
+          sanitizedPromptMessages,
+          (text) => {
+            if (!text) return;
+            hasAnyToken = true;
+            accumulated += text;
+            onToken(text);
+          },
+          abortSignal
+        )
       );
       latencyMs = result.latencyMs;
       accumulated = result.fullText || accumulated;
       if (result.usedModelId && result.usedModelId !== activeRuntime.modelId) {
         activeRuntime = { ...activeRuntime, modelId: result.usedModelId };
       }
+      if (result.usedCrossProviderFallback) {
+        activeRuntime = result.usedRuntime;
+      }
     } catch (error) {
       if (!hasAnyToken) {
-        await incrementAiFailureCount(conversation, 'provider_stream_error_no_token');
-        const streamMessage =
-          error instanceof Error && error.message.includes('rate limit')
-            ? 'AI tạm thời quá tải. Vui lòng thử lại sau vài phút hoặc bấm chuyển nhân viên.'
-            : 'AI đang gặp sự cố, mình sẽ chuyển bạn đến nhân viên hỗ trợ.';
-        throw new ChatHttpError(503, streamMessage);
+        if (error instanceof ProviderUnavailableError) {
+          return finalizeProviderUnavailableHandoff({
+            conversation,
+            onToken,
+            onHandoff,
+            buildChatMetadata,
+          });
+        }
+        return finalizeProviderUnavailableHandoff({
+          conversation,
+          onToken,
+          onHandoff,
+          buildChatMetadata,
+        });
       }
 
       const fallbackTail = '\n\nTin nhắn AI bị gián đoạn, mình đã chuyển bạn tới nhân viên hỗ trợ.';

@@ -1,6 +1,7 @@
 import { eventBus, AppEvent, PaymentSuccessPayload, PaymentFailedPayload } from '../../../shared/utils/eventBus.js';
 import { Notification, UserNotification } from '../models/Notification.js';
 import User from '../../user/models/User.js';
+import crypto from 'crypto';
 
 export const registerNotificationEventHandlers = () => {
   eventBus.on(AppEvent.PAYMENT_SUCCESS, async (payload: PaymentSuccessPayload) => {
@@ -61,7 +62,8 @@ const handleOrderCreated = async (payload: any) => {
     dedupeKey,
     recipients,
     channelPreferences: { IN_APP: true, EMAIL: true },
-    payload
+    payload,
+    sourceEventId: payload.eventId
   });
 };
 
@@ -82,7 +84,8 @@ const handleOrderStatusChanged = async (payload: any) => {
     dedupeKey,
     recipients,
     channelPreferences: { IN_APP: true, EMAIL: true },
-    payload
+    payload,
+    sourceEventId: payload.eventId
   });
 };
 
@@ -110,7 +113,8 @@ const handleChatMessageReceived = async (payload: any) => {
     dedupeKey,
     recipients,
     channelPreferences: { IN_APP: true, EMAIL: false }, // Usually chat is in-app only, maybe push notification, but not email
-    payload
+    payload,
+    sourceEventId: payload.eventId
   });
 };
 
@@ -204,7 +208,7 @@ const deliverNotification = async (params: DeliverNotificationParams) => {
       priority: params.priority || 'NORMAL',
       data: params.payload,
       dedupeKey: params.dedupeKey,
-      sourceEventId: params.sourceEventId,
+      sourceEventId: params.sourceEventId || crypto.randomUUID(),
     });
 
     // Unique recipients

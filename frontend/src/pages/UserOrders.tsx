@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { AppDispatch, RootState } from "@/store";
 import { fetchUserOrders } from "@/features/profile/profileSlice";
@@ -14,6 +14,7 @@ import { parseDecimalPrice } from "@/lib/price";
 
 export function UserOrders() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { showToast } = useToast();
 
@@ -102,6 +103,16 @@ export function UserOrders() {
       showToast("Lỗi khi tải chi tiết đơn hàng", "error");
     }
   };
+
+  useEffect(() => {
+    const openOrderId = (location.state as { openOrderId?: string } | null)?.openOrderId;
+    if (!openOrderId || ordersStatus === "loading") {
+      return;
+    }
+    void handleViewDetails(openOrderId);
+    navigate(location.pathname, { replace: true, state: {} });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when navigated from overview
+  }, [location.state, ordersStatus]);
 
   const handleBuyAgain = (item: any) => {
     const pVar = item.productVariant;

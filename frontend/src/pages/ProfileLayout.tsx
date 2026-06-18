@@ -14,8 +14,6 @@ const sideMenu = [
   { label: "Đơn hàng của tôi", icon: "shopping_bag", path: "orders" },
   { label: "Sổ địa chỉ", icon: "location_on", path: "addresses" },
   { label: "Yêu thích", icon: "favorite", path: "favorites" },
-  { label: "Thông tin tài khoản", icon: "person", path: "account" },
-  { label: "Phương thức thanh toán", icon: "credit_card", path: "payments" },
   { label: "Thông báo", icon: "notifications", path: "notifications" },
 ] as const;
 

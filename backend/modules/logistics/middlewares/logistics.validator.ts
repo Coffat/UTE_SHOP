@@ -13,6 +13,24 @@ export const validateCreateAddress = [
   handleValidationErrors,
 ];
 
+export const validateUpdateAddress = [
+  body('street').optional().notEmpty().withMessage('Địa chỉ đường không được để trống').trim().isLength({ max: 200 }),
+  body('city').optional().notEmpty().withMessage('Thành phố không được để trống').trim().isLength({ max: 100 }),
+  body('district').optional().trim().isLength({ max: 100 }),
+  body('ward').optional().trim().isLength({ max: 100 }),
+  body('label').optional().trim().isLength({ max: 50 }),
+  body('isDefault').optional().isBoolean(),
+  body().custom((value: Record<string, unknown>) => {
+    const allowedKeys = ['street', 'city', 'district', 'ward', 'label', 'isDefault'];
+    const keys = Object.keys(value || {}).filter((k) => allowedKeys.includes(k));
+    if (keys.length === 0) {
+      throw new Error('Không có trường hợp lệ để cập nhật');
+    }
+    return true;
+  }),
+  handleValidationErrors,
+];
+
 export const validateAddressId = [
   param('id').isMongoId().withMessage('Address ID không hợp lệ'),
   handleValidationErrors,

@@ -66,3 +66,51 @@ export const getVouchers = async (): Promise<IVoucher[]> => {
 export const toggleVoucher = async (id: string, isActive: boolean): Promise<IVoucher | null> => {
   return Voucher.findByIdAndUpdate(id, { isActive }, { new: true });
 };
+
+export type SerializedCustomerVoucher = {
+  _id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  maxDiscountAmount: number | null;
+  minOrderAmount: number;
+  validUntil: string;
+  usageLimit: number | null;
+  usedCount: number;
+};
+
+function serializeCustomerVoucher(voucher: IVoucher): SerializedCustomerVoucher {
+  return {
+    _id: voucher._id.toString(),
+    code: voucher.code,
+    discountType: voucher.discountType,
+    discountValue: Number(voucher.discountValue),
+    maxDiscountAmount: voucher.maxDiscountAmount != null ? Number(voucher.maxDiscountAmount) : null,
+    minOrderAmount: Number(voucher.minOrderAmount ?? 0),
+    validUntil: voucher.validUntil.toISOString(),
+    usageLimit: voucher.usageLimit ?? null,
+    usedCount: voucher.usedCount,
+  };
+}
+
+/**
+ * Lấy danh sách voucher khách hàng có thể sử dụng (global hoặc gán riêng user).
+ */
+export const getAvailableVouchersForCustomer = async (
+  customerId: string
+): Promise<SerializedCustomerVoucher[]> => {
+  const now = new Date();
+  const vouchers = await Voucher.find({
+    isActive: true,
+    validUntil: { $gte: now },
+    $or: [{ customer: null }, { customer: customerId }],
+    $expr: {
+      $or: [
+        { $eq: ['$usageLimit', null] },
+        { $lt: ['$usedCount', '$usageLimit'] },
+      ],
+    },
+  }).sort({ validUntil: 1 });
+
+  return vouchers.map(serializeCustomerVoucher);
+};

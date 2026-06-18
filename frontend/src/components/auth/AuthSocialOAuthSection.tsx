@@ -1,12 +1,16 @@
-import { AppleGlyph, FacebookGlyph, GoogleGlyph } from "@/icons";
+import { FacebookGlyph, GoogleGlyph } from "@/icons";
 
 const providers = [
-  { name: "Google" as const, Glyph: GoogleGlyph },
-  { name: "Facebook" as const, Glyph: FacebookGlyph },
-  { name: "Apple" as const, Glyph: AppleGlyph },
+  { name: "Google" as const, Glyph: GoogleGlyph, endpoint: "/api/v1/auth/google" },
+  { name: "Facebook" as const, Glyph: FacebookGlyph, endpoint: "/api/v1/auth/facebook" },
 ];
 
 export function AuthSocialOAuthSection() {
+  const handleSocialLogin = (endpoint: string) => {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "";
+    window.location.href = apiBase ? `${apiBase}${endpoint}` : endpoint;
+  };
+
   return (
     <>
       <div className="mt-8 flex items-center gap-3">
@@ -15,12 +19,13 @@ export function AuthSocialOAuthSection() {
         <span className="h-px flex-1 bg-gradient-to-l from-transparent to-crystal-border" />
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4">
-        {providers.map(({ name, Glyph }) => (
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
+        {providers.map(({ name, Glyph, endpoint }) => (
           <button
             key={name}
             type="button"
-            className="flex flex-col items-center gap-2 rounded-2xl border border-white/55 bg-pure-ivory/30 py-4 backdrop-blur-sm transition hover:bg-pure-ivory/45"
+            onClick={() => handleSocialLogin(endpoint)}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-white/55 bg-pure-ivory/30 py-4 backdrop-blur-sm transition hover:bg-pure-ivory/45 cursor-pointer"
             style={{ WebkitBackdropFilter: "blur(8px)" }}
           >
             <Glyph className="size-7 sm:size-8" />

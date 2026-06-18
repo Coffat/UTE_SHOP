@@ -186,7 +186,18 @@ export function CustomerChatWidget() {
           aiStreamCloseRef.current = null;
           scrollToBottom();
         },
-        onError: (message) => {
+        onError: () => {
+          const friendlyMessage =
+            "Vui lòng chờ kết nối tới nhân viên nhé. Mình đã chuyển yêu cầu của bạn sang nhân viên hỗ trợ.";
+          setConversation((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: "waiting_staff",
+                  handoffReason: "provider_unavailable",
+                }
+              : prev
+          );
           setMessages((prev) => {
             const tempIdx = prev.findIndex((msg) => msg._id === tempId);
             if (tempIdx < 0) {
@@ -199,14 +210,14 @@ export function CustomerChatWidget() {
                   senderId: null,
                   clientMessageId: null,
                   messageType: "text",
-                  content: message,
+                  content: friendlyMessage,
                   createdAt: new Date().toISOString(),
                   deliveryState: "sent",
                 },
               ];
             }
             const next = [...prev];
-            next[tempIdx] = { ...next[tempIdx], content: message, deliveryState: "sent" as const };
+            next[tempIdx] = { ...next[tempIdx], content: friendlyMessage, deliveryState: "sent" as const };
             return next;
           });
           aiStreamCloseRef.current = null;

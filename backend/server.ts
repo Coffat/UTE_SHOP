@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
+import passport from './config/passport.js';
 import v1Router from './routes/index.js';
 import './modules/order/services/order.events.js';
 import { generalLimiter } from './shared/middlewares/rateLimiter.js';
@@ -57,6 +58,9 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // ─── NoSQL Injection Sanitizer (loại bỏ $ và . trong req.body/params/query) ───
 app.use(mongoSanitize());
+
+// ─── Passport Initialization ───────────────────────────────────────────────────
+app.use(passport.initialize());
 
 // ─── Global Rate Limiter (10 req/phút mọi route) ─────────────────────────────
 app.use('/api', generalLimiter);
