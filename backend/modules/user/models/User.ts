@@ -3,7 +3,9 @@ import UserStatus from '../../../shared/enums/UserStatus.js';
 
 export interface IUser extends Document {
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
+  googleId?: string;
+  facebookId?: string;
   phone: string | null;
   status: UserStatus;
   role: string;
@@ -28,7 +30,16 @@ const userSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: [true, 'Mật khẩu là bắt buộc'],
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    facebookId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     phone: {
       type: String,

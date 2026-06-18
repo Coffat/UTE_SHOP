@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 
 export interface UserNotification {
   _id: string;
@@ -34,15 +34,20 @@ const initialState: NotificationState = {
   error: null,
 };
 
+interface NotificationListPayload {
+  data: UserNotification[];
+  nextCursor: string | null;
+}
+
 export const fetchNotifications = createAsyncThunk(
   'notification/fetchNotifications',
   async (cursor?: string) => {
     const url = cursor ? `/api/v1/notifications?cursor=${cursor}` : '/api/v1/notifications';
     const response = await api.get(url);
-    // response.data from our api client usually unpacks the standard success payload
-    // If our backend sends { success: true, data: { data: [...], nextCursor: ... } }
-    // then response.data here will be { data: [...], nextCursor: ... }
-    return response.data;
+    if (response.data?.success && response.data?.data) {
+      return response.data.data as NotificationListPayload;
+    }
+    return { data: [], nextCursor: null } satisfies NotificationListPayload;
   }
 );
 
@@ -50,7 +55,7 @@ export const fetchUnreadCount = createAsyncThunk(
   'notification/fetchUnreadCount',
   async () => {
     const response = await api.get('/api/v1/notifications/unread-count');
-    return response.data.unreadCount;
+    return response.data?.data?.unreadCount ?? 0;
   }
 );
 
@@ -93,17 +98,17 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        const incoming = Array.isArray(action.payload.data) ? action.payload.data : [];
         // If it's a new fetch without cursor, replace items. Else append.
         if (!action.meta.arg) {
-          state.items = action.payload.data || [];
+          state.items = incoming;
         } else {
-          // Prevent duplicates
-          const newItems = (action.payload.data || []).filter(
-            (newItem: UserNotification) => !state.items.some((item) => item._id === newItem._id)
+          const newItems = incoming.filter(
+            (newItem) => !state.items.some((item) => item._id === newItem._id)
           );
           state.items = [...state.items, ...newItems];
         }
-        state.nextCursor = action.payload.nextCursor;
+        state.nextCursor = action.payload.nextCursor ?? null;
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.status = 'failed';

@@ -12,6 +12,7 @@ import { createPaymentRecord } from '../../finance/services/payment.service.js';
 import { calculateOrderTotal, applyDiscounts } from '../../marketing/services/discount.service.js';
 import PointLedger, { PointTransactionType } from '../../user/models/PointLedger.js';
 import User from '../../user/models/User.js';
+import { getAddressByIdForCustomer } from '../../logistics/services/address.service.js';
 // ─────────────────────────────────────────────────────────────────────────────
 
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
@@ -106,6 +107,46 @@ interface PlaceOrderParams {
   note?: string;
 }
 
+const formatAddressLine = (address: {
+  street: string;
+  ward?: string;
+  district?: string;
+  city: string;
+}) => [address.street, address.ward, address.district, address.city].filter(Boolean).join(', ');
+
+const resolveRecipientAndAddressId = async (
+  customerId: string | undefined,
+  recipientInfo: PlaceOrderParams['recipientInfo'],
+  deliveryAddressId?: string
+): Promise<{ recipientInfo: PlaceOrderParams['recipientInfo']; deliveryAddressId?: string }> => {
+  if (!deliveryAddressId) {
+    return {
+      recipientInfo: {
+        ...recipientInfo,
+        deliveryNote: recipientInfo.deliveryNote?.trim() ?? '',
+      },
+    };
+  }
+
+  if (!customerId) {
+    throw new AppError('Không thể dùng địa chỉ đã lưu cho đơn hàng khách', 400);
+  }
+
+  const address = await getAddressByIdForCustomer(deliveryAddressId, customerId);
+  if (!address) {
+    throw new AppError('Địa chỉ giao hàng không hợp lệ', 400);
+  }
+
+  const fallbackNote = formatAddressLine(address);
+  return {
+    deliveryAddressId: String(address._id),
+    recipientInfo: {
+      ...recipientInfo,
+      deliveryNote: recipientInfo.deliveryNote?.trim() || fallbackNote,
+    },
+  };
+};
+
 const resolveInitialOrderPaymentStatus = (paymentMethod: PlaceOrderParams['paymentMethod']): OrderPaymentStatus => {
   if (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.VNPAY) {
     return OrderPaymentStatus.PENDING;
@@ -127,6 +168,8 @@ export const placeOrderWithoutTransaction = async ({
   paymentMethod,
   note,
 }: PlaceOrderParams): Promise<IOrder> => {
+  const resolved = await resolveRecipientAndAddressId(customerId, recipientInfo, deliveryAddressId);
+
   // ── STEP 0: Lấy cart & tính subtotal ─────────────────────────────────────
   const cart = await Cart.findById(cartId).populate('items.productVariant');
   if (!cart || cart.items.length === 0) throw new Error('Giỏ hàng trống');
@@ -163,8 +206,8 @@ export const placeOrderWithoutTransaction = async ({
       status: OrderStatus.PENDING,
       orderType,
       items: orderItems,
-      recipient: recipientInfo,
-      deliveryAddress: deliveryAddressId || null,
+      recipient: resolved.recipientInfo,
+      deliveryAddress: resolved.deliveryAddressId || null,
       subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
       shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
       discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,
@@ -279,6 +322,7 @@ export const placeOrder = async ({
     });
 
     const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
+    const resolved = await resolveRecipientAndAddressId(customerId, recipientInfo, deliveryAddressId);
 
     // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
     const [order] = await Order.create(
@@ -289,8 +333,8 @@ export const placeOrder = async ({
           status: OrderStatus.PENDING,
           orderType,
           items: orderItems,
-          recipient: recipientInfo,
-          deliveryAddress: deliveryAddressId || null,
+          recipient: resolved.recipientInfo,
+          deliveryAddress: resolved.deliveryAddressId || null,
           subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
           shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
           discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,

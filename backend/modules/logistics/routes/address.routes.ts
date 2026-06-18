@@ -4,6 +4,7 @@ import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
 import {
   validateCreateAddress,
+  validateUpdateAddress,
   validateAddressId,
 } from '../middlewares/logistics.validator.js';
 
@@ -27,6 +28,14 @@ router.delete(
   authenticate, authorize('CUSTOMER'),
   validateAddressId,
   asyncHandler(addressController.deleteAddress)
+);
+
+router.patch(
+  '/:id',
+  authenticate, authorize('CUSTOMER'),
+  validateAddressId,
+  validateUpdateAddress,
+  asyncHandler(addressController.updateAddress)
 );
 
 router.patch(

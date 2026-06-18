@@ -16,6 +16,11 @@ export const deleteAddress = async (req: Request, res: Response) => {
   sendSuccess(res, 200, 'Đã xóa địa chỉ');
 };
 
+export const updateAddress = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  sendSuccess(res, 200, 'Cập nhật địa chỉ thành công', await addressService.updateAddress(id, req.user!.id, req.body));
+};
+
 export const setDefaultAddress = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   sendSuccess(res, 200, 'OK', await addressService.setDefaultAddress(id, req.user!.id));

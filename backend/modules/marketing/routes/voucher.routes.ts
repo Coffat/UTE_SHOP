@@ -27,6 +27,13 @@ router.post(
 );
 
 router.get(
+  '/mine',
+  authenticate,
+  authorize('CUSTOMER'),
+  asyncHandler(voucherController.getMyVouchers)
+);
+
+router.get(
   '/',
   authenticate, authorize('ADMIN', 'SALES'),
   asyncHandler(voucherController.getVouchers)

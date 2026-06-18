@@ -3,6 +3,9 @@ import {
   getProfile,
   editProfile,
   changePassword,
+  getFavorites,
+  addFavorite,
+  removeFavorite,
 } from '../controllers/user.controller.js';
 import * as wishlistController from '../controllers/wishlist.controller.js';
 import * as pointController from '../controllers/point.controller.js';
@@ -33,7 +36,12 @@ router.post(
   changePassword
 );
 
-// Wishlist routes
+// Favorites routes (frontend contract)
+router.get('/favorites', authenticate, getFavorites);
+router.post('/favorites/:productId', authenticate, addFavorite);
+router.delete('/favorites/:productId', authenticate, removeFavorite);
+
+// Wishlist routes (legacy alias)
 router.get('/wishlist', authenticate, wishlistController.getWishlist);
 router.post('/wishlist/:productId', authenticate, wishlistController.toggleWishlist);
 

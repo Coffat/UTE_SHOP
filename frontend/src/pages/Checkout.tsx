@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
@@ -12,6 +12,8 @@ import { fetchProfile } from "@/features/profile/profileSlice";
 import { useToast } from "@/components/ui/ToastContext";
 import { isValidMongoObjectId } from "@/lib/variant";
 import { isValidVietnameseMobilePhone, normalizeVietnamesePhone } from "@/lib/phone";
+import { AddressDto, fetchAddresses, formatAddressLine } from "@/features/address/addressApi";
+import { VietnamAddressPicker } from "@/features/address/VietnamAddressPicker";
 
 export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
@@ -28,6 +30,10 @@ export function Checkout() {
   const [address, setAddress] = useState("");
   const [giftNote, setGiftNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "MOMO" | "VNPAY">("COD");
+  const [savedAddresses, setSavedAddresses] = useState<AddressDto[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [addressBookStatus, setAddressBookStatus] = useState<"idle" | "loading">("idle");
+  const [streetLine, setStreetLine] = useState("");
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -52,9 +58,35 @@ export function Checkout() {
     if (profile) {
       if (profile.fullName && !fullName) setFullName(profile.fullName);
       if (profile.phone && !phone) setPhone(normalizeVietnamesePhone(profile.phone));
-      if (profile.address && !address) setAddress(profile.address);
     }
   }, [profile]);
+
+  useEffect(() => {
+    const loadSavedAddresses = async () => {
+      if (!profile) return;
+      setAddressBookStatus("loading");
+      try {
+        const data = await fetchAddresses();
+        setSavedAddresses(data);
+        const defaultAddress = data.find((item) => item.isDefault);
+        if (defaultAddress) {
+          const formatted = formatAddressLine(defaultAddress);
+          setAddress((current) => current || formatted);
+          setSelectedAddressId((current) => current || defaultAddress._id);
+        }
+      } catch (err) {
+        if (isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        console.error("Load saved addresses error", err);
+      } finally {
+        setAddressBookStatus("idle");
+      }
+    };
+
+    void loadSavedAddresses();
+  }, [profile, navigate]);
 
   // Flow states
   const [loading, setLoading] = useState(false);
@@ -71,6 +103,19 @@ export function Checkout() {
   const pointsDiscount = pointsApplied * 1000;
 
   const finalPrice = Math.max(0, subtotal + shippingCost - discountAmount - pointsDiscount);
+
+  const handleResolvedAreaChange = useCallback(
+    (parts: { province?: string; district?: string; ward?: string }) => {
+      setSelectedAddressId("");
+      setAddress((current) => {
+        const fallbackStreet = current.split(",")[0]?.trim() || "";
+        const street = streetLine.trim() || fallbackStreet;
+        const next = [street, parts.ward, parts.district, parts.province].filter(Boolean).join(", ");
+        return next || current;
+      });
+    },
+    [streetLine]
+  );
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -187,6 +232,7 @@ export function Checkout() {
           phone: normalizedPhone,
           deliveryNote: address.trim(),
         },
+        deliveryAddressId: selectedAddressId || undefined,
         paymentMethod,
         note: giftNote.trim(),
         voucherCode: couponApplied ? couponCode.trim() : undefined,
@@ -375,6 +421,54 @@ export function Checkout() {
               {/* Address input */}
               <div>
                 <label className="text-xs font-semibold text-dusk-gray block mb-1.5">Địa chỉ nhận hoa chính xác</label>
+                {savedAddresses.length > 0 ? (
+                  <div className="mb-3">
+                    <p className="mb-2 text-xs font-semibold text-midnight-purple">Chọn từ sổ địa chỉ đã lưu</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {savedAddresses.map((savedAddress) => {
+                        const formattedAddress = formatAddressLine(savedAddress);
+                        const active = selectedAddressId === savedAddress._id;
+                        return (
+                          <button
+                            key={savedAddress._id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedAddressId(savedAddress._id);
+                              setAddress(formattedAddress);
+                              setStreetLine(formattedAddress.split(",")[0] ?? "");
+                            }}
+                            className={`rounded-xl border px-3 py-2 text-left transition ${
+                              active
+                                ? "border-primary bg-soft-amethyst/30"
+                                : "border-crystal-border bg-pure-ivory/70 hover:bg-pure-ivory/95"
+                            }`}
+                          >
+                            <p className="text-xs font-semibold text-midnight-purple">
+                              {savedAddress.label || "Địa chỉ giao hàng"}
+                              {savedAddress.isDefault ? " (Mặc định)" : ""}
+                            </p>
+                            <p className="mt-1 line-clamp-2 text-xs text-dusk-gray">{formattedAddress}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {addressBookStatus === "loading" ? (
+                      <p className="mt-2 text-xs text-dusk-gray">Đang tải sổ địa chỉ...</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="mb-3 rounded-2xl border border-white/60 bg-pure-ivory/65 p-3">
+                  <VietnamAddressPicker onResolvedChange={handleResolvedAreaChange} />
+                  <div className="mt-2">
+                    <label className="mb-1 block text-xs font-medium text-dusk-gray">Số nhà, tên đường</label>
+                    <input
+                      value={streetLine}
+                      onChange={(e) => setStreetLine(e.target.value)}
+                      placeholder="Ví dụ: 25 Nguyễn Huệ"
+                      className="w-full rounded-xl border border-crystal-border bg-pure-ivory/90 px-3 py-2.5 text-sm text-deep-plum outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
                 <div className="flex items-start gap-2 rounded-xl border border-crystal-border bg-pure-ivory/90 px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 transition">
                   <MaterialIcon name="location_on" className="text-[18px] text-dusk-gray mt-0.5" />
                   <textarea
@@ -382,10 +476,18 @@ export function Checkout() {
                     rows={2}
                     placeholder="Số 1 Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP. Hồ Chí Minh"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      if (selectedAddressId) {
+                        setSelectedAddressId("");
+                      }
+                    }}
                     className="w-full bg-transparent text-sm text-deep-plum outline-none resize-none"
                   />
                 </div>
+                <p className="mt-1 text-xs text-dusk-gray">
+                  Bạn có thể chọn nhanh từ sổ địa chỉ hoặc chỉnh tay để giao đến địa điểm khác.
+                </p>
               </div>
 
               {/* Message Note input */}

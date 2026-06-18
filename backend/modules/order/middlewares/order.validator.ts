@@ -30,6 +30,8 @@ export const validatePlaceOrder = [
       }
       return true;
     }),
+  body('recipientInfo.deliveryNote').optional().trim().isLength({ max: 500 }),
+  body('deliveryAddressId').optional().custom(isObjectId),
   body('orderType')
     .optional()
     .isIn(Object.values(OrderType))

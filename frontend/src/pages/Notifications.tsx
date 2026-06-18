@@ -4,12 +4,13 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { useToast } from "@/components/ui/ToastContext";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { fetchNotifications, markAsRead, markAllAsRead, UserNotification } from "@/features/notification/notificationSlice";
+import { fetchNotifications, markAsRead, markAllAsRead } from "@/features/notification/notificationSlice";
 
 export function Notifications() {
   const { showToast } = useToast();
   const dispatch = useDispatch<AppDispatch>();
-  const { items: notifications, status, nextCursor } = useSelector((state: RootState) => state.notification);
+  const { items: notificationItems, status, nextCursor } = useSelector((state: RootState) => state.notification);
+  const notifications = Array.isArray(notificationItems) ? notificationItems : [];
   
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 

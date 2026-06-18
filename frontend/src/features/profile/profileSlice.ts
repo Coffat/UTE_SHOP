@@ -44,9 +44,9 @@ export type UserProfileDto = {
   email: string;
   points?: number;
   phone?: string;
-  address?: string;
   role?: string;
   is_active?: boolean;
+  loyalty?: { points: number; tier: string };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -57,10 +57,9 @@ type ProfileResponse = {
   message?: string;
 };
 
-type UpdateProfilePayload = {
+export type UpdateProfilePayload = {
   fullName: string;
   phone: string;
-  address: string;
 };
 
 /** Chỉ dev + env: dùng khi capture Figma/screenshot không có backend đăng nhập. Không bật trên production. */
@@ -73,7 +72,8 @@ function getProfileCaptureMock(): UserProfileDto | null {
     fullName: "Nguyễn Minh Anh",
     email: "minhanh@uteshop.example",
     phone: "0901 234 567",
-    address: "Quận 3, TP. Hồ Chí Minh",
+    points: 1250,
+    loyalty: { points: 1250, tier: "SILVER" },
     role: "user",
     is_active: true,
     createdAt: "2024-06-15T08:00:00.000Z",
@@ -127,12 +127,14 @@ export const updateProfile = createAsyncThunk<
       ...mockBase,
       fullName: payload.fullName,
       phone: payload.phone,
-      address: payload.address,
       updatedAt: new Date().toISOString(),
     };
   }
   try {
-    const { data } = await api.put<ProfileResponse>("/api/v1/users/profile", payload);
+    const { data } = await api.put<ProfileResponse>("/api/v1/users/profile", {
+      fullName: payload.fullName,
+      phone: payload.phone,
+    });
     if (!data.success || !data.data) {
       return rejectWithValue(data.message ?? "Cập nhật thất bại");
     }

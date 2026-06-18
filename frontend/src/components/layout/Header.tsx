@@ -43,7 +43,8 @@ export function Header() {
   const { profile, fetchStatus } = useSelector((state: RootState) => state.profile);
   const { items: wishlistItems, status: wishlistStatus } = useSelector((state: RootState) => state.wishlist);
   const categories = useSelector((state: RootState) => state.categories?.items || []);
-  const { items: notifications, unreadCount } = useSelector((state: RootState) => state.notification);
+  const { items: notificationItems, unreadCount } = useSelector((state: RootState) => state.notification);
+  const notifications = Array.isArray(notificationItems) ? notificationItems : [];
 
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   

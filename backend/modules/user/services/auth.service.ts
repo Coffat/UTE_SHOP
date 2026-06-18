@@ -198,3 +198,33 @@ export const rotateRefreshToken = async (refreshToken?: string): Promise<{ acces
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 };
+
+// ─── Social Login Token Exchange ──────────────────────────────────────────────
+export const socialTokenExchange = async (token: string): Promise<{ user: any; accessToken: string; refreshToken: string }> => {
+  if (!token) throw new Error('Token is required');
+
+  const secret = process.env.JWT_SECRET || 'secret';
+  let decoded: { id: string };
+  try {
+    decoded = jwt.verify(token, secret) as { id: string };
+  } catch (err) {
+    throw new Error('Invalid or expired social token');
+  }
+
+  const user = await User.findById(decoded.id);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (user.status !== UserStatus.ACTIVE) {
+    throw new Error('Tài khoản chưa được kích hoạt hoặc đã bị khóa');
+  }
+
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
+
+  const hashedToken = hashToken(refreshToken);
+  await redisClient.setEx(`refresh:${user._id}:${hashedToken}`, 7 * 24 * 60 * 60, 'valid');
+
+  return { user, accessToken, refreshToken };
+};

@@ -52,10 +52,9 @@ export const customerStreamAiReply = asyncHandler(async (req: Request, res: Resp
       content: result.finalContent,
       metadata: result.metadata,
     });
-  } catch (error) {
-    const mapped = toUserMessage(error);
+  } catch {
     writeSseEvent(res, 'error', {
-      message: mapped.message || 'AI đang gặp sự cố, mình sẽ chuyển bạn đến nhân viên hỗ trợ.',
+      message: 'Vui lòng chờ kết nối tới nhân viên nhé. Mình đã chuyển yêu cầu của bạn sang nhân viên hỗ trợ.',
     });
   } finally {
     closeSse(res);

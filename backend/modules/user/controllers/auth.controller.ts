@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import * as authService from '../services/auth.service.js';
 import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
@@ -85,4 +86,45 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
   });
 
   sendSuccess(res, 200, 'Refresh token thành công');
+});
+
+// GET /api/v1/auth/*/callback (social callback)
+export const socialLoginCallback = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user as any;
+  const clientUrl = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',')[0].trim() : 'http://localhost:5173';
+  if (!user) {
+    return res.redirect(`${clientUrl}/login?error=social_auth_failed`);
+  }
+
+  const payload = { id: user._id };
+  const secret = process.env.JWT_SECRET || 'secret';
+  const shortLivedToken = jwt.sign(payload, secret, { expiresIn: '1m' });
+
+  res.redirect(`${clientUrl}/auth/social/callback?token=${shortLivedToken}`);
+});
+
+// POST /api/v1/auth/social-exchange
+export const socialTokenExchange = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.body;
+  const { user, accessToken, refreshToken } = await authService.socialTokenExchange(token);
+
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true, sameSite: 'strict', secure: isProd, maxAge: 15 * 60 * 1000,
+  });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true, sameSite: 'strict', secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  const roleRedirect: Record<string, string> = {
+    ADMIN: '/admin/dashboard',
+    CUSTOMER: '/user/profile',
+    SALES: '/staff/orders',
+    WAREHOUSE_STAFF: '/staff/inventory',
+    STORE_STAFF: '/staff/pos',
+  };
+
+  sendSuccess(res, 200, 'Đăng nhập mạng xã hội thành công', {
+    redirectUrl: roleRedirect[user.role as string] ?? '/user/profile',
+  });
 });

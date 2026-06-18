@@ -25,5 +25,14 @@ const addressSchema = new Schema<IAddress>(
   { timestamps: true }
 );
 
+addressSchema.index({ customer: 1, createdAt: -1 });
+addressSchema.index(
+  { customer: 1, isDefault: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDefault: true },
+  }
+);
+
 const Address = mongoose.model<IAddress>('Address', addressSchema);
 export default Address;
