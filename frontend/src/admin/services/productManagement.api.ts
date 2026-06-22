@@ -116,6 +116,7 @@ export interface CreateProductPayload {
   price: number;
   stock: number;
   status?: BackendProductStatus;
+  mainImageUrl?: string;
 }
 
 export async function createAdminProduct(payload: CreateProductPayload) {
@@ -134,6 +135,7 @@ export interface UpdateProductPayload {
   price?: number;
   stock?: number;
   status?: BackendProductStatus;
+  mainImageUrl?: string;
 }
 
 export async function updateAdminProduct(id: string, payload: UpdateProductPayload) {
@@ -146,46 +148,61 @@ export async function discontinueAdminProduct(id: string) {
   return response.data.data;
 }
 
+export async function uploadProductImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("image", file);
+  const response = await api.post("/api/v1/admin/upload/image", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data.data.url;
+}
+
 export function buildUpdatePayloadFromForm(
   form: {
     name: string;
-    subName: string;
+    description: string;
     sku: string;
     categoryId: string;
     price: number;
     stock: number;
     status: UiProductStatus;
+    mainImageUrl?: string;
   }
 ): UpdateProductPayload {
   return {
     name: form.name,
-    description: form.subName,
+    description: form.description,
     categoryId: form.categoryId,
     sku: form.sku,
     price: form.price,
     stock: form.stock,
     status: uiStatusToBackend(form.status),
+    mainImageUrl: form.mainImageUrl,
   };
 }
 
 export function buildCreatePayloadFromForm(
   form: {
     name: string;
-    subName: string;
+    description: string;
     sku: string;
     categoryId: string;
     price: number;
     stock: number;
     status: UiProductStatus;
+    mainImageUrl?: string;
   }
 ): CreateProductPayload {
   return {
     name: form.name,
-    description: form.subName,
+    description: form.description,
     categoryId: form.categoryId,
     sku: form.sku,
     price: form.price,
     stock: form.stock,
     status: uiStatusToBackend(form.status),
+    mainImageUrl: form.mainImageUrl,
   };
 }

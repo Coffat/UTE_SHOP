@@ -763,7 +763,7 @@
 .admin-form { display: flex; flex-direction: column; gap: 16px; }
 .admin-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-.admin-form-group {
+.admin-form-group, .admin-form-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -775,7 +775,7 @@
   color: var(--adm-text-dim);
 }
 
-.admin-form-label .req { color: #f43f5e; margin-left: 4px; }
+.admin-form-label .admin-form-required { color: #f43f5e; margin-left: 4px; }
 
 .admin-form-input, .admin-form-select, .admin-form-textarea {
   width: 100%;
@@ -987,6 +987,10 @@
 
 .admin-crud-modal-form .admin-form-field + .admin-form-field {
   margin-top: 16px;
+}
+
+.admin-crud-modal-form .admin-form-row .admin-form-field + .admin-form-field {
+  margin-top: 0;
 }
 
 /* ── ACTIVITY FEED ── */
@@ -1434,4 +1438,104 @@
   transform: translateY(-1px);
 }
 
+/* Image Upload Zone */
+.admin-image-upload-zone {
+  border: 1px dashed var(--adm-border-2);
+  border-radius: var(--adm-radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  transition: all 0.2s;
+}
+
+.admin-image-upload-zone:hover {
+  border-color: var(--adm-accent);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-image-upload-label {
+  color: var(--adm-accent);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-image-upload-label:hover {
+  color: #818cf8;
+}
+
+.admin-image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-image-preview img {
+  max-height: 120px;
+  border-radius: var(--adm-radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--adm-border);
+}
+
+.admin-image-remove-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  height: auto;
+}
+
+/* Fix number input default styles to match text inputs */
+.admin-form-input[type="number"] {
+  box-sizing: border-box;
+}
+
+/* Chrome, Safari, Edge, Opera */
+.admin-form-input::-webkit-outer-spin-button,
+.admin-form-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.admin-form-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+
+/* --- Print Styles --- */
+@media print {
+  .admin-sidebar, .admin-topbar, .admin-page-header .admin-btn, .admin-page-header > div:last-child {
+    display: none !important;
+  }
+  .admin-root {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .admin-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+  .admin-card, .admin-stats-card {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  h2, h3, span, div {
+    color: #000 !important;
+  }
+  svg {
+    stroke: #000 !important;
+  }
+  .admin-table-row {
+    border-bottom: 1px solid #ddd !important;
+  }
+}
 

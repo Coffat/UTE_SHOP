@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import * as XLSX from "xlsx";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -174,10 +176,63 @@ function buildReportsFallback(): ReportsData {
 }
 
 export function ReportsPage() {
-  const [period] = useState<ReportsPeriod>("30d");
+  const [period, setPeriod] = useState<ReportsPeriod>("30d");
   const [data, setData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [usedFallback, setUsedFallback] = useState(false);
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+
+  const handleExportExcel = () => {
+    if (!data) return;
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    // 1. Stats Sheet
+    const statsData = data.stats.map(s => ({
+      'Chỉ số': s.label,
+      'Giá trị': s.value,
+      'Thay đổi (%)': s.change,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(statsData), "Tổng quan");
+    
+    // 2. Top Products Sheet
+    const productsData = data.topProducts.map(p => ({
+      'Sản phẩm': p.name,
+      'SKU': p.sku,
+      'Đã bán': p.sold,
+      'Doanh thu': p.revenue,
+      'Tăng trưởng': p.growth
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(productsData), "Top Sản phẩm");
+    
+    // 3. Category Revenue Sheet
+    const categoryData = data.categoryRevenue.map(c => ({
+      'Danh mục': c.category,
+      'Doanh thu (Tỷ/Triệu)': c.label
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categoryData), "Doanh thu Danh mục");
+    
+    // 4. Order Sources Sheet
+    const sourcesData = data.orderSources.map(s => ({
+      'Nguồn': s.name,
+      'Đơn hàng': s.count,
+      'Tỷ lệ (%)': s.percentage
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sourcesData), "Nguồn Đơn hàng");
+    
+    // Save file
+    XLSX.writeFile(wb, `BaoCao_${period}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setShowExportDropdown(false);
+  };
+
+  const handleExportPDF = () => {
+    setShowExportDropdown(false);
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -332,64 +387,116 @@ export function ReportsPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {/* Custom Date Range Selector */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "8px 14px",
-              background: "rgba(13, 21, 38, 0.6)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid var(--adm-border)",
-              borderRadius: "8px",
-              color: "var(--adm-text-dim)",
-              fontSize: "13px",
-              fontWeight: "500",
-              cursor: "pointer",
-              height: "38px",
-            }}
-          >
-            {/* Calendar Icon */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--adm-text-muted)" }}>
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>{report.periodLabel}</span>
-            {/* Down Chevron */}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--adm-text-muted)", marginLeft: "4px" }}>
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+          <div style={{ position: "relative" }}>
+            <div
+              onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "8px 14px",
+                background: "rgba(13, 21, 38, 0.6)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "8px",
+                color: "var(--adm-text-dim)",
+                fontSize: "13px",
+                fontWeight: "500",
+                cursor: "pointer",
+                height: "38px",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--adm-text-muted)" }}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span>{report.periodLabel}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--adm-text-muted)", marginLeft: "4px", transform: showPeriodDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            
+            {showPeriodDropdown && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                right: 0,
+                marginTop: "4px",
+                background: "#0d1526",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "8px",
+                padding: "4px",
+                width: "180px",
+                zIndex: 100,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)"
+              }}>
+                <div onClick={() => { setPeriod("7d"); setShowPeriodDropdown(false); }} style={{ padding: "8px 12px", fontSize: "13px", color: period === "7d" ? "#60a5fa" : "#e2e8f0", cursor: "pointer", borderRadius: "4px", background: period === "7d" ? "rgba(96,165,250,0.1)" : "transparent" }} onMouseOver={(e) => { if (period !== "7d") e.currentTarget.style.background = "rgba(255,255,255,0.05)" }} onMouseOut={(e) => { if (period !== "7d") e.currentTarget.style.background = "transparent" }}>7 ngày qua</div>
+                <div onClick={() => { setPeriod("30d"); setShowPeriodDropdown(false); }} style={{ padding: "8px 12px", fontSize: "13px", color: period === "30d" ? "#60a5fa" : "#e2e8f0", cursor: "pointer", borderRadius: "4px", background: period === "30d" ? "rgba(96,165,250,0.1)" : "transparent" }} onMouseOver={(e) => { if (period !== "30d") e.currentTarget.style.background = "rgba(255,255,255,0.05)" }} onMouseOut={(e) => { if (period !== "30d") e.currentTarget.style.background = "transparent" }}>30 ngày qua</div>
+                <div onClick={() => { setPeriod("month"); setShowPeriodDropdown(false); }} style={{ padding: "8px 12px", fontSize: "13px", color: period === "month" ? "#60a5fa" : "#e2e8f0", cursor: "pointer", borderRadius: "4px", background: period === "month" ? "rgba(96,165,250,0.1)" : "transparent" }} onMouseOver={(e) => { if (period !== "month") e.currentTarget.style.background = "rgba(255,255,255,0.05)" }} onMouseOut={(e) => { if (period !== "month") e.currentTarget.style.background = "transparent" }}>Tháng này</div>
+              </div>
+            )}
           </div>
 
-          {/* Export PDF Button */}
-          <button
-            className="admin-btn admin-btn-primary"
-            style={{
-              background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-              boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 18px",
-              fontWeight: 600,
-              fontSize: "13.5px",
-              color: "#fff",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              height: "38px",
-              transition: "all 0.2s",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span>Xuất PDF</span>
-          </button>
+          {/* Export Dropdown */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+              className="admin-btn admin-btn-primary"
+              style={{
+                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 18px",
+                fontWeight: 600,
+                fontSize: "13.5px",
+                color: "#fff",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                height: "38px",
+                transition: "all 0.2s",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Xuất Báo cáo</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "4px", transform: showExportDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            
+            {showExportDropdown && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                right: 0,
+                marginTop: "4px",
+                background: "#0d1526",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "8px",
+                padding: "4px",
+                width: "160px",
+                zIndex: 100,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)"
+              }}>
+                <div onClick={handleExportExcel} style={{ padding: "8px 12px", fontSize: "13px", color: "#10b981", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "transparent"}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Xuất Excel
+                </div>
+                <div onClick={handleExportPDF} style={{ padding: "8px 12px", fontSize: "13px", color: "#f43f5e", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "transparent"}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  In PDF
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -644,8 +751,8 @@ export function ReportsPage() {
 
             {/* Bottom Centered Detail Link */}
             <div style={{ borderTop: "1px solid var(--adm-border)", width: "100%", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
-              <a
-                href="#details"
+              <Link
+                to="/admin/orders"
                 style={{
                   fontSize: "12px",
                   color: "#60a5fa",
@@ -663,7 +770,7 @@ export function ReportsPage() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -692,17 +799,19 @@ export function ReportsPage() {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Top sản phẩm bán chạy</h3>
-            <a
-              href="#view-all-products"
+            <Link
+              to="/admin/products"
               style={{
                 fontSize: "13px",
                 color: "#60a5fa",
                 textDecoration: "none",
                 fontWeight: "600",
               }}
+              onMouseOver={(e) => (e.currentTarget.style.color = "#82b1ff")}
+              onMouseOut={(e) => (e.currentTarget.style.color = "#60a5fa")}
             >
               Xem tất cả
-            </a>
+            </Link>
           </div>
 
           {/* Table list of products */}

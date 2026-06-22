@@ -365,134 +365,166 @@ export function BlogsPage() {
         submitLabel={editBlog ? "Cập nhật" : "Tạo bài viết"}
         size="lg"
       >
-        <FormField label="Tiêu đề bài viết" required>
-          <FormInput
-            value={formTitle}
-            onChange={(e) => {
-              const val = e.target.value;
-              setFormTitle(val);
-              if (!slugTouched) {
-                setFormSlug(slugify(val));
-              }
-            }}
-            required
-          />
-        </FormField>
-
-        <FormField label="Slug đường dẫn" required>
-          <FormInput
-            value={formSlug}
-            onChange={(e) => {
-              setSlugTouched(true);
-              setFormSlug(e.target.value);
-            }}
-            required
-          />
-        </FormField>
-
-        <FormField label="Danh mục" required>
-          <FormInput
-            value={formCategory}
-            onChange={(e) => setFormCategory(e.target.value)}
-            placeholder="Ví dụ: Hướng dẫn, Đánh giá, Tin công nghệ"
-            required
-          />
-        </FormField>
-
-        <FormField label="Tóm tắt bài viết" required>
-          <textarea
-            value={formExcerpt}
-            onChange={(e) => setFormExcerpt(e.target.value)}
-            rows={2}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(13, 21, 38, 0.4)",
-              border: "1px solid var(--adm-border)",
-              borderRadius: "6px",
-              color: "#fff",
-              fontSize: "13.5px",
-            }}
-            placeholder="Mô tả ngắn hiển thị trên danh sách tin tức..."
-            required
-          />
-        </FormField>
-
-        <FormField label="Nội dung chi tiết" required>
-          <textarea
-            value={formContent}
-            onChange={(e) => setFormContent(e.target.value)}
-            rows={10}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(13, 21, 38, 0.4)",
-              border: "1px solid var(--adm-border)",
-              borderRadius: "6px",
-              color: "#fff",
-              fontSize: "13.5px",
-              fontFamily: "monospace",
-            }}
-            placeholder="Nội dung chi tiết (hỗ trợ văn bản thường)..."
-            required
-          />
-        </FormField>
-
-        <FormField label="Ảnh đại diện bài viết">
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              void handleImageSelect(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {formCoverImage && (
-              <img
-                src={resolveAssetUrl(formCoverImage)}
-                alt=""
-                style={{
-                  width: 80,
-                  height: 48,
-                  borderRadius: 6,
-                  objectFit: "cover",
-                  border: "1px solid var(--adm-border)",
+        <div className="admin-form-group">
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Tiêu đề bài viết" required>
+              <FormInput
+                value={formTitle}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormTitle(val);
+                  if (!slugTouched) {
+                    setFormSlug(slugify(val));
+                  }
                 }}
+                required
               />
-            )}
-            <button
-              type="button"
-              className="admin-btn admin-btn-ghost"
-              disabled={uploadingImage}
-              onClick={() => imageInputRef.current?.click()}
-            >
-              {uploadingImage ? "Đang tải..." : formCoverImage ? "Đổi ảnh" : "Tải ảnh lên"}
-            </button>
+            </FormField>
+
+            <FormField label="Slug đường dẫn" required>
+              <FormInput
+                value={formSlug}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setFormSlug(e.target.value);
+                }}
+                required
+              />
+            </FormField>
           </div>
-        </FormField>
 
-        <FormField label="Từ khóa (thẻ tags)">
-          <FormInput
-            value={formTagsString}
-            onChange={(e) => setFormTagsString(e.target.value)}
-            placeholder="Ngăn cách bằng dấu phẩy, ví dụ: sale, shoe, review"
-          />
-        </FormField>
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Danh mục" required>
+              <FormInput
+                value={formCategory}
+                onChange={(e) => setFormCategory(e.target.value)}
+                placeholder="Ví dụ: Hướng dẫn, Đánh giá, Tin công nghệ"
+                required
+              />
+            </FormField>
+            
+            <FormField label="Từ khóa (thẻ tags)">
+              <FormInput
+                value={formTagsString}
+                onChange={(e) => setFormTagsString(e.target.value)}
+                placeholder="Ngăn cách bằng dấu phẩy, ví dụ: sale, shoe, review"
+              />
+            </FormField>
+          </div>
 
-        <FormField label="Chế độ hiển thị">
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#fff" }}>
-            <input
-              type="checkbox"
-              checked={formIsPublished}
-              onChange={(e) => setFormIsPublished(e.target.checked)}
-              style={{ width: "16px", height: "16px" }}
+          <FormField label="Tóm tắt bài viết" required>
+            <textarea
+              value={formExcerpt}
+              onChange={(e) => setFormExcerpt(e.target.value)}
+              rows={2}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                background: "rgba(13, 21, 38, 0.4)",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13.5px",
+              }}
+              placeholder="Mô tả ngắn hiển thị trên danh sách tin tức..."
+              required
             />
-            Xuất bản ngay lập tức
-          </label>
-        </FormField>
+          </FormField>
+
+          <FormField label="Nội dung chi tiết" required>
+            <textarea
+              value={formContent}
+              onChange={(e) => setFormContent(e.target.value)}
+              rows={10}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                background: "rgba(13, 21, 38, 0.4)",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13.5px",
+                fontFamily: "monospace",
+              }}
+              placeholder="Nội dung chi tiết (hỗ trợ văn bản thường)..."
+              required
+            />
+          </FormField>
+
+          <FormField label="Ảnh đại diện bài viết">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                void handleImageSelect(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <div 
+              className="admin-image-upload-zone" 
+              onClick={() => { if (!uploadingImage) imageInputRef.current?.click(); }}
+              style={{
+                height: "160px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: uploadingImage ? "wait" : "pointer",
+                ...(formCoverImage ? { padding: 0 } : {})
+              }}
+            >
+              {uploadingImage ? (
+                <span style={{ color: "#94a3b8" }}>Đang tải...</span>
+              ) : formCoverImage ? (
+                <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: "8px", overflow: "hidden" }}>
+                  <img
+                    src={resolveAssetUrl(formCoverImage)}
+                    alt="Cover"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div 
+                    style={{ 
+                      position: "absolute", inset: 0, 
+                      background: "rgba(0,0,0,0.4)", 
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      opacity: 0, transition: "opacity 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}
+                  >
+                    <span style={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}>Thay đổi ảnh</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="upload-icon" style={{ marginBottom: "12px", color: "#64748b" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: 500 }}>Nhấn để tải ảnh lên</span>
+                  <span style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Hỗ trợ JPG, PNG, WEBP</span>
+                </>
+              )}
+            </div>
+          </FormField>
+
+          <FormField label="Chế độ hiển thị">
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#fff" }}>
+              <input
+                type="checkbox"
+                checked={formIsPublished}
+                onChange={(e) => setFormIsPublished(e.target.checked)}
+                style={{ width: "16px", height: "16px" }}
+              />
+              Xuất bản ngay lập tức
+            </label>
+          </FormField>
+        </div>
       </CrudModal>
     </div>
   );
