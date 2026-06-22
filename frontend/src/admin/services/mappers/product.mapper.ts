@@ -22,7 +22,7 @@ export interface BackendAdminProduct {
 export interface AdminProductRow {
   id: string;
   name: string;
-  subName: string;
+  description: string;
   sku: string;
   category: string;
   categoryId: string;
@@ -52,7 +52,7 @@ export const mapBackendProductToRow = (item: BackendAdminProduct): AdminProductR
   return {
     id: item.id,
     name: item.name,
-    subName: item.description || "—",
+    description: item.description || "—",
     sku: item.sku || "—",
     category: item.categoryName,
     categoryId: item.categoryId,

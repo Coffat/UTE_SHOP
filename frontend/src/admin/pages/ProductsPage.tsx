@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import { useConfirm, CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
+import { useConfirm, CrudModal, FormField, FormInput, FormSelect, FormTextarea } from "../components/AdminUI";
 import { StatCardWidget } from "../components/StatCard";
 import {
   fetchManagedProducts,
@@ -12,6 +13,7 @@ import {
   discontinueAdminProduct,
   buildCreatePayloadFromForm,
   buildUpdatePayloadFromForm,
+  uploadProductImage,
   type ProductSummary,
   type CategoryOption,
 } from "../services/productManagement.api";
@@ -153,6 +155,7 @@ export function ProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [products, setProducts] = useState<AdminProductRow[]>([]);
   const [summary, setSummary] = useState<ProductSummary | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
@@ -162,6 +165,8 @@ export function ProductsPage() {
   const [slideoverOpen, setSlideoverOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<AdminProductRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { confirm, ModalEl } = useConfirm();
 
   const loadProducts = useCallback(async () => {
@@ -179,6 +184,7 @@ export function ProductsPage() {
               stockFilter === "all"
                 ? undefined
                 : (stockFilter as "in_stock" | "low_stock" | "out_of_stock"),
+            status: statusFilter === "all" ? undefined : (statusFilter as any),
           },
           role
         ),
@@ -198,7 +204,7 @@ export function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search, categoryFilter, stockFilter, role]);
+  }, [currentPage, search, categoryFilter, stockFilter, statusFilter, role]);
 
   useEffect(() => {
     fetchCategories()
@@ -292,6 +298,7 @@ export function ProductsPage() {
 
   function handleEdit(p: AdminProductRow) {
     setEditProduct(p);
+    setImageUrl(p.mainImageUrl || "");
     setSlideoverOpen(true);
   }
 
@@ -313,13 +320,29 @@ export function ProductsPage() {
     }
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      const url = await uploadProductImage(file);
+      setImageUrl(url);
+    } catch (err) {
+      console.error("Failed to upload image:", err);
+      alert("Không thể tải ảnh lên.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!isAdmin) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const subName = (formData.get("subName") as string) || "";
+    const description = (formData.get("description") as string) || "";
     const sku = (formData.get("sku") as string) || `SKU-${Date.now().toString().slice(-6)}`;
     const categoryId = formData.get("categoryId") as string;
     const price = Number(formData.get("price"));
@@ -331,11 +354,11 @@ export function ProductsPage() {
       if (editProduct) {
         await updateAdminProduct(
           editProduct.id,
-          buildUpdatePayloadFromForm({ name, subName, sku, categoryId, price, stock, status })
+          buildUpdatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl })
         );
       } else {
         await createAdminProduct(
-          buildCreatePayloadFromForm({ name, subName, sku, categoryId, price, stock, status })
+          buildCreatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl })
         );
       }
       setSlideoverOpen(false);
@@ -433,6 +456,7 @@ export function ProductsPage() {
             }}
             onClick={() => {
               setEditProduct(null);
+              setImageUrl("");
               setSlideoverOpen(true);
             }}
           >
@@ -537,23 +561,47 @@ export function ProductsPage() {
                   </select>
                 </div>
 
+                {/* Status filter selector */}
+                <div className="admin-filter-select-wrapper" style={{ height: "36px", padding: "0 10px", background: "rgba(13, 21, 38, 0.3)" }}>
+                  <select
+                    className="admin-filter-select"
+                    style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: "12.5px", outline: "none", cursor: "pointer", paddingRight: "15px" }}
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="all" style={{ background: "#0d1526", color: "#fff" }}>Tất cả trạng thái</option>
+                    <option value="active" style={{ background: "#0d1526", color: "#fff" }}>Đang bán</option>
+                    <option value="inactive" style={{ background: "#0d1526", color: "#fff" }}>Ngừng bán</option>
+                    <option value="draft" style={{ background: "#0d1526", color: "#fff" }}>Nháp</option>
+                  </select>
+                </div>
+
                 {/* Export Excel Button */}
                 <button
-                  className="admin-action-btn options"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    height: "36px",
-                    padding: "0 12px",
-                    borderRadius: "8px",
-                    fontSize: "12.5px",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
+                  className="admin-btn admin-btn-outline"
+                  style={{ height: "36px", display: "flex", alignItems: "center", gap: "6px" }}
                   title="Xuất danh sách ra Excel"
-                  onClick={() => alert("Đang xuất danh sách sản phẩm ra file Excel...")}
+                  onClick={() => {
+                    if (products.length === 0) {
+                      alert("Không có dữ liệu để xuất!");
+                      return;
+                    }
+                    const wsData = products.map(p => ({
+                      "Sản phẩm": p.name,
+                      "SKU": p.sku,
+                      "Danh mục": p.category,
+                      "Giá bán": p.price,
+                      "Tồn kho": p.stock,
+                      "Trạng thái": p.status === "active" ? "Đang bán" : p.status === "inactive" ? "Ngừng bán" : "Nháp"
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(wsData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Products");
+                    XLSX.writeFile(wb, "danh_sach_san_pham.xlsx");
+                  }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -612,7 +660,7 @@ export function ProductsPage() {
                                 {p.name}
                               </p>
                               <p className="admin-table-muted" style={{ color: "#64748b", fontSize: "12px", margin: 0 }}>
-                                {p.subName}
+                                {p.description}
                               </p>
                             </div>
                           </div>
@@ -936,8 +984,25 @@ export function ProductsPage() {
           <FormField label="Tên sản phẩm" required>
             <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
           </FormField>
-          <FormField label="Phiên bản / Loại sản phẩm">
-            <FormInput name="subName" placeholder="Ví dụ: Sony WH-1000XM5" defaultValue={editProduct?.subName} />
+          <FormField label="Mô tả sản phẩm">
+            <FormTextarea name="description" placeholder="Nhập mô tả..." defaultValue={editProduct?.description} />
+          </FormField>
+          <FormField label="Ảnh sản phẩm">
+            <div className="admin-image-upload-zone">
+              {imageUrl ? (
+                <div className="admin-image-preview">
+                  <img src={imageUrl} alt="Preview" />
+                  <button type="button" onClick={() => setImageUrl("")} className="admin-btn admin-btn-danger admin-image-remove-btn">
+                    Xóa
+                  </button>
+                </div>
+              ) : (
+                <label className="admin-image-upload-label">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} style={{ display: "none" }} />
+                  {uploadingImage ? "Đang tải lên..." : "Tải ảnh lên"}
+                </label>
+              )}
+            </div>
           </FormField>
           <FormField label="Mã SKU">
             <FormInput name="sku" placeholder="Ví dụ: SONY-WH1000XM5" defaultValue={editProduct?.sku} />
@@ -952,7 +1017,7 @@ export function ProductsPage() {
               ))}
             </FormSelect>
           </FormField>
-          <div className="admin-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div className="admin-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "flex-start" }}>
             <FormField label="Giá bán (₫)" required>
               <FormInput name="price" type="number" placeholder="0" defaultValue={editProduct?.price} required />
             </FormField>

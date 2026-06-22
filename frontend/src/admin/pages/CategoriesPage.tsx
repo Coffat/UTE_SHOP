@@ -446,30 +446,33 @@ export function CategoriesPage() {
         submitLabel={editCategory ? "Cập nhật" : "Tạo danh mục"}
         size="lg"
       >
-          <FormField label="Tên danh mục" required>
-            <FormInput
-              value={formName}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFormName(value);
-                if (!slugTouched) {
-                  setFormSlug(slugifyCategoryName(value));
-                }
-              }}
-              required
-            />
-          </FormField>
+        <div className="admin-form-group">
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Tên danh mục" required>
+              <FormInput
+                value={formName}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormName(value);
+                  if (!slugTouched) {
+                    setFormSlug(slugifyCategoryName(value));
+                  }
+                }}
+                required
+              />
+            </FormField>
 
-          <FormField label="Slug" required>
-            <FormInput
-              value={formSlug}
-              onChange={(e) => {
-                setSlugTouched(true);
-                setFormSlug(e.target.value);
-              }}
-              required
-            />
-          </FormField>
+            <FormField label="Slug" required>
+              <FormInput
+                value={formSlug}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setFormSlug(e.target.value);
+                }}
+                required
+              />
+            </FormField>
+          </div>
 
           <FormField label="Mô tả">
             <FormInput
@@ -489,30 +492,57 @@ export function CategoriesPage() {
                 e.target.value = "";
               }}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              {formImageUrl && (
-                <img
-                  src={resolveAssetUrl(formImageUrl)}
-                  alt=""
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 8,
-                    objectFit: "cover",
-                    border: "1px solid var(--adm-border)",
-                  }}
-                />
+            <div 
+              className="admin-image-upload-zone" 
+              onClick={() => { if (!uploadingImage) imageInputRef.current?.click(); }}
+              style={{
+                height: "160px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: uploadingImage ? "wait" : "pointer",
+                ...(formImageUrl ? { padding: 0 } : {})
+              }}
+            >
+              {uploadingImage ? (
+                <span style={{ color: "#94a3b8" }}>Đang tải...</span>
+              ) : formImageUrl ? (
+                <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: "8px", overflow: "hidden" }}>
+                  <img
+                    src={resolveAssetUrl(formImageUrl)}
+                    alt="Category"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div 
+                    style={{ 
+                      position: "absolute", inset: 0, 
+                      background: "rgba(0,0,0,0.4)", 
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      opacity: 0, transition: "opacity 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}
+                  >
+                    <span style={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}>Thay đổi ảnh</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="upload-icon" style={{ marginBottom: "12px", color: "#64748b" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: 500 }}>Nhấn để tải ảnh lên</span>
+                  <span style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Hỗ trợ JPG, PNG, WEBP</span>
+                </>
               )}
-              <button
-                type="button"
-                className="admin-btn admin-btn-ghost"
-                disabled={uploadingImage}
-                onClick={() => imageInputRef.current?.click()}
-              >
-                {uploadingImage ? "Đang tải..." : formImageUrl ? "Đổi ảnh" : "Tải ảnh lên"}
-              </button>
             </div>
           </FormField>
+        </div>
       </CrudModal>
     </div>
   );

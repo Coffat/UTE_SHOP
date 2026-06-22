@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CrudModal, FormField, FormInput, FormSelect } from '../AdminUI';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/themes/dark.css';
 
 interface Voucher {
   _id: string;
@@ -199,88 +201,94 @@ export const VoucherTab: React.FC = () => {
         submitLabel="Tạo Voucher"
         size="lg"
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <FormField label="Mã Voucher" required>
-            <FormInput 
-              required 
-              value={formData.code} 
-              onChange={e => setFormData({...formData, code: e.target.value})} 
-              placeholder="VD: SUMMER2024" 
-            />
-          </FormField>
-          <FormField label="Loại giảm giá" required>
-            <FormSelect 
-              value={formData.discountType} 
-              onChange={e => setFormData({...formData, discountType: e.target.value as any})}
-            >
-              <option value="FIXED_AMOUNT">Số tiền cố định (VNĐ)</option>
-              <option value="PERCENTAGE">Phần trăm (%)</option>
-            </FormSelect>
-          </FormField>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <FormField label="Giá trị giảm" required>
-            <FormInput 
-              required 
-              type="number" 
-              min="0" 
-              value={formData.discountValue} 
-              onChange={e => setFormData({...formData, discountValue: e.target.value})} 
-              placeholder={formData.discountType === 'PERCENTAGE' ? "VD: 10 (%)" : "VD: 50000 (VNĐ)"} 
-            />
-          </FormField>
-          {formData.discountType === 'PERCENTAGE' ? (
-            <FormField label="Giá giảm tối đa (VNĐ)">
+        <div className="admin-form-group">
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Mã Voucher" required>
               <FormInput 
-                type="number" 
-                min="0" 
-                value={formData.maxDiscountAmount} 
-                onChange={e => setFormData({...formData, maxDiscountAmount: e.target.value})} 
-                placeholder="Không bắt buộc" 
+                required 
+                value={formData.code} 
+                onChange={e => setFormData({...formData, code: e.target.value})} 
+                placeholder="VD: SUMMER2024" 
               />
             </FormField>
-          ) : <div />}
-        </div>
+            <FormField label="Loại giảm giá" required>
+              <FormSelect 
+                value={formData.discountType} 
+                onChange={e => setFormData({...formData, discountType: e.target.value as any})}
+              >
+                <option value="FIXED_AMOUNT">Số tiền cố định (VNĐ)</option>
+                <option value="PERCENTAGE">Phần trăm (%)</option>
+              </FormSelect>
+            </FormField>
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <FormField label="Đơn hàng tối thiểu (VNĐ)" required>
-            <FormInput 
-              required 
-              type="number" 
-              min="0" 
-              value={formData.minOrderAmount} 
-              onChange={e => setFormData({...formData, minOrderAmount: e.target.value})} 
-            />
-          </FormField>
-          <FormField label="Số lượt dùng tối đa">
-            <FormInput 
-              type="number" 
-              min="1" 
-              value={formData.usageLimit} 
-              onChange={e => setFormData({...formData, usageLimit: e.target.value})} 
-              placeholder="Trống = Không giới hạn" 
-            />
-          </FormField>
-        </div>
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Giá trị giảm" required>
+              <FormInput 
+                required 
+                type="number" 
+                min="0" 
+                value={formData.discountValue} 
+                onChange={e => setFormData({...formData, discountValue: e.target.value})} 
+                placeholder={formData.discountType === 'PERCENTAGE' ? "VD: 10 (%)" : "VD: 50000 (VNĐ)"} 
+              />
+            </FormField>
+            {formData.discountType === 'PERCENTAGE' ? (
+              <FormField label="Giá giảm tối đa (VNĐ)">
+                <FormInput 
+                  type="number" 
+                  min="0" 
+                  value={formData.maxDiscountAmount} 
+                  onChange={e => setFormData({...formData, maxDiscountAmount: e.target.value})} 
+                  placeholder="Không bắt buộc" 
+                />
+              </FormField>
+            ) : <div />}
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <FormField label="Ngày bắt đầu" required>
-            <FormInput 
-              required 
-              type="datetime-local" 
-              value={formData.startDate} 
-              onChange={e => setFormData({...formData, startDate: e.target.value})} 
-            />
-          </FormField>
-          <FormField label="Ngày kết thúc" required>
-            <FormInput 
-              required 
-              type="datetime-local" 
-              value={formData.endDate} 
-              onChange={e => setFormData({...formData, endDate: e.target.value})} 
-            />
-          </FormField>
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Đơn hàng tối thiểu (VNĐ)" required>
+              <FormInput 
+                required 
+                type="number" 
+                min="0" 
+                value={formData.minOrderAmount} 
+                onChange={e => setFormData({...formData, minOrderAmount: e.target.value})} 
+              />
+            </FormField>
+            <FormField label="Số lượt dùng tối đa">
+              <FormInput 
+                type="number" 
+                min="1" 
+                value={formData.usageLimit} 
+                onChange={e => setFormData({...formData, usageLimit: e.target.value})} 
+                placeholder="Trống = Không giới hạn" 
+              />
+            </FormField>
+          </div>
+
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Ngày bắt đầu" required>
+              <Flatpickr
+                data-enable-time
+                value={formData.startDate ? new Date(formData.startDate) : ""}
+                onChange={([date]) => setFormData({...formData, startDate: date.toISOString()})}
+                className="admin-form-input"
+                options={{ time_24hr: true, dateFormat: "Z", altInput: true, altFormat: "d/m/Y H:i" }}
+                placeholder="Chọn thời gian..."
+              />
+            </FormField>
+            <FormField label="Ngày kết thúc" required>
+              <Flatpickr
+                data-enable-time
+                value={formData.endDate ? new Date(formData.endDate) : ""}
+                onChange={([date]) => setFormData({...formData, endDate: date.toISOString()})}
+                className="admin-form-input"
+                options={{ time_24hr: true, dateFormat: "Z", altInput: true, altFormat: "d/m/Y H:i" }}
+                placeholder="Chọn thời gian..."
+              />
+            </FormField>
+          </div>
         </div>
       </CrudModal>
     </div>
