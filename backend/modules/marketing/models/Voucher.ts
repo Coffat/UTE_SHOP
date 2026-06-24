@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import DiscountType from '../../../shared/enums/DiscountType.js';
+import './Campaign.js';
 
 export interface IVoucher extends Document {
   code: string;

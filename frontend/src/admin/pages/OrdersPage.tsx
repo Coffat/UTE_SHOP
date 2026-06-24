@@ -110,6 +110,7 @@ export function OrdersPage() {
   const [detailModalOrderId, setDetailModalOrderId] = useState<string | null>(null);
   const [advancedFilters, setAdvancedFilters] = useState<OrderAdvancedFilters>(EMPTY_ORDER_FILTERS);
   const [draftFilters, setDraftFilters] = useState<OrderAdvancedFilters>(EMPTY_ORDER_FILTERS);
+  const [draftStatus, setDraftStatus] = useState<"all" | UiOrderStatus>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -284,77 +285,7 @@ export function OrdersPage() {
         <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>{actionMessage}</p>
       )}
 
-      {/* Filters Row */}
-      <div className="admin-stat-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-        {/* Status Filter */}
-        <div className="admin-filter-select-wrapper">
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as "all" | UiOrderStatus);
-              setCurrentPage(1);
-            }}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#e2e8f0",
-              fontSize: "13.5px",
-              fontWeight: 500,
-              outline: "none",
-              width: "100%",
-              cursor: "pointer",
-            }}
-          >
-            <option value="all">Tất cả</option>
-            <option value="pending">Chờ xử lý</option>
-            <option value="confirmed">Đã xác nhận</option>
-            <option value="ready">Chờ lấy hàng</option>
-            <option value="shipping">Đang giao</option>
-            <option value="completed">Hoàn tất</option>
-            <option value="cancelled">Đã hủy</option>
-          </select>
-          <div style={{ display: "none", flexDirection: "column" }}>
-            <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.02em" }}>Trạng thái</span>
-            <span style={{ fontSize: "13.5px", color: "#e2e8f0", marginTop: "2px", fontWeight: 500 }}>Tất cả</span>
-          </div>
-          <span style={{ marginLeft: "auto", color: "#64748b", display: "flex", alignItems: "center" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </span>
-        </div>
 
-        {/* Search Filter */}
-        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-          <span style={{ position: "absolute", left: "14px", color: "#64748b", display: "flex", alignItems: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm theo mã đơn, khách hàng, SĐT..."
-            style={{
-              width: "100%",
-              height: "100%",
-              background: "rgba(13, 21, 38, 0.4)",
-              border: "1px solid var(--adm-border)",
-              borderRadius: "var(--adm-radius)",
-              padding: "12px 16px 12px 40px",
-              fontSize: "13px",
-              color: "#fff",
-              outline: "none",
-              transition: "all 0.2s"
-            }}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-      </div>
 
       {/* Stats Cards Row */}
       <div className="admin-stat-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
@@ -631,62 +562,6 @@ export function OrdersPage() {
           }}>
             <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: 0 }}>Danh sách đơn hàng</h3>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <button style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid var(--adm-border)",
-                color: "#e2e8f0",
-                padding: "6px 12px",
-                borderRadius: "6px",
-                fontSize: "13px",
-                cursor: "pointer",
-                fontWeight: 500,
-                transition: "all 0.2s"
-              }} className="admin-action-glass-btn" onClick={() => {
-                setDraftFilters(advancedFilters);
-                setShowFilters(true);
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-                Lọc
-                {activeFilterCount > 0 ? (
-                  <span style={{
-                    marginLeft: "4px",
-                    background: "#6366f1",
-                    color: "#fff",
-                    borderRadius: "999px",
-                    fontSize: "10px",
-                    padding: "1px 6px",
-                    fontWeight: 700,
-                  }}>
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </button>
-              <button style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid var(--adm-border)",
-                color: "#e2e8f0",
-                padding: "6px 12px",
-                borderRadius: "6px",
-                fontSize: "13px",
-                cursor: "pointer",
-                fontWeight: 500,
-                transition: "all 0.2s"
-              }} className="admin-action-glass-btn" onClick={handleExportExcel} disabled={exporting || !isAdmin}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                {exporting ? "Đang xuất..." : "Xuất Excel"}
-              </button>
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                 <span style={{ position: "absolute", left: "10px", color: "#64748b", display: "flex", alignItems: "center" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -715,8 +590,67 @@ export function OrdersPage() {
                   }}
                 />
               </div>
+              <button style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--adm-border)",
+                color: "#e2e8f0",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                cursor: "pointer",
+                fontWeight: 500,
+                transition: "all 0.2s"
+              }} className="admin-action-glass-btn" onClick={() => {
+                setDraftFilters(advancedFilters);
+                setDraftStatus(statusFilter);
+                setShowFilters(true);
+              }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Lọc
+                {(activeFilterCount + (statusFilter !== "all" ? 1 : 0)) > 0 ? (
+                  <span style={{
+                    marginLeft: "4px",
+                    background: "#6366f1",
+                    color: "#fff",
+                    borderRadius: "999px",
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    fontWeight: 700,
+                  }}>
+                    {activeFilterCount + (statusFilter !== "all" ? 1 : 0)}
+                  </span>
+                ) : null}
+              </button>
+              <button style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--adm-border)",
+                color: "#e2e8f0",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                cursor: "pointer",
+                fontWeight: 500,
+                transition: "all 0.2s"
+              }} className="admin-action-glass-btn" onClick={handleExportExcel} disabled={exporting || !isAdmin}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                {exporting ? "Đang xuất..." : "Xuất Excel"}
+              </button>
             </div>
           </div>
+
+
 
           {/* List Table */}
           <div className="admin-table-wrap" style={{ overflowX: "auto" }}>
@@ -1061,15 +995,20 @@ export function OrdersPage() {
           <OrderFiltersPanel
             isOpen={showFilters}
             filters={draftFilters}
+            statusFilter={draftStatus}
             onChange={setDraftFilters}
+            onStatusChange={setDraftStatus}
             onApply={() => {
               setAdvancedFilters(draftFilters);
+              setStatusFilter(draftStatus);
               setCurrentPage(1);
               setShowFilters(false);
             }}
             onReset={() => {
               setAdvancedFilters(EMPTY_ORDER_FILTERS);
               setDraftFilters(EMPTY_ORDER_FILTERS);
+              setStatusFilter("all");
+              setDraftStatus("all");
               setCurrentPage(1);
               setShowFilters(false);
             }}

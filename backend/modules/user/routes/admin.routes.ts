@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
+import { uploadImage } from '../../../shared/middlewares/uploadImage.js';
 import {
   validateCreateStaff,
   validateUpdateStaff,
@@ -49,14 +50,14 @@ router.use(authorize('ADMIN'));
 
 // ─── Staff Management Routes ─────────────────────────────────────────────────
 router.get('/staff', validateStaffListQuery, listStaff);
-router.post('/staff', validateCreateStaff, createStaff);
+router.post('/staff', uploadImage.single('avatar'), validateCreateStaff, createStaff);
 router.patch('/staff/:id', validateUpdateStaff, updateStaff);
 router.delete('/staff/:id', validateStaffId, deleteStaff);
 
 // ─── Customer Management Routes ──────────────────────────────────────────────
 router.get('/customers', validateCustomerListQuery, listCustomers);
 router.get('/customers/:id', validateCustomerId, getCustomer);
-router.post('/customers', validateCreateCustomer, createCustomer);
+router.post('/customers', uploadImage.single('avatar'), validateCreateCustomer, createCustomer);
 router.patch('/customers/:id/status', validateUpdateCustomerStatus, updateCustomerStatus);
 
 // ─── Shift Management Routes ─────────────────────────────────────────────────

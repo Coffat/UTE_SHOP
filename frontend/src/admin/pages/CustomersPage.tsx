@@ -21,6 +21,7 @@ interface Customer {
   lastPurchaseDate: string;
   avatarColor: string;
   isFemale: boolean;
+  avatarUrl?: string;
 }
 
 export function CustomersPage() {
@@ -35,6 +36,7 @@ export function CustomersPage() {
   const [newPhone, setNewPhone] = useState("");
   const [newSegment, setNewSegment] = useState<"VIP" | "Tiềm năng" | "Mới" | "Ngủ quên">("Mới");
   const [newStatus, setNewStatus] = useState<"Hoạt động" | "Ít hoạt động" | "Không hoạt động">("Hoạt động");
+  const [newAvatar, setNewAvatar] = useState<File | null>(null);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,6 +96,7 @@ export function CustomersPage() {
       lastPurchaseDate: ordersCount > 0 ? "Giao dịch gần đây" : "Chưa giao dịch",
       avatarColor: avatarColor,
       isFemale: Math.random() > 0.5,
+      avatarUrl: bCust.avatar || "",
     };
   };
 
@@ -142,13 +145,24 @@ export function CustomersPage() {
     }
 
     try {
-      const payload = {
-        fullName: newFullName,
-        email: newEmail,
-        phone: newPhone || undefined,
-        status: mappedStatus,
-        password: "Uteshop@123",
-      };
+      let payload: any;
+      if (newAvatar) {
+        payload = new FormData();
+        payload.append("fullName", newFullName);
+        payload.append("email", newEmail);
+        if (newPhone) payload.append("phone", newPhone);
+        payload.append("status", mappedStatus);
+        payload.append("password", "Uteshop@123");
+        payload.append("avatar", newAvatar);
+      } else {
+        payload = {
+          fullName: newFullName,
+          email: newEmail,
+          phone: newPhone || undefined,
+          status: mappedStatus,
+          password: "Uteshop@123",
+        };
+      }
 
       await createCustomerApi(payload);
       
@@ -157,6 +171,7 @@ export function CustomersPage() {
       setNewPhone("");
       setNewSegment("Mới");
       setNewStatus("Hoạt động");
+      setNewAvatar(null);
       setSlideoverOpen(false);
 
       fetchCustomers();
@@ -468,13 +483,18 @@ export function CustomersPage() {
                             fontWeight: 650,
                             flexShrink: 0,
                             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                            overflow: "hidden",
                           }}
                         >
-                          {cust.fullName
-                            .split(" ")
-                            .pop()
-                            ?.charAt(0)
-                            .toUpperCase()}
+                          {cust.avatarUrl ? (
+                            <img src={`http://localhost:5000${cust.avatarUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            cust.fullName
+                              .split(" ")
+                              .pop()
+                              ?.charAt(0)
+                              .toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "13.5px" }}>
@@ -1051,52 +1071,86 @@ export function CustomersPage() {
         onClose={() => setSlideoverOpen(false)}
         onSubmit={handleCreateCustomer}
         submitLabel="Lưu khách hàng"
-        size="lg"
+        size="xl"
       >
-          <FormField label="Họ và tên" required>
-            <FormInput
-              placeholder="Nhập họ và tên..."
-              required
-              value={newFullName}
-              onChange={(e) => setNewFullName(e.target.value)}
+          <div className="admin-form-row">
+            <FormField label="Họ và tên" required>
+              <FormInput
+                placeholder="Nhập họ và tên..."
+                required
+                value={newFullName}
+                onChange={(e) => setNewFullName(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Email" required>
+              <FormInput
+                type="email"
+                placeholder="example@email.com"
+                required
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </FormField>
+          </div>
+          
+          <div className="admin-form-row">
+            <FormField label="Số điện thoại">
+              <FormInput
+                placeholder="0xxx xxx xxx"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Phân khúc" required>
+              <FormSelect
+                value={newSegment}
+                onChange={(e) => setNewSegment(e.target.value as any)}
+              >
+                <option value="Mới">Mới</option>
+                <option value="Tiềm năng">Tiềm năng</option>
+                <option value="VIP">VIP</option>
+                <option value="Ngủ quên">Ngủ quên</option>
+              </FormSelect>
+            </FormField>
+          </div>
+
+          <div className="admin-form-row">
+            <FormField label="Trạng thái hoạt động" required>
+              <FormSelect
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as any)}
+              >
+                <option value="Hoạt động">Hoạt động</option>
+                <option value="Ít hoạt động">Ít hoạt động</option>
+                <option value="Không hoạt động">Không hoạt động</option>
+              </FormSelect>
+            </FormField>
+            <FormField label="Mật khẩu" required>
+              <FormInput
+                type="password"
+                placeholder="Mật khẩu mặc định..."
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Ảnh đại diện (Avatar)">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setNewAvatar(e.target.files?.[0] || null)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px"
+              }}
             />
-          </FormField>
-          <FormField label="Email" required>
-            <FormInput
-              type="email"
-              placeholder="example@email.com"
-              required
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Số điện thoại">
-            <FormInput
-              placeholder="0xxx xxx xxx"
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Phân khúc" required>
-            <FormSelect
-              value={newSegment}
-              onChange={(e) => setNewSegment(e.target.value as any)}
-            >
-              <option value="Mới">Mới</option>
-              <option value="Tiềm năng">Tiềm năng</option>
-              <option value="VIP">VIP</option>
-              <option value="Ngủ quên">Ngủ quên</option>
-            </FormSelect>
-          </FormField>
-          <FormField label="Trạng thái hoạt động" required>
-            <FormSelect
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as any)}
-            >
-              <option value="Hoạt động">Hoạt động</option>
-              <option value="Ít hoạt động">Ít hoạt động</option>
-              <option value="Không hoạt động">Không hoạt động</option>
-            </FormSelect>
           </FormField>
       </CrudModal>
     </div>

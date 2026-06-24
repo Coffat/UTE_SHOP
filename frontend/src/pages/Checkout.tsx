@@ -14,6 +14,7 @@ import { isValidMongoObjectId } from "@/lib/variant";
 import { isValidVietnameseMobilePhone, normalizeVietnamesePhone } from "@/lib/phone";
 import { AddressDto, fetchAddresses, formatAddressLine } from "@/features/address/addressApi";
 import { VietnamAddressPicker } from "@/features/address/VietnamAddressPicker";
+import { useShippingFee } from "@/hooks/useShippingFee";
 
 export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
@@ -34,6 +35,8 @@ export function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [addressBookStatus, setAddressBookStatus] = useState<"idle" | "loading">("idle");
   const [streetLine, setStreetLine] = useState("");
+  const [toDistrictId, setToDistrictId] = useState<number | null>(null);
+  const [toWardCode, setToWardCode] = useState<string | null>(null);
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -92,10 +95,13 @@ export function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cấu hình định mức
-  const SHIPPING_THRESHOLD = 1000000;
-  const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : 30000;
-  
+  // GHN Shipping Fee Hook
+  const { shippingFee: shippingCost, isLoading: isCalculatingShipping, error: shippingError } = useShippingFee({
+    toDistrictId,
+    toWardCode,
+    subtotal
+  });
+
   // Tính toán giới hạn điểm
   const pointsAvailable = profile?.points || 0;
   const maxPointsAllowed = Math.floor((subtotal * 0.5) / 1000); // Tối đa 50% giá trị đơn hàng
@@ -105,8 +111,11 @@ export function Checkout() {
   const finalPrice = Math.max(0, subtotal + shippingCost - discountAmount - pointsDiscount);
 
   const handleResolvedAreaChange = useCallback(
-    (parts: { province?: string; district?: string; ward?: string }) => {
+    (parts: { province?: string; district?: string; ward?: string; provinceCode?: number | null; wardCode?: string | null }) => {
       setSelectedAddressId("");
+      if (parts.provinceCode) setToDistrictId(parts.provinceCode);
+      if (parts.wardCode) setToWardCode(parts.wardCode);
+      
       setAddress((current) => {
         const fallbackStreet = current.split(",")[0]?.trim() || "";
         const street = streetLine.trim() || fallbackStreet;
@@ -585,6 +594,13 @@ export function Checkout() {
                 </div>
               </div>
 
+              {shippingError && (
+                <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-600 flex items-center gap-2.5">
+                  <MaterialIcon name="warning" className="text-amber-500 text-[20px]" />
+                  <span className="font-medium">{shippingError}</span>
+                </div>
+              )}
+
               {error && (
                 <div className="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-600 flex items-center gap-2.5">
                   <MaterialIcon name="error" className="text-rose-500 text-[20px]" />
@@ -595,13 +611,18 @@ export function Checkout() {
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-lg shadow-md flex items-center justify-center gap-2 hover-lift active-press"
+                disabled={loading || isCalculatingShipping}
+                className="w-full btn-hero-cta-gradient py-4 rounded-full font-bold tracking-wide text-lg shadow-md flex items-center justify-center gap-2 hover-lift active-press disabled:opacity-50"
               >
                 {loading ? (
                   <>
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-pure-ivory border-t-transparent"></div>
                     Đang thiết lập đơn hàng...
+                  </>
+                ) : isCalculatingShipping ? (
+                  <>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-pure-ivory border-t-transparent"></div>
+                    Đang tính phí vận chuyển...
                   </>
                 ) : (
                   <>
@@ -765,7 +786,9 @@ export function Checkout() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-dusk-gray">Phí vận chuyển</span>
-                  {shippingCost === 0 ? (
+                  {isCalculatingShipping ? (
+                    <div className="h-5 w-16 bg-gray-200 animate-pulse rounded-md"></div>
+                  ) : shippingCost === 0 ? (
                     <span className="text-safe-mint font-semibold">Miễn phí</span>
                   ) : (
                     <span className="text-deep-plum font-semibold">{formatVND(shippingCost)}</span>

@@ -23,6 +23,10 @@ export interface IProduct extends Document {
   };
   views: number;
   soldCount: number;
+  weight?: number; // in grams
+  length?: number; // in cm
+  width?: number; // in cm
+  height?: number; // in cm
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +62,10 @@ const productSchema = new Schema<IProduct>(
     },
     views: { type: Number, default: 0 },
     soldCount: { type: Number, default: 0 },
+    weight: { type: Number },
+    length: { type: Number },
+    width: { type: Number },
+    height: { type: Number },
   },
   { timestamps: true }
 );

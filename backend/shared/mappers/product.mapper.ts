@@ -16,6 +16,10 @@ export interface AdminProductListItemDto {
   mainImageUrl: string;
   primaryVariantId: string | null;
   stockStatus: StockStatus | null;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 const decimalToNumber = (value: unknown): number => {
@@ -57,6 +61,10 @@ export const mapProductToAdminListItem = (
     mainImageUrl: String(product.mainImageUrl ?? ''),
     primaryVariantId: primaryVariantByProductId.get(productId) ?? null,
     stockStatus: null,
+    weight: product.weight as number | undefined,
+    length: product.length as number | undefined,
+    width: product.width as number | undefined,
+    height: product.height as number | undefined,
   };
 };
 

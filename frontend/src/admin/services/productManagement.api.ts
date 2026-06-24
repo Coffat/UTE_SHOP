@@ -117,6 +117,10 @@ export interface CreateProductPayload {
   stock: number;
   status?: BackendProductStatus;
   mainImageUrl?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 export async function createAdminProduct(payload: CreateProductPayload) {
@@ -136,6 +140,10 @@ export interface UpdateProductPayload {
   stock?: number;
   status?: BackendProductStatus;
   mainImageUrl?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 export async function updateAdminProduct(id: string, payload: UpdateProductPayload) {
@@ -169,6 +177,10 @@ export function buildUpdatePayloadFromForm(
     stock: number;
     status: UiProductStatus;
     mainImageUrl?: string;
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
   }
 ): UpdateProductPayload {
   return {
@@ -180,6 +192,10 @@ export function buildUpdatePayloadFromForm(
     stock: form.stock,
     status: uiStatusToBackend(form.status),
     mainImageUrl: form.mainImageUrl,
+    weight: form.weight,
+    length: form.length,
+    width: form.width,
+    height: form.height,
   };
 }
 
@@ -193,6 +209,10 @@ export function buildCreatePayloadFromForm(
     stock: number;
     status: UiProductStatus;
     mainImageUrl?: string;
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
   }
 ): CreateProductPayload {
   return {
@@ -204,5 +224,9 @@ export function buildCreatePayloadFromForm(
     stock: form.stock,
     status: uiStatusToBackend(form.status),
     mainImageUrl: form.mainImageUrl,
+    weight: form.weight,
+    length: form.length,
+    width: form.width,
+    height: form.height,
   };
 }

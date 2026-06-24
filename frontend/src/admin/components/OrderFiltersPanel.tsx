@@ -2,10 +2,14 @@ import { Slideover, FormField, FormSelect, FormInput } from "./AdminUI";
 import type { OrderAdvancedFilters } from "../types/orderFilters.types";
 import { EMPTY_ORDER_FILTERS } from "../types/orderFilters.types";
 
+import { UiOrderStatus } from "../services/mappers/order.mapper";
+
 interface OrderFiltersPanelProps {
   isOpen: boolean;
   filters: OrderAdvancedFilters;
+  statusFilter: "all" | UiOrderStatus;
   onChange: (filters: OrderAdvancedFilters) => void;
+  onStatusChange: (status: "all" | UiOrderStatus) => void;
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
@@ -14,7 +18,9 @@ interface OrderFiltersPanelProps {
 export function OrderFiltersPanel({
   isOpen,
   filters,
+  statusFilter,
   onChange,
+  onStatusChange,
   onApply,
   onReset,
   onClose,
@@ -25,6 +31,21 @@ export function OrderFiltersPanel({
   return (
     <Slideover isOpen={isOpen} title="Bộ lọc đơn hàng" onClose={onClose} width="400px">
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <FormField label="Trạng thái">
+          <FormSelect
+            value={statusFilter}
+            onChange={(e) => onStatusChange(e.target.value as "all" | UiOrderStatus)}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="pending">Chờ xử lý</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="ready">Chờ lấy hàng</option>
+            <option value="shipping">Đang giao</option>
+            <option value="completed">Hoàn tất</option>
+            <option value="cancelled">Đã hủy</option>
+          </FormSelect>
+        </FormField>
+
         <FormField label="Từ ngày">
           <FormInput
             type="date"

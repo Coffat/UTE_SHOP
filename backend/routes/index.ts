@@ -38,6 +38,7 @@ import paymentRoutes from '../modules/finance/routes/payment.routes.js';
 
 // ─── Module: Logistics ────────────────────────────────────────────────────────
 import addressRoutes from '../modules/logistics/routes/address.routes.js';
+import shippingRoutes from '../modules/logistics/routes/shipping.routes.js';
 
 // ─── Module: Notification ─────────────────────────────────────────────────────
 import notificationRoutes from '../modules/notification/routes/notification.routes.js';
@@ -106,8 +107,9 @@ router.use('/orders', orderRoutes);
 // Finance
 router.use('/payments', paymentRoutes);
 
-// Logistics
+// Logistics routes
 router.use('/addresses', addressRoutes);
+router.use('/shipping', shippingRoutes);
 
 // Notifications
 router.use('/notifications', notificationRoutes);

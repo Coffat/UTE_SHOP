@@ -50,7 +50,10 @@ export const createStaff = asyncHandler(async (req: Request, res: Response) => {
     storeLocation,
   } = req.body;
 
+  const avatar = req.file ? `/uploads/${req.file.filename}` : undefined;
+
   const result = await adminService.createStaff({
+    avatar,
     email,
     passwordHash: password, // adminService handles the hashing
     phone,
@@ -134,7 +137,10 @@ export const updateCustomerStatus = asyncHandler(async (req: Request, res: Respo
 export const createCustomer = asyncHandler(async (req: Request, res: Response) => {
   const { email, password, phone, fullName, status } = req.body;
 
+  const avatar = req.file ? `/uploads/${req.file.filename}` : undefined;
+
   const result = await adminService.createCustomer({
+    avatar,
     email,
     passwordHash: password || 'Uteshop@123',
     phone,

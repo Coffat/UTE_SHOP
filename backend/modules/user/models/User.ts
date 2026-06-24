@@ -12,6 +12,7 @@ export interface IUser extends Document {
   otpCode: string | null;
   otpExpires: Date | null;
   isActive: boolean;
+  avatar: string | null;
   points: number;
   deletedAt: Date | null;
   deletedBy: mongoose.Types.ObjectId | null;
@@ -54,6 +55,7 @@ const userSchema = new Schema<IUser>(
     otpCode: { type: String, default: null },
     otpExpires: { type: Date, default: null },
     isActive: { type: Boolean, default: true },
+    avatar: { type: String, default: null },
     points: { type: Number, default: 0 },
     deletedAt: { type: Date, default: null },
     deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
