@@ -35,6 +35,8 @@ import {
 import {
   isValidOrderStatusTransition,
 } from '../constants/orderStatusGroups.js';
+import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
+import crypto from 'crypto';
 
 const generateOrderCode = () => `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
@@ -433,12 +435,16 @@ export const updateOrderStatus = async (
   orderId: string,
   newStatus: OrderStatus,
   note: string,
-  changedById?: string
+  changedById: string,
+  role : string
 ): Promise<IOrder> => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
 
   const currentStatus = order.status as OrderStatus;
+  if (newStatus === OrderStatus.DELIVERY_FAILED && !['SHIPPER', 'ADMIN'].includes(role)) {
+    throw new AppError('Chỉ nhân viên giao hàng hoặc Admin mới được phép đánh dấu Giao thất bại', 403);
+  }
   if (!Object.values(OrderStatus).includes(newStatus)) {
     throw new AppError('Trạng thái đơn hàng không hợp lệ', 400);
   }
@@ -520,8 +526,14 @@ export const assertOrderAccess = (
 export const cancelOrderWithoutTransaction = async (
   orderId: string,
   reason: string,
-  cancelledById: string
+  cancelledById: string,
+  role: string // <--- Thêm role
 ): Promise<IOrder> => {
+  const orderCheck = await Order.findById(orderId);
+  if (!orderCheck) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+  validateCustomerCancelRule(orderCheck, role);
+
   // Atomic update to prevent race conditions (double cancellation)
   const order = await Order.findOneAndUpdate(
     { 
@@ -587,16 +599,37 @@ export const confirmOrderPayment = async (
   await order.save(session ? { session } : {});
   return order;
 };
+// Kiểm tra quá 30 phút
+const validateCustomerCancelRule = (order: IOrder, role: string) => {
+  if (role === 'CUSTOMER') {
+    if (order.status !== OrderStatus.PENDING) {
+      throw new AppError('Đơn hàng đã được xác nhận hoặc đang xử lý. Bạn không thể tự hủy.', 400);
+    }
+    
+    // Tính toán thời gian (Phút)
+    const orderTime = new Date(order.createdAt).getTime();
+    const currentTime = new Date().getTime();
+    const diffInMinutes = (currentTime - orderTime) / (1000 * 60);
+
+    if (diffInMinutes > 30) {
+      throw new AppError('Đã quá 30 phút kể từ lúc đặt hàng. Bạn không thể tự hủy, vui lòng liên hệ shop để được hỗ trợ.', 400);
+    }
+  }
+};
 
 export const cancelOrder = async (
   orderId: string,
   reason: string,
   cancelledById: string,
+  role: string, // <--- Thêm role
   session?: ClientSession
 ): Promise<IOrder> => {
   if (session) {
     const order = await orderRepository.findByIdWithSession(orderId, session);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
+
+    //Kiểm tra 30p
+    validateCustomerCancelRule(order, role);
 
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
       throw new Error('Không thể hủy đơn hàng ở trạng thái này');
@@ -632,7 +665,7 @@ export const cancelOrder = async (
     newSession.startTransaction();
   } catch (sessionErr: any) {
     console.warn('⚠️ Standard MongoDB without replica set, bypassing session creation in cancelOrder:', sessionErr.message);
-    return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
+    return cancelOrderWithoutTransaction(orderId, reason, cancelledById,role);
   }
 
   try {
@@ -679,7 +712,7 @@ export const cancelOrder = async (
     if (isTransactionError) {
       console.warn('⚠️ Replica set transaction error caught in cancelOrder. Falling back...');
       if (newSession) newSession.endSession();
-      return cancelOrderWithoutTransaction(orderId, reason, cancelledById);
+      return cancelOrderWithoutTransaction(orderId, reason, cancelledById,role);
     }
     throw err;
   } finally {
@@ -1028,4 +1061,42 @@ export const softDeleteOrder = async (orderId: string): Promise<IOrder | null> =
     { isDeleted: true, deletedAt: new Date() },
     { new: true }
   );
+};
+
+export const requestReturnOrder = async (orderId: string, userId: string, reason: string): Promise<IOrder> => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+  // Đảm bảo là đơn của user
+  if (order.customer?.toString() !== userId) {
+    throw new AppError('Bạn không có quyền thao tác trên đơn hàng này', 403);
+  }
+
+  // Khách chỉ được yêu cầu trả hàng nếu đơn đã giao xong (hoặc tùy quy định shop)
+  if (order.status !== OrderStatus.COMPLETED) {
+    throw new AppError('Chỉ có thể yêu cầu trả hàng đối với đơn đã giao thành công', 400);
+  }
+
+  order.status = OrderStatus.RETURNED;
+  order.statusHistory.push({
+    status: OrderStatus.RETURNED,
+    note: `Khách yêu cầu trả hàng. Lý do: ${reason}`,
+    changedBy: userId as any
+  });
+
+  await order.save();
+
+  // Bắn event để thông báo cho Admin/Sales biết có đơn yêu cầu trả hàng
+  eventBus.emitAsync(AppEvent.ORDER_STATUS_CHANGED, {
+    eventId: crypto.randomUUID(),
+    occurredAt: new Date(),
+    entityId: (order._id as mongoose.Types.ObjectId).toString(),
+    actorId: userId,
+    orderId: (order._id as mongoose.Types.ObjectId).toString(),
+    orderCode: order.orderCode,
+    oldStatus: OrderStatus.COMPLETED,
+    newStatus: OrderStatus.RETURNED,
+  }).catch((err: any) => console.error('[EventBus] Error emitting ORDER_STATUS_CHANGED:', err));
+
+  return order;
 };

@@ -226,6 +226,47 @@ const STAFF_BOTTOM_ITEMS: NavItem[] = [
   },
 ];
 
+const STORE_STAFF_NAV_ITEMS: NavItem[] = [
+  {
+    key: "dashboard",
+    label: "Tổng quan",
+    icon: "",
+    path: "/store/dashboard",
+    allowedRoles: ["STORE_STAFF"],
+  },
+  {
+    key: "orders",
+    label: "Đơn hàng",
+    icon: "",
+    path: "/store/orders",
+    allowedRoles: ["STORE_STAFF"],
+  },
+  {
+    key: "create-order",
+    label: "Tạo đơn",
+    icon: "",
+    path: "/store/orders/create",
+    allowedRoles: ["STORE_STAFF"],
+  },
+];
+
+const STORE_STAFF_BOTTOM_ITEMS: NavItem[] = [
+  {
+    key: "profile",
+    label: "Hồ sơ",
+    icon: "",
+    path: "/store/profile",
+    allowedRoles: ["STORE_STAFF"],
+  },
+  {
+    key: "logout",
+    label: "Đăng xuất",
+    icon: "",
+    path: "/login",
+    allowedRoles: ["STORE_STAFF"],
+  },
+];
+
 // ── SVG Icons ────────────────────────────────────────────────────────────────
 function IconWarehouse() {
   return (
@@ -402,6 +443,7 @@ const ICONS: Record<string, React.FC<any>> = {
   reviews:   IconReviews,
   marketing: IconMarketing,
   chat:      IconChat,
+  "create-order": IconOrders,
   "wh-dashboard":    IconWarehouse,
   "wh-stock":        IconProducts,
   "wh-import":       IconImport,
@@ -424,8 +466,9 @@ export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps)
   const location = useLocation();
 
   const isWarehouse = role === "WAREHOUSE_STAFF";
-  const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : isWarehouse ? WAREHOUSE_NAV_ITEMS : STAFF_NAV_ITEMS;
-  const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : isWarehouse ? WAREHOUSE_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
+  const isStore = role === "STORE_STAFF";
+  const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : isWarehouse ? WAREHOUSE_NAV_ITEMS : isStore ? STORE_STAFF_NAV_ITEMS : STAFF_NAV_ITEMS;
+  const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : isWarehouse ? WAREHOUSE_BOTTOM_ITEMS : isStore ? STORE_STAFF_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
 
   const visibleItems = navItems.filter((item) => item.allowedRoles.includes(role));
 
