@@ -92,6 +92,54 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const WAREHOUSE_NAV_ITEMS: NavItem[] = [
+  {
+    key: "wh-dashboard",
+    label: "Tổng quan kho",
+    icon: "",
+    path: "/warehouse/dashboard",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+  {
+    key: "wh-stock",
+    label: "Tồn kho",
+    icon: "",
+    path: "/warehouse/stock",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+  {
+    key: "wh-import",
+    label: "Nhập kho",
+    icon: "",
+    path: "/warehouse/import",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+  {
+    key: "wh-transactions",
+    label: "Lịch sử GD",
+    icon: "",
+    path: "/warehouse/transactions",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+];
+
+const WAREHOUSE_BOTTOM_ITEMS: NavItem[] = [
+  {
+    key: "profile",
+    label: "Hồ sơ",
+    icon: "",
+    path: "/warehouse/profile",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+  {
+    key: "logout",
+    label: "Đăng xuất",
+    icon: "",
+    path: "/login",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+];
+
 const STAFF_NAV_ITEMS: NavItem[] = [
   {
     key: "orders",
@@ -179,6 +227,33 @@ const STAFF_BOTTOM_ITEMS: NavItem[] = [
 ];
 
 // ── SVG Icons ────────────────────────────────────────────────────────────────
+function IconWarehouse() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35z"/>
+      <path d="M6 18h12M6 14h12"/>
+      <rect x="9" y="18" width="6" height="4"/>
+    </svg>
+  );
+}
+function IconImport() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  );
+}
+function IconHistory() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v5h5"/>
+      <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
+      <path d="M12 7v5l4 2"/>
+    </svg>
+  );
+}
 function IconDashboard() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -327,6 +402,10 @@ const ICONS: Record<string, React.FC<any>> = {
   reviews:   IconReviews,
   marketing: IconMarketing,
   chat:      IconChat,
+  "wh-dashboard":    IconWarehouse,
+  "wh-stock":        IconProducts,
+  "wh-import":       IconImport,
+  "wh-transactions": IconHistory,
 };
 
 function getIcon(key: string) {
@@ -343,8 +422,10 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const { user, role } = useAdminAuth();
   const location = useLocation();
-  const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : STAFF_NAV_ITEMS;
-  const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
+
+  const isWarehouse = role === "WAREHOUSE_STAFF";
+  const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : isWarehouse ? WAREHOUSE_NAV_ITEMS : STAFF_NAV_ITEMS;
+  const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : isWarehouse ? WAREHOUSE_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
 
   const visibleItems = navItems.filter((item) => item.allowedRoles.includes(role));
 

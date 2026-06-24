@@ -46,6 +46,12 @@ import { ReviewsPage } from "./admin/pages/ReviewsPage";
 import { MarketingManagementPage } from "./admin/pages/MarketingManagementPage";
 import { StaffChatPage } from "./admin/pages/StaffChatPage";
 
+// Warehouse imports
+import { WarehouseDashboardPage } from "./admin/pages/warehouse/WarehouseDashboardPage";
+import { WarehouseStockPage } from "./admin/pages/warehouse/WarehouseStockPage";
+import { WarehouseImportPage } from "./admin/pages/warehouse/WarehouseImportPage";
+import { WarehouseTransactionsPage } from "./admin/pages/warehouse/WarehouseTransactionsPage";
+
 export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
@@ -112,6 +118,25 @@ export const router = createBrowserRouter([
           { path: "reviews", element: <ReviewsPage /> },
           { path: "marketing", element: <MarketingManagementPage /> },
           { path: "chat", element: <StaffChatPage /> },
+          { path: "profile", element: <AdminProfilePage /> },
+        ],
+      },
+      // --- Warehouse Routes ---
+      {
+        path: "/warehouse",
+        element: (
+          <AdminAuthProvider>
+            <RoleGuard allowedRoles={["WAREHOUSE_STAFF", "ADMIN"]}>
+              <DashboardLayout />
+            </RoleGuard>
+          </AdminAuthProvider>
+        ),
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: "dashboard", element: <WarehouseDashboardPage /> },
+          { path: "stock", element: <WarehouseStockPage /> },
+          { path: "import", element: <WarehouseImportPage /> },
+          { path: "transactions", element: <WarehouseTransactionsPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],
       },
