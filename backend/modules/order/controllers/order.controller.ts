@@ -118,7 +118,8 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
     id,
     status as OrderStatus,
     note ?? '',
-    req.user!.id
+    req.user!.id,
+    req.user!.role // <--- Truyền thêm role
   );
   sendSuccess(res, 200, 'Cập nhật trạng thái thành công', order);
 });
@@ -127,6 +128,19 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { reason } = req.body;
-  const order = await orderService.cancelOrder(id, reason, req.user!.id);
+  const order = await orderService.cancelOrder(id, reason, req.user!.id, req.user!.role);
   sendSuccess(res, 200, 'Hủy đơn hàng thành công', order);
+});
+
+// POST /api/v1/orders/:id/return
+export const requestReturn = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { reason } = req.body;
+  
+  if (!reason) {
+    return sendError(res, 400, 'Vui lòng cung cấp lý do trả hàng');
+  }
+
+  const order = await orderService.requestReturnOrder(id, req.user!.id, reason);
+  sendSuccess(res, 200, 'Gửi yêu cầu trả hàng thành công', order);
 });

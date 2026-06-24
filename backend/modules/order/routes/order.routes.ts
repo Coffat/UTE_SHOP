@@ -53,7 +53,7 @@ router.post(
 // PATCH /api/v1/orders/:id/status – ADMIN, SALES, STORE_STAFF
 router.patch(
   '/:id/status',
-  authenticate, authorize('ADMIN', 'SALES', 'STORE_STAFF'),
+  authenticate, authorize('ADMIN', 'SALES', 'STORE_STAFF','SHIPPER'),
   validateChangeStatus,
   orderController.changeStatus
 );
@@ -64,6 +64,12 @@ router.post(
   authenticate, authorize('CUSTOMER', 'ADMIN'),
   validateCancelOrder,
   orderController.cancelOrder
+);
+// POST /api/v1/orders/:id/return – CUSTOMER (yêu cầu trả hàng)
+router.post(
+  '/:id/return',
+  authenticate, authorize('CUSTOMER'),
+  orderController.requestReturn
 );
 
 export default router;
