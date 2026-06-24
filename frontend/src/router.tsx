@@ -52,6 +52,11 @@ import { WarehouseStockPage } from "./admin/pages/warehouse/WarehouseStockPage";
 import { WarehouseImportPage } from "./admin/pages/warehouse/WarehouseImportPage";
 import { WarehouseTransactionsPage } from "./admin/pages/warehouse/WarehouseTransactionsPage";
 
+// Store imports
+import { StoreDashboardPage } from "./admin/pages/store/StoreDashboardPage";
+import { StoreOrdersPage } from "./admin/pages/store/StoreOrdersPage";
+import { StoreCreateOrderPage } from "./admin/pages/store/StoreCreateOrderPage";
+
 export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
@@ -137,6 +142,24 @@ export const router = createBrowserRouter([
           { path: "stock", element: <WarehouseStockPage /> },
           { path: "import", element: <WarehouseImportPage /> },
           { path: "transactions", element: <WarehouseTransactionsPage /> },
+          { path: "profile", element: <AdminProfilePage /> },
+        ],
+      },
+      // --- Store Routes ---
+      {
+        path: "/store",
+        element: (
+          <AdminAuthProvider>
+            <RoleGuard allowedRoles={["STORE_STAFF", "ADMIN"]}>
+              <DashboardLayout />
+            </RoleGuard>
+          </AdminAuthProvider>
+        ),
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: "dashboard", element: <StoreDashboardPage /> },
+          { path: "orders", element: <StoreOrdersPage /> },
+          { path: "orders/create", element: <StoreCreateOrderPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],
       },
