@@ -24,8 +24,9 @@ import categoryRoutes from '../modules/catalog/routes/category.routes.js';
 import reviewRoutes from '../modules/catalog/routes/review.routes.js';
 import storefrontRoutes from '../modules/catalog/routes/storefront.routes.js';
 
-// ─── Module: Inventory ────────────────────────────────────────────────────────
+// ─── Module: Inventory ──────────────────────────────────────────────
 import stockRoutes from '../modules/inventory/routes/stock.routes.js';
+import warehouseRoutes from '../modules/inventory/routes/warehouse.routes.js';
 
 // ─── Module: Marketing ────────────────────────────────────────────────────────
 import voucherRoutes from '../modules/marketing/routes/voucher.routes.js';
@@ -97,6 +98,8 @@ router.use('/categories', categoryRoutes);
 
 // Inventory
 router.use('/stock', stockRoutes);
+router.use('/warehouse', warehouseRoutes);
+
 
 // Marketing
 router.use('/vouchers', voucherRoutes);
