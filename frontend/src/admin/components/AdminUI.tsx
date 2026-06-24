@@ -115,7 +115,7 @@ interface CrudModalProps {
   submitLabel?: string;
   cancelLabel?: string;
   children: ReactNode;
-  size?: "md" | "lg";
+  size?: "md" | "lg" | "xl";
 }
 
 export function CrudModal({
@@ -136,6 +136,8 @@ export function CrudModal({
   const resolvedSubmitLabel =
     submitLabel ?? (mode === "create" ? "Tạo mới" : "Lưu thay đổi");
 
+  const sizeClass = size === "xl" ? "admin-crud-modal--xl" : size === "lg" ? "admin-crud-modal--lg" : "";
+
   return (
     <div
       className={`admin-crud-modal-overlay ${isOpen ? "open" : ""}`}
@@ -143,7 +145,7 @@ export function CrudModal({
       role="presentation"
     >
       <div
-        className={`admin-crud-modal ${size === "lg" ? "admin-crud-modal--lg" : ""}`}
+        className={`admin-crud-modal ${sizeClass}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

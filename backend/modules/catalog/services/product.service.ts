@@ -321,6 +321,10 @@ export interface CreateAdminProductInput {
   stock: number;
   status?: ProductStatus;
   mainImageUrl?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 export const createAdminProduct = async (input: CreateAdminProductInput): Promise<IProduct> => {
@@ -349,6 +353,10 @@ export const createAdminProduct = async (input: CreateAdminProductInput): Promis
       },
     ],
     soldCount: 0,
+    weight: input.weight,
+    length: input.length,
+    width: input.width,
+    height: input.height,
   });
 
   await ProductVariant.create({
@@ -396,6 +404,10 @@ export interface UpdateAdminProductInput {
   price?: number;
   stock?: number;
   status?: ProductStatus;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 const resolvePrimaryVariant = async (productId: string) => {
@@ -440,6 +452,11 @@ export const updateAdminProduct = async (
       product.minifiedVariants[0].price = priceDecimal as mongoose.Types.Decimal128;
     }
   }
+
+  if (input.weight !== undefined) product.weight = input.weight;
+  if (input.length !== undefined) product.length = input.length;
+  if (input.width !== undefined) product.width = input.width;
+  if (input.height !== undefined) product.height = input.height;
 
   if (input.stock !== undefined) {
     const stockQty = Math.max(0, input.stock);

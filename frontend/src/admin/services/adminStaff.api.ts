@@ -33,7 +33,7 @@ export async function fetchStaffList(params: StaffListParams = {}) {
   return data;
 }
 
-export async function createStaffMember(payload: Record<string, unknown>) {
+export async function createStaffMember(payload: Record<string, unknown> | FormData) {
   const response = await api.post("/api/v1/admin/staff", payload);
   return response.data.data;
 }

@@ -29,7 +29,7 @@ export async function fetchCustomerById(id: string) {
   return response.data.data;
 }
 
-export async function createCustomer(payload: Record<string, unknown>) {
+export async function createCustomer(payload: Record<string, unknown> | FormData) {
   const response = await api.post("/api/v1/admin/customers", payload);
   return response.data.data;
 }

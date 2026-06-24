@@ -931,6 +931,10 @@
   max-width: 640px;
 }
 
+.admin-crud-modal--xl {
+  max-width: 800px;
+}
+
 .admin-crud-modal-header {
   padding: 20px 24px;
   border-bottom: 1px solid var(--adm-border);

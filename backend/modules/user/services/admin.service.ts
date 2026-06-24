@@ -20,6 +20,7 @@ export class AdminService {
   async createStaff(data: {
     email: string;
     passwordHash: string;
+    avatar?: string;
     phone?: string;
     role: 'SALES' | 'WAREHOUSE_STAFF' | 'STORE_STAFF';
     fullName: string;
@@ -117,6 +118,7 @@ export class AdminService {
   async createCustomer(data: {
     email: string;
     passwordHash: string;
+    avatar?: string;
     phone?: string;
     fullName: string;
     status?: string;

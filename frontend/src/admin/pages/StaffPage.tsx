@@ -19,6 +19,7 @@ interface ExtendedStaffMember {
   performance: number; // 0-100
   avatarBg: string; // gradient string
   avatarText: string;
+  avatarUrl?: string;
 }
 
 const mapBackendUserToStaff = (u: any): ExtendedStaffMember => {
@@ -61,6 +62,7 @@ const mapBackendUserToStaff = (u: any): ExtendedStaffMember => {
     performance: u.performanceScore ?? 100,
     avatarBg,
     avatarText: initials,
+    avatarUrl: u.avatar || "",
   };
 };
 
@@ -120,6 +122,7 @@ export function StaffPage() {
   const [formRole, setFormRole] = useState("Staff");
   const [formStatus, setFormStatus] = useState<"Đang hoạt động" | "Nghỉ phép" | "Tạm nghỉ">("Đang hoạt động");
   const [formPerformance, setFormPerformance] = useState(85);
+  const [formAvatar, setFormAvatar] = useState<File | null>(null);
 
   const itemsPerPage = 6;
   const staffListRequestRef = useRef(0);
@@ -276,6 +279,7 @@ export function StaffPage() {
     setFormRole("Staff");
     setFormStatus("Đang hoạt động");
     setFormPerformance(85);
+    setFormAvatar(null);
     setSlideoverOpen(true);
   };
 
@@ -287,6 +291,7 @@ export function StaffPage() {
     setFormRole(s.role);
     setFormStatus(s.status);
     setFormPerformance(s.performance);
+    setFormAvatar(null);
     setSlideoverOpen(true);
   };
 
@@ -313,27 +318,37 @@ export function StaffPage() {
     if (!formName || !formEmail) return;
 
     try {
-      if (editStaff) {
-        // Edit Staff
-        const payload: any = {
+      let payload: any;
+      if (formAvatar) {
+        payload = new FormData();
+        payload.append("fullName", formName);
+        payload.append("email", formEmail);
+        if (formPhone) payload.append("phone", formPhone);
+        payload.append("status", mapFrontendStatusToBackend(formStatus));
+        payload.append("performanceScore", formPerformance.toString());
+        payload.append("avatar", formAvatar);
+        
+        if (!editStaff) {
+          payload.append("role", mapFrontendRoleToBackend(formRole));
+          payload.append("password", "Uteshop@123");
+        }
+      } else {
+        payload = {
           fullName: formName,
           email: formEmail,
           phone: formPhone || null,
           status: mapFrontendStatusToBackend(formStatus),
           performanceScore: Number(formPerformance),
         };
+        if (!editStaff) {
+          payload.role = mapFrontendRoleToBackend(formRole);
+          payload.password = "Uteshop@123";
+        }
+      }
+
+      if (editStaff) {
         await updateStaffMember(editStaff.id, payload);
       } else {
-        // Create Staff
-        const payload = {
-          fullName: formName,
-          email: formEmail,
-          phone: formPhone || null,
-          role: mapFrontendRoleToBackend(formRole),
-          status: mapFrontendStatusToBackend(formStatus),
-          performanceScore: Number(formPerformance),
-          password: "Uteshop@123", // default temporary password
-        };
         await createStaffMember(payload);
       }
       setSlideoverOpen(false);
@@ -636,9 +651,13 @@ export function StaffPage() {
                               boxShadow: "0 0 10px rgba(255,255,255,0.05)",
                               flexShrink: 0,
                             }}
-                          >
-                            {item.avatarText}
-                          </div>
+                            >
+                              {item.avatarUrl ? (
+                                <img src={`http://localhost:5000${item.avatarUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                item.avatarText
+                              )}
+                            </div>
                           <span style={{ fontWeight: 500, color: "#fff", fontSize: "13.5px" }}>{item.fullName}</span>
                         </div>
                       </td>
@@ -1322,46 +1341,82 @@ export function StaffPage() {
         onClose={() => setSlideoverOpen(false)}
         onSubmit={handleSubmit}
         submitLabel={editStaff ? "Lưu thay đổi" : "Thêm nhân viên"}
-        size="lg"
+        size="xl"
       >
-          <FormField label="Họ và tên" required>
-            <FormInput
-              placeholder="Nhập tên nhân viên..."
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              required
+          <div className="admin-form-row">
+            <FormField label="Họ và tên" required>
+              <FormInput
+                placeholder="Nhập tên nhân viên..."
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                required
+              />
+            </FormField>
+            <FormField label="Email" required>
+              <FormInput
+                type="email"
+                placeholder="example@uteshop.vn"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                required
+              />
+            </FormField>
+          </div>
+          
+          <div className="admin-form-row">
+            <FormField label="Số điện thoại">
+              <FormInput
+                placeholder="Nhập số điện thoại..."
+                value={formPhone}
+                onChange={(e) => setFormPhone(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Vai trò" required>
+              <FormSelect value={formRole} onChange={(e) => setFormRole(e.target.value)} disabled={editStaff !== null}>
+                <option value="Admin">Admin (Quản trị viên)</option>
+                <option value="Staff">Staff (Nhân viên vận hành)</option>
+                <option value="Quản lý ca">Quản lý ca (Shift Manager)</option>
+                <option value="Kho vận">Kho vận (Logistics Team)</option>
+              </FormSelect>
+            </FormField>
+          </div>
+
+          <div className="admin-form-row">
+            <FormField label="Trạng thái làm việc" required>
+              <FormSelect value={formStatus} onChange={(e) => setFormStatus(e.target.value as any)}>
+                <option value="Đang hoạt động">Đang hoạt động</option>
+                <option value="Nghỉ phép">Nghỉ phép</option>
+                <option value="Tạm nghỉ">Tạm nghỉ</option>
+              </FormSelect>
+            </FormField>
+            {!editStaff && (
+              <FormField label="Mật khẩu" required>
+                <FormInput
+                  type="password"
+                  placeholder="Mật khẩu mặc định..."
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  required
+                />
+              </FormField>
+            )}
+          </div>
+
+          <FormField label="Ảnh đại diện (Avatar)">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFormAvatar(e.target.files?.[0] || null)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--adm-border)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px"
+              }}
             />
-          </FormField>
-          <FormField label="Email" required>
-            <FormInput
-              type="email"
-              placeholder="example@uteshop.vn"
-              value={formEmail}
-              onChange={(e) => setFormEmail(e.target.value)}
-              required
-            />
-          </FormField>
-          <FormField label="Số điện thoại">
-            <FormInput
-              placeholder="Nhập số điện thoại..."
-              value={formPhone}
-              onChange={(e) => setFormPhone(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Vai trò" required>
-            <FormSelect value={formRole} onChange={(e) => setFormRole(e.target.value)} disabled={editStaff !== null}>
-              <option value="Admin">Admin (Quản trị viên)</option>
-              <option value="Staff">Staff (Nhân viên vận hành)</option>
-              <option value="Quản lý ca">Quản lý ca (Shift Manager)</option>
-              <option value="Kho vận">Kho vận (Logistics Team)</option>
-            </FormSelect>
-          </FormField>
-          <FormField label="Trạng thái làm việc" required>
-            <FormSelect value={formStatus} onChange={(e) => setFormStatus(e.target.value as any)}>
-              <option value="Đang hoạt động">Đang hoạt động</option>
-              <option value="Nghỉ phép">Nghỉ phép</option>
-              <option value="Tạm nghỉ">Tạm nghỉ</option>
-            </FormSelect>
           </FormField>
           <FormField label="Hiệu suất khởi điểm (%)">
             <FormInput

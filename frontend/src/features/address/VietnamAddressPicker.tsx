@@ -9,6 +9,8 @@ import {
 type ResolvedAddressParts = {
   province?: string;
   ward?: string;
+  provinceCode?: number | null;
+  wardCode?: string | null;
 };
 
 type VietnamAddressPickerProps = {
@@ -79,13 +81,15 @@ export function VietnamAddressPicker({ onResolvedChange, className }: VietnamAdd
   useEffect(() => {
     const provinceName = provinces.find((item) => item.code === provinceCode)?.name;
     if (!wardCode) {
-      onResolvedChange({ province: provinceName });
+      onResolvedChange({ province: provinceName, provinceCode, wardCode: null });
       return;
     }
     const wardName = wards.find((item) => item.code === wardCode)?.name;
     onResolvedChange({
       province: provinceName,
       ward: wardName,
+      provinceCode,
+      wardCode: wardCode ? String(wardCode) : null,
     });
   }, [wardCode, provinceCode, provinces, wards, onResolvedChange]);
 

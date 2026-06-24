@@ -17,6 +17,10 @@ export interface BackendAdminProduct {
   soldCount: number;
   mainImageUrl: string;
   primaryVariantId: string | null;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface AdminProductRow {
@@ -33,6 +37,10 @@ export interface AdminProductRow {
   sales: number;
   mainImageUrl: string;
   primaryVariantId: string | null;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   iconType: "headphones" | "sneaker" | "backpack" | "hoodie" | "keyboard" | "mouse" | "earbuds" | "default";
 }
 
@@ -63,6 +71,10 @@ export const mapBackendProductToRow = (item: BackendAdminProduct): AdminProductR
     sales: item.soldCount,
     mainImageUrl: item.mainImageUrl ?? "",
     primaryVariantId: item.primaryVariantId,
+    weight: item.weight,
+    length: item.length,
+    width: item.width,
+    height: item.height,
     iconType: "default",
   };
 };

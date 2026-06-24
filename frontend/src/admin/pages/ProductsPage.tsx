@@ -348,17 +348,23 @@ export function ProductsPage() {
     const price = Number(formData.get("price"));
     const stock = Number(formData.get("stock"));
     const status = formData.get("status") as AdminProductRow["status"];
+    
+    // Shipping fields
+    const weight = Number(formData.get("weight")) || 1000;
+    const length = Number(formData.get("length")) || 30;
+    const width = Number(formData.get("width")) || 30;
+    const height = Number(formData.get("height")) || 30;
 
     setSubmitting(true);
     try {
       if (editProduct) {
         await updateAdminProduct(
           editProduct.id,
-          buildUpdatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl })
+          buildUpdatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl, weight, length, width, height })
         );
       } else {
         await createAdminProduct(
-          buildCreatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl })
+          buildCreatePayloadFromForm({ name, description, sku, categoryId, price, stock, status, mainImageUrl: imageUrl, weight, length, width, height })
         );
       }
       setSlideoverOpen(false);
@@ -979,58 +985,82 @@ export function ProductsPage() {
         onSubmit={handleSubmit}
         submitting={submitting}
         submitLabel={editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
-        size="lg"
+        size="xl"
       >
-          <FormField label="Tên sản phẩm" required>
-            <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
-          </FormField>
+          <div className="admin-form-row">
+            <FormField label="Tên sản phẩm" required>
+              <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
+            </FormField>
+            <FormField label="Mã SKU">
+              <FormInput name="sku" placeholder="VD: SKU-12345" defaultValue={editProduct?.sku} />
+            </FormField>
+          </div>
+
           <FormField label="Mô tả sản phẩm">
             <FormTextarea name="description" placeholder="Nhập mô tả..." defaultValue={editProduct?.description} />
           </FormField>
+
           <FormField label="Ảnh sản phẩm">
             <div className="admin-image-upload-zone">
               {imageUrl ? (
                 <div className="admin-image-preview">
                   <img src={imageUrl} alt="Preview" />
-                  <button type="button" onClick={() => setImageUrl("")} className="admin-btn admin-btn-danger admin-image-remove-btn">
-                    Xóa
-                  </button>
+                  <button type="button" className="admin-image-remove" onClick={() => setImageUrl("")}>X</button>
                 </div>
               ) : (
                 <label className="admin-image-upload-label">
-                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} style={{ display: "none" }} />
-                  {uploadingImage ? "Đang tải lên..." : "Tải ảnh lên"}
+                  <input type="file" accept="image/*" className="admin-image-file-input" onChange={handleImageUpload} disabled={uploadingImage} />
+                  <span>{uploadingImage ? "Đang tải lên..." : "Tải ảnh lên"}</span>
                 </label>
               )}
             </div>
           </FormField>
-          <FormField label="Mã SKU">
-            <FormInput name="sku" placeholder="Ví dụ: SONY-WH1000XM5" defaultValue={editProduct?.sku} />
-          </FormField>
-          <FormField label="Danh mục" required>
-            <FormSelect name="categoryId" defaultValue={editProduct?.categoryId} required>
-              <option value="">-- Chọn danh mục --</option>
-              {categoryOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </FormSelect>
-          </FormField>
-          <div className="admin-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "flex-start" }}>
-            <FormField label="Giá bán (₫)" required>
-              <FormInput name="price" type="number" placeholder="0" defaultValue={editProduct?.price} required />
+
+          <div className="admin-form-row">
+            <FormField label="Danh mục" required>
+              <FormSelect name="categoryId" defaultValue={editProduct?.categoryId} required>
+                <option value="">-- Chọn danh mục --</option>
+                {categoryOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </FormSelect>
             </FormField>
-            <FormField label="Tồn kho" required>
-              <FormInput name="stock" type="number" placeholder="0" defaultValue={editProduct?.stock} required />
+            <FormField label="Trạng thái" required>
+              <FormSelect name="status" defaultValue={editProduct?.status || "active"}>
+                <option value="active">Đang kinh doanh</option>
+                <option value="inactive">Ẩn</option>
+              </FormSelect>
             </FormField>
           </div>
-          <FormField label="Trạng thái">
-            <FormSelect name="status" defaultValue={editProduct?.status ?? "active"}>
-              <option value="active">Đang bán</option>
-              <option value="inactive">Ẩn</option>
-            </FormSelect>
-          </FormField>
+
+          <div className="admin-form-row">
+            <FormField label="Giá (VNĐ)" required>
+              <FormInput type="number" name="price" min="0" step="1000" defaultValue={editProduct?.price} required />
+            </FormField>
+            <FormField label="Tồn kho" required>
+              <FormInput type="number" name="stock" min="0" defaultValue={editProduct?.stock ?? 10} required />
+            </FormField>
+          </div>
+
+          <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', marginTop: '12px' }}>
+            <h4 style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Thông số Vận chuyển (GHN)</h4>
+            <div className="admin-form-row">
+              <FormField label="Khối lượng (gram)" required>
+                <FormInput type="number" name="weight" min="1" defaultValue={editProduct?.weight || 1000} required />
+              </FormField>
+              <FormField label="Chiều dài (cm)" required>
+                <FormInput type="number" name="length" min="1" defaultValue={editProduct?.length || 30} required />
+              </FormField>
+            </div>
+            <div className="admin-form-row" style={{ marginTop: '16px' }}>
+              <FormField label="Chiều rộng (cm)" required>
+                <FormInput type="number" name="width" min="1" defaultValue={editProduct?.width || 30} required />
+              </FormField>
+              <FormField label="Chiều cao (cm)" required>
+                <FormInput type="number" name="height" min="1" defaultValue={editProduct?.height || 30} required />
+              </FormField>
+            </div>
+          </div>
       </CrudModal>
       )}
     </div>
