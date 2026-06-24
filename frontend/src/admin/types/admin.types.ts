@@ -36,12 +36,13 @@ export interface StatCard {
   color: "indigo" | "emerald" | "amber" | "rose" | "purple";
 }
 
+// Sửa lại interface OrderItem để đồng bộ với Backend Enum
 export interface OrderItem {
   id: string;
   customer: string;
   product: string;
   amount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: "PENDING" | "CONFIRMED" | "READY" | "DELIVERING" | "COMPLETED" | "CANCELLED" | "DELIVERY_FAILED" | "RETURNED";
   date: string;
   avatar?: string;
 }
@@ -87,8 +88,8 @@ export interface ActivityItem {
   time: string;
   type: "order" | "product" | "user" | "system";
 }
-
-export const STAFF_ROLES = ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"] as const;
+// Bổ sung SHIPPER vào danh sách Role
+export const STAFF_ROLES = ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF", "SHIPPER"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
 const ADMIN_PERMISSIONS = [
@@ -109,13 +110,23 @@ const STAFF_PERMISSIONS = [
   "profile.view", "profile.edit",
 ] as const;
 
+// Thêm bộ quyền giới hạn cho SHIPPER
+const SHIPPER_PERMISSIONS = [
+  "dashboard.limited",
+  "orders.view", "orders.edit", // Shipper chỉ cần xem và cập nhật đơn hàng
+  "profile.view", "profile.edit",
+] as const;
+
 // Permission matrix per real DB role
 export const PERMISSIONS: Record<string, readonly string[]> = {
   ADMIN: ADMIN_PERMISSIONS,
   SALES: STAFF_PERMISSIONS,
   STORE_STAFF: STAFF_PERMISSIONS,
   WAREHOUSE_STAFF: STAFF_PERMISSIONS,
+  SHIPPER: SHIPPER_PERMISSIONS,
 };
+
+
 
 export function hasPermission(role: AdminRole, permission: string): boolean {
   const normalized = role?.toUpperCase();

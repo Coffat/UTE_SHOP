@@ -13,10 +13,17 @@ export const ORDER_STATUS_GROUP_MAP: Record<string, OrderStatus[]> = {
 export const ALLOWED_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.CONFIRMED]: [OrderStatus.READY, OrderStatus.CANCELLED],
-  [OrderStatus.READY]: [OrderStatus.DELIVERING],
-  [OrderStatus.DELIVERING]: [OrderStatus.COMPLETED],
-  [OrderStatus.COMPLETED]: [],
+  [OrderStatus.READY]: [OrderStatus.DELIVERING, OrderStatus.CANCELLED], 
+  [OrderStatus.DELIVERING]: [OrderStatus.COMPLETED, OrderStatus.DELIVERY_FAILED],
+  
+  // Khách bấm nhận hàng -> COMPLETED. Từ COMPLETED khách bấm Trả hàng -> RETURNED
+  [OrderStatus.COMPLETED]: [OrderStatus.RETURNED], 
+  
+  // Shipper đi giao lại lần 2, hoặc kho nhập lại hàng 
+  [OrderStatus.DELIVERY_FAILED]: [OrderStatus.DELIVERING, OrderStatus.RETURNED],
+  
   [OrderStatus.CANCELLED]: [],
+  [OrderStatus.RETURNED]: [], 
 };
 
 export const isValidOrderStatusTransition = (
