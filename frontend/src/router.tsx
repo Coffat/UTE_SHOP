@@ -50,6 +50,7 @@ import { StaffChatPage } from "./admin/pages/StaffChatPage";
 import { WarehouseDashboardPage } from "./admin/pages/warehouse/WarehouseDashboardPage";
 import { WarehouseStockPage } from "./admin/pages/warehouse/WarehouseStockPage";
 import { WarehouseImportPage } from "./admin/pages/warehouse/WarehouseImportPage";
+import { WarehouseRecipesPage } from "./admin/pages/warehouse/WarehouseRecipesPage";
 import { WarehouseTransactionsPage } from "./admin/pages/warehouse/WarehouseTransactionsPage";
 
 // Store imports
@@ -141,6 +142,7 @@ export const router = createBrowserRouter([
           { path: "dashboard", element: <WarehouseDashboardPage /> },
           { path: "stock", element: <WarehouseStockPage /> },
           { path: "import", element: <WarehouseImportPage /> },
+          { path: "recipes", element: <WarehouseRecipesPage /> },
           { path: "transactions", element: <WarehouseTransactionsPage /> },
           { path: "profile", element: <AdminProfilePage /> },
         ],

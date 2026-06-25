@@ -59,7 +59,7 @@ export const validateListOrders = [
     .withMessage(`status phải là: ${Object.values(OrderStatus).join(', ')}`),
   query('statusGroup')
     .optional()
-    .isIn(['pending', 'confirmed', 'ready', 'shipping', 'completed', 'cancelled'])
+    .isIn(['attention', 'pending', 'confirmed', 'ready', 'shipping', 'completed', 'cancelled'])
     .withMessage('statusGroup không hợp lệ'),
   query('orderType')
     .optional()

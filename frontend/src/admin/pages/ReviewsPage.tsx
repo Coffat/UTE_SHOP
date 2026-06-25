@@ -11,6 +11,8 @@ import {
 import {
   fetchStaffReviews,
   moderateStaffReview,
+  replyStaffReview,
+  hideStaffReview
 } from "../services/staffReviews.api";
 
 function StarRating({ rating }: { rating: number }) {
@@ -93,7 +95,6 @@ export function ReviewsPage() {
   }
 
   async function handleReject(review: Review) {
-    if (!isAdmin) return;
     const ok = await confirm({
       title: "Từ chối / Xóa đánh giá",
       message: `Bạn muốn xóa/từ chối đánh giá của khách hàng "${review.customer?.fullName || "Khách hàng"}"? Hành động này sẽ gỡ hoàn toàn đánh giá khỏi sản phẩm.`,
@@ -115,6 +116,31 @@ export function ReviewsPage() {
     }
   }
 
+  async function handleReply(review: Review) {
+    const replyText = window.prompt("Nhập nội dung phản hồi của bạn:", review.replyComment || "");
+    if (replyText === null) return; // User cancelled
+
+    try {
+      // Both ADMIN and SALES can use staff API for reply
+      await replyStaffReview(review._id, replyText);
+      await loadReviews();
+    } catch (err) {
+      console.error("Failed to reply review:", err);
+      setError("Không thể phản hồi đánh giá.");
+    }
+  }
+
+  async function handleToggleHide(review: Review) {
+    try {
+      // Both ADMIN and SALES can use staff API for hide
+      await hideStaffReview(review._id, !review.isHidden);
+      await loadReviews();
+    } catch (err) {
+      console.error("Failed to hide/show review:", err);
+      setError("Không thể thay đổi trạng thái hiển thị của đánh giá.");
+    }
+  }
+
   return (
     <div className="admin-page">
       {ModalEl}
@@ -130,7 +156,7 @@ export function ReviewsPage() {
         <div style={{ marginBottom: "16px", color: "#f87171", fontSize: "13px" }}>{error}</div>
       )}
 
-      <div className="admin-card" style={{ padding: "20px" }}>
+      <div className="admin-card" style={{ padding: "20px", flex: 1 }}>
         {loading ? (
           <p style={{ color: "#94a3b8", textAlign: "center", padding: "32px 0" }}>Đang tải...</p>
         ) : reviews.length === 0 ? (
@@ -165,24 +191,44 @@ export function ReviewsPage() {
                       <StarRating rating={review.rating} />
                     </td>
                     <td style={{ maxWidth: "300px", wordBreak: "break-word" }}>
-                      {review.comment || <span style={{ color: "#64748b", fontStyle: "italic" }}>Không ghi chú</span>}
+                      <div>{review.comment || <span style={{ color: "#64748b", fontStyle: "italic" }}>Không ghi chú</span>}</div>
+                      {review.replyComment && (
+                        <div style={{ marginTop: "8px", padding: "8px", background: "rgba(16, 185, 129, 0.1)", borderRadius: "4px", fontSize: "13px", color: "#a7f3d0", borderLeft: "2px solid #10b981" }}>
+                          <strong>Phản hồi:</strong> {review.replyComment}
+                        </div>
+                      )}
                     </td>
                     <td>
-                      <span
-                        className="admin-category-tag"
-                        style={{
-                          background: review.isVerified
-                            ? "rgba(16, 185, 129, 0.12)"
-                            : "rgba(245, 158, 11, 0.12)",
-                          color: review.isVerified ? "#10b981" : "#f59e0b",
-                        }}
-                      >
-                        {review.isVerified ? "Đã duyệt" : "Chờ duyệt"}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span
+                          className="admin-category-tag"
+                          style={{
+                            background: review.isVerified
+                              ? "rgba(16, 185, 129, 0.12)"
+                              : "rgba(245, 158, 11, 0.12)",
+                            color: review.isVerified ? "#10b981" : "#f59e0b",
+                            width: "fit-content"
+                          }}
+                        >
+                          {review.isVerified ? "Đã duyệt" : "Chờ duyệt"}
+                        </span>
+                        {review.isHidden && (
+                          <span
+                            className="admin-category-tag"
+                            style={{
+                              background: "rgba(100, 116, 139, 0.2)",
+                              color: "#94a3b8",
+                              width: "fit-content"
+                            }}
+                          >
+                            Đã ẩn
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>{new Date(review.createdAt).toLocaleDateString("vi-VN")}</td>
                     <td>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
                         {!review.isVerified && (
                           <button
                             className="admin-btn admin-btn-ghost"
@@ -192,15 +238,27 @@ export function ReviewsPage() {
                             Duyệt
                           </button>
                         )}
-                        {isAdmin && (
-                          <button
-                            className="admin-btn admin-btn-ghost"
-                            onClick={() => handleReject(review)}
-                            style={{ color: "#f87171" }}
-                          >
-                            Xóa
-                          </button>
-                        )}
+                        <button
+                          className="admin-btn admin-btn-ghost"
+                          onClick={() => handleReply(review)}
+                          style={{ color: "#60a5fa" }}
+                        >
+                          Phản hồi
+                        </button>
+                        <button
+                          className="admin-btn admin-btn-ghost"
+                          onClick={() => handleToggleHide(review)}
+                          style={{ color: "#fbbf24" }}
+                        >
+                          {review.isHidden ? "Hiện" : "Ẩn"}
+                        </button>
+                        <button
+                          className="admin-btn admin-btn-ghost"
+                          onClick={() => handleReject(review)}
+                          style={{ color: "#f87171" }}
+                        >
+                          Xóa
+                        </button>
                       </div>
                     </td>
                   </tr>

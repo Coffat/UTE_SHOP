@@ -116,3 +116,12 @@ export const deleteBlogPost = async (id: string): Promise<boolean> => {
 export const getBlogPostById = async (id: string): Promise<IBlogPost | null> => {
   return BlogPost.findById(id).populate('author', 'fullName email role');
 };
+
+export const getBlogFilters = async () => {
+  const categories = await BlogPost.distinct('category');
+  const tags = await BlogPost.distinct('tags');
+  return {
+    categories: categories.filter(Boolean),
+    tags: tags.filter(Boolean),
+  };
+};

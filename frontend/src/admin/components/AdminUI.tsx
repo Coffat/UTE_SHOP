@@ -115,7 +115,7 @@ interface CrudModalProps {
   submitLabel?: string;
   cancelLabel?: string;
   children: ReactNode;
-  size?: "md" | "lg" | "xl";
+  size?: "md" | "lg" | "xl" | "xxl";
 }
 
 export function CrudModal({
@@ -136,7 +136,7 @@ export function CrudModal({
   const resolvedSubmitLabel =
     submitLabel ?? (mode === "create" ? "Tạo mới" : "Lưu thay đổi");
 
-  const sizeClass = size === "xl" ? "admin-crud-modal--xl" : size === "lg" ? "admin-crud-modal--lg" : "";
+  const sizeClass = size === "xxl" ? "admin-crud-modal--xxl" : size === "xl" ? "admin-crud-modal--xl" : size === "lg" ? "admin-crud-modal--lg" : "";
 
   return (
     <div

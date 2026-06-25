@@ -71,7 +71,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ status: 1 });
 userSchema.index({ createdAt: -1 });
-userSchema.index({ email: 1 });
+
 userSchema.index({ phone: 1 });
 userSchema.index({ fullName: 1 });
 userSchema.index({ role: 1, isActive: 1, deletedAt: 1 });

@@ -37,6 +37,7 @@ export function OrderFiltersPanel({
             onChange={(e) => onStatusChange(e.target.value as "all" | UiOrderStatus)}
           >
             <option value="all">Tất cả trạng thái</option>
+            <option value="attention">Cần chú ý</option>
             <option value="pending">Chờ xử lý</option>
             <option value="confirmed">Đã xác nhận</option>
             <option value="ready">Chờ lấy hàng</option>

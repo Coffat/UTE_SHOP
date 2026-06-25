@@ -56,4 +56,26 @@ router.patch(
   staffReviewsController.moderateReview
 );
 
+// PATCH /staff/reviews/:id/reply
+router.patch(
+  '/:id/reply',
+  authenticate,
+  authorize(...STAFF_ROLES),
+  validateId,
+  body('replyComment').notEmpty().withMessage('Nội dung phản hồi không được để trống'),
+  handleValidationErrors,
+  staffReviewsController.handleReply
+);
+
+// PATCH /staff/reviews/:id/hide
+router.patch(
+  '/:id/hide',
+  authenticate,
+  authorize(...STAFF_ROLES),
+  validateId,
+  body('isHidden').isBoolean().withMessage('isHidden phải là boolean'),
+  handleValidationErrors,
+  staffReviewsController.handleHide
+);
+
 export default router;

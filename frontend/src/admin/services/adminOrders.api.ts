@@ -37,6 +37,21 @@ export interface OrdersSummary {
   cancelled: number;
   attentionCount: number;
   attentionOrders: AttentionOrder[];
+  trends?: {
+    total: number;
+    pending: number;
+    shipping: number;
+    completed: number;
+  };
+  currentMonthStr?: string;
+  lastMonthStr?: string;
+  today?: {
+    total: number;
+    pending: number;
+    shipping: number;
+    completed: number;
+    cancelled: number;
+  };
 }
 
 export interface OrdersListResult {

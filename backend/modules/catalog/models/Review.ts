@@ -8,6 +8,10 @@ export interface IReview extends Document {
   comment: string;
   imageUrls: string[];
   isVerified: boolean;
+  isHidden: boolean;
+  replyComment?: string | null;
+  repliedAt?: Date | null;
+  repliedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +25,10 @@ const reviewSchema = new Schema<IReview>(
     comment: { type: String, default: '' },
     imageUrls: [{ type: String }],
     isVerified: { type: Boolean, default: false },
+    isHidden: { type: Boolean, default: false },
+    replyComment: { type: String, default: null },
+    repliedAt: { type: Date, default: null },
+    repliedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true }
 );

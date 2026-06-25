@@ -145,12 +145,15 @@ export function OrdersPage() {
         setTotalCount(result.meta.total);
         if (result.meta.summary) setSummary(result.meta.summary);
       } else {
-        const result = await fetchStaffOrders(params);
+        const result = await fetchStaffOrders({
+          ...params,
+          includeSummary: true,
+        });
         if (signal?.aborted) return;
         setOrders(result.items);
         setTotalPages(result.meta.pages);
         setTotalCount(result.meta.total);
-        setSummary(null);
+        if (result.meta.summary) setSummary(result.meta.summary);
       }
     } catch (err) {
       if (signal?.aborted) return;
@@ -236,6 +239,12 @@ export function OrdersPage() {
 
   const pendingGroupCount = stats.pending + (stats.confirmed || 0) + (stats.ready || 0);
 
+  const todayStats = stats.today ?? {
+    total: 0, pending: 0, shipping: 0, completed: 0, cancelled: 0
+  };
+  const todayPct = (n: number) =>
+    todayStats.total > 0 ? ((n / todayStats.total) * 100).toFixed(1) : "0.0";
+
   const attentionOrders = stats.attentionOrders ?? [];
   const attentionCount = stats.attentionCount ?? 0;
   const pct = (n: number) =>
@@ -249,6 +258,38 @@ export function OrdersPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const renderTrend = (trendValue?: number, lastMonthStr?: string) => {
+    if (trendValue === undefined || lastMonthStr === undefined) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
+          <span style={{ color: "#64748b" }}>Đang tải...</span>
+        </div>
+      );
+    }
+
+    const isPositive = trendValue >= 0;
+    const color = isPositive ? "#10b981" : "#f43f5e";
+    const Icon = isPositive ? (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="18 15 12 9 6 15" />
+      </svg>
+    ) : (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    );
+
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
+        <span style={{ color, fontWeight: "600", display: "flex", alignItems: "center", gap: "2px" }}>
+          {Icon}
+          {Math.abs(trendValue).toFixed(1)}%
+        </span>
+        <span style={{ color: "#64748b" }}>so với {lastMonthStr}</span>
+      </div>
+    );
+  };
 
   const attentionLabelColor = (label: string) =>
     label === "Đã hủy" ? "#f43f5e" : "#f59e0b";
@@ -341,15 +382,7 @@ export function OrdersPage() {
           </div>
 
           {/* Bottom row: Trend metrics */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
-            <span style={{ color: "#10b981", fontWeight: "600", display: "flex", alignItems: "center", gap: "2px" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              12.6%
-            </span>
-            <span style={{ color: "#64748b" }}>so với 12/05 - 18/05</span>
-          </div>
+          {renderTrend(stats.trends?.total, stats.lastMonthStr)}
 
         </div>
 
@@ -405,15 +438,7 @@ export function OrdersPage() {
           </div>
 
           {/* Bottom row: Trend metrics */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
-            <span style={{ color: "#f59e0b", fontWeight: "600", display: "flex", alignItems: "center", gap: "2px" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-              8.3%
-            </span>
-            <span style={{ color: "#64748b" }}>so với 12/05 - 18/05</span>
-          </div>
+          {renderTrend(stats.trends?.pending, stats.lastMonthStr)}
 
         </div>
 
@@ -471,15 +496,7 @@ export function OrdersPage() {
           </div>
 
           {/* Bottom row: Trend metrics */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
-            <span style={{ color: "#10b981", fontWeight: "600", display: "flex", alignItems: "center", gap: "2px" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              15.7%
-            </span>
-            <span style={{ color: "#64748b" }}>so với 12/05 - 18/05</span>
-          </div>
+          {renderTrend(stats.trends?.shipping, stats.lastMonthStr)}
 
         </div>
 
@@ -535,21 +552,13 @@ export function OrdersPage() {
           </div>
 
           {/* Bottom row: Trend metrics */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", marginTop: "auto" }}>
-            <span style={{ color: "#10b981", fontWeight: "600", display: "flex", alignItems: "center", gap: "2px" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              9.8%
-            </span>
-            <span style={{ color: "#64748b" }}>so với 12/05 - 18/05</span>
-          </div>
+          {renderTrend(stats.trends?.completed, stats.lastMonthStr)}
 
         </div>
       </div>
 
       {/* Main Grid: List + Widgets */}
-      <div className="admin-grid-2col" style={{ gridTemplateColumns: "3fr 1.3fr" }}>
+      <div className="admin-grid-2col" style={{ gridTemplateColumns: "3fr 1.3fr", flex: 1 }}>
         {/* Left Column: Orders List Card */}
         <div className="admin-card" style={{ padding: 0, display: "flex", flexDirection: "column" }}>
           {/* List Header */}
@@ -848,11 +857,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Chờ xử lý</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    {pendingGroupCount} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(pendingGroupCount)}%)</span>
+                    {todayStats.pending} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({todayPct(todayStats.pending)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct(pendingGroupCount)}%`, background: "#f59e0b", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${todayPct(todayStats.pending)}%`, background: "#f59e0b", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -864,11 +873,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Đang giao</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    {stats.shipping} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.shipping)}%)</span>
+                    {todayStats.shipping} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({todayPct(todayStats.shipping)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct(stats.shipping)}%`, background: "#3b82f6", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${todayPct(todayStats.shipping)}%`, background: "#3b82f6", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -880,11 +889,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Hoàn tất</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    {stats.completed} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.completed)}%)</span>
+                    {todayStats.completed} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({todayPct(todayStats.completed)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct(stats.completed)}%`, background: "#10b981", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${todayPct(todayStats.completed)}%`, background: "#10b981", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -896,11 +905,11 @@ export function OrdersPage() {
                     <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 500 }}>Đã hủy</span>
                   </div>
                   <span style={{ fontSize: "13px", color: "#e2e8f0", fontWeight: 600 }}>
-                    {stats.cancelled} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({pct(stats.cancelled)}%)</span>
+                    {todayStats.cancelled} <span style={{ color: "#64748b", fontSize: "12px", fontWeight: 400 }}>({todayPct(todayStats.cancelled)}%)</span>
                   </span>
                 </div>
                 <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct(stats.cancelled)}%`, background: "#f43f5e", borderRadius: "3px" }} />
+                  <div style={{ height: "100%", width: `${todayPct(todayStats.cancelled)}%`, background: "#f43f5e", borderRadius: "3px" }} />
                 </div>
               </div>
 
@@ -914,7 +923,7 @@ export function OrdersPage() {
                 alignItems: "center"
               }}>
                 <span style={{ fontSize: "13px", color: "#64748b" }}>Tổng cộng</span>
-                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{stats.total.toLocaleString("vi-VN")} đơn</span>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{todayStats.total.toLocaleString("vi-VN")} đơn</span>
               </div>
             </div>
           </div>
@@ -923,7 +932,12 @@ export function OrdersPage() {
           <div className="admin-card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Đơn cần chú ý</h4>
-              <a href={`${basePath}/orders?statusGroup=pending`} style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none", fontWeight: 500 }}>Xem tất cả</a>
+              <span 
+                onClick={() => { setStatusFilter("attention"); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                style={{ fontSize: "13px", color: "#6366f1", cursor: "pointer", fontWeight: 500 }}
+              >
+                Xem tất cả
+              </span>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -933,6 +947,7 @@ export function OrdersPage() {
                 attentionOrders.map((order) => (
                   <div
                     key={order.id}
+                    onClick={() => setDetailModalOrderId(order.id)}
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -941,7 +956,11 @@ export function OrdersPage() {
                       borderRadius: "8px",
                       padding: "12px 14px",
                       gap: "6px",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -25,6 +25,14 @@ router.get(
   staffBlogsController.listBlogs
 );
 
+// GET /staff/blogs/filters
+router.get(
+  '/filters',
+  authenticate,
+  authorize(...STAFF_ROLES),
+  staffBlogsController.getBlogFilters
+);
+
 // GET /staff/blogs/:id
 router.get(
   '/:id',

@@ -8,7 +8,8 @@ export interface IVoucher extends Document {
   discountValue: mongoose.Types.Decimal128;
   maxDiscountAmount?: mongoose.Types.Decimal128 | null;
   minOrderAmount?: mongoose.Types.Decimal128;
-  validUntil: Date;
+  startDate: Date;
+  endDate: Date;
   usageLimit?: number | null;
   usedCount: number;
   isActive: boolean;
@@ -26,7 +27,8 @@ const voucherSchema = new Schema<IVoucher>(
     discountValue: { type: Schema.Types.Decimal128, required: true },
     maxDiscountAmount: { type: Schema.Types.Decimal128, default: null },
     minOrderAmount: { type: Schema.Types.Decimal128, default: 0 },
-    validUntil: { type: Date, required: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
     usageLimit: { type: Number, default: null }, // null = vô hạn
     usedCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },

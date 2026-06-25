@@ -15,10 +15,17 @@ interface Voucher {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  campaign?: { _id: string; name: string };
+}
+
+interface Campaign {
+  _id: string;
+  name: string;
 }
 
 export const VoucherTab: React.FC = () => {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -31,11 +38,27 @@ export const VoucherTab: React.FC = () => {
     minOrderAmount: '',
     startDate: '',
     endDate: '',
+    campaign: '',
   });
 
   useEffect(() => {
     fetchVouchers();
+    fetchCampaigns();
   }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/campaigns', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCampaigns(data.data.filter((c: any) => c.isActive));
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+    }
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -58,13 +81,14 @@ export const VoucherTab: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = {
+      const payload: any = {
         ...formData,
         discountValue: Number(formData.discountValue),
         maxDiscountAmount: formData.maxDiscountAmount ? Number(formData.maxDiscountAmount) : undefined,
         usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined,
         minOrderAmount: Number(formData.minOrderAmount),
       };
+      if (!payload.campaign) delete payload.campaign;
 
       const res = await fetch('/api/v1/vouchers', {
         method: 'POST',
@@ -81,7 +105,7 @@ export const VoucherTab: React.FC = () => {
         fetchVouchers();
         setFormData({
           code: '', discountType: 'FIXED_AMOUNT', discountValue: '', maxDiscountAmount: '',
-          usageLimit: '', minOrderAmount: '', startDate: '', endDate: ''
+          usageLimit: '', minOrderAmount: '', startDate: '', endDate: '', campaign: ''
         });
       } else {
         alert(data.message || 'Lỗi tạo voucher');
@@ -127,6 +151,7 @@ export const VoucherTab: React.FC = () => {
           <thead>
             <tr>
               <th>Mã</th>
+              <th>Chiến dịch</th>
               <th>Loại giảm</th>
               <th>Giá trị</th>
               <th>Đã dùng / Giới hạn</th>
@@ -144,6 +169,7 @@ export const VoucherTab: React.FC = () => {
               vouchers.map((v) => (
                 <tr key={v._id} className="admin-table-row">
                   <td style={{ fontWeight: 600, color: '#6366f1', fontFamily: 'var(--adm-mono)' }}>{v.code}</td>
+                  <td style={{ color: '#94a3b8', fontSize: '13px' }}>{v.campaign?.name || '-'}</td>
                   <td>{v.discountType === 'PERCENTAGE' ? 'Phần trăm (%)' : 'Số tiền cố định'}</td>
                   <td style={{ fontWeight: 500, color: '#fff' }}>
                     {v.discountType === 'PERCENTAGE' 
@@ -265,6 +291,32 @@ export const VoucherTab: React.FC = () => {
                 placeholder="Trống = Không giới hạn" 
               />
             </FormField>
+          </div>
+
+          <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <FormField label="Chiến dịch">
+              <FormSelect 
+                value={formData.campaign} 
+                onChange={e => {
+                  const campId = e.target.value;
+                  const selectedCamp = campaigns.find(c => c._id === campId);
+                  setFormData({
+                    ...formData, 
+                    campaign: campId,
+                    ...(selectedCamp ? {
+                      startDate: selectedCamp.startDate,
+                      endDate: selectedCamp.endDate
+                    } : {})
+                  });
+                }}
+              >
+                <option value="">Không tham gia chiến dịch</option>
+                {campaigns.map(c => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </FormSelect>
+            </FormField>
+            <div />
           </div>
 
           <div className="admin-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>

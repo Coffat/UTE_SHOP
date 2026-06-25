@@ -264,10 +264,10 @@ export function StaffChatPage() {
         display: "grid",
         gridTemplateColumns: "320px 1fr 280px",
         gap: 16,
-        minHeight: "calc(100vh - 180px)",
+        height: "calc(100vh - 120px)",
       }}
     >
-      <section className="admin-card" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+      <section className="admin-card" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
         <h3 style={{ color: "#fff", margin: 0, fontSize: 16 }}>Hội thoại</h3>
         <input
           value={search}
@@ -301,7 +301,7 @@ export function StaffChatPage() {
             </button>
           ))}
         </div>
-        <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
           {conversationError ? (
             <p style={{ color: "#f43f5e", fontSize: 13 }}>{conversationError}</p>
           ) : loadingConversations ? (
@@ -346,7 +346,7 @@ export function StaffChatPage() {
         </div>
       </section>
 
-      <section className="admin-card" style={{ padding: 0, display: "flex", flexDirection: "column" }}>
+      <section className="admin-card" style={{ padding: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div
           style={{
             padding: "12px 14px",
@@ -509,7 +509,7 @@ export function StaffChatPage() {
         </div>
       </section>
 
-      <section className="admin-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <section className="admin-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
         <h3 style={{ color: "#fff", margin: 0, fontSize: 15 }}>Thông tin khách hàng</h3>
         {!activeConversation ? (
           <p style={{ color: "#94a3b8", fontSize: 13 }}>Chưa chọn hội thoại.</p>

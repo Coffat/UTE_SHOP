@@ -17,10 +17,23 @@ export const validateAndCalculateVoucher = async (
   orderTotal: number,
   customerId?: string
 ): Promise<{ discountAmount: number; voucher: IVoucher }> => {
-  const voucher = await Voucher.findOne({ code: code.toUpperCase(), isActive: true });
+  const voucher = await Voucher.findOne({ code: code.toUpperCase(), isActive: true }).populate('campaign');
 
-  if (!voucher) throw new Error('Mã voucher không tồn tại hoặc đã hết hạn');
-  if (voucher.validUntil < new Date()) throw new Error('Mã voucher đã hết hạn');
+  if (!voucher) throw new Error('Mã voucher không tồn tại hoặc đã bị khóa');
+  
+  if (voucher.campaign) {
+    const campaign = voucher.campaign as any;
+    if (!campaign.isActive) throw new Error('Chiến dịch chứa mã voucher này đang tạm dừng');
+    
+    const now = new Date();
+    if (now < new Date(campaign.startDate)) throw new Error('Chiến dịch chứa mã voucher này chưa bắt đầu');
+    if (now > new Date(campaign.endDate)) throw new Error('Chiến dịch chứa mã voucher này đã kết thúc');
+  }
+
+  const now = new Date();
+  if (voucher.startDate > now) throw new Error('Mã voucher chưa đến thời gian sử dụng');
+  if (voucher.endDate < now) throw new Error('Mã voucher đã hết hạn');
+  
   if (voucher.usageLimit !== null && voucher.usageLimit !== undefined && voucher.usedCount >= voucher.usageLimit) {
     throw new Error('Mã voucher đã hết lượt sử dụng');
   }
@@ -55,7 +68,23 @@ export const markVoucherUsed = async (voucherId: string, session: ClientSession 
   );
 };
 
+import Campaign from '../models/Campaign.js';
+import { AppError } from '../../../shared/utils/AppError.js';
+
 export const createVoucher = async (data: Partial<IVoucher>): Promise<IVoucher> => {
+  if (data.campaign) {
+    const campaign = await Campaign.findById(data.campaign);
+    if (!campaign) throw new AppError('Chiến dịch không tồn tại', 400);
+    
+    const vStart = new Date(data.startDate!);
+    const vEnd = new Date(data.endDate!);
+    const cStart = new Date(campaign.startDate);
+    const cEnd = new Date(campaign.endDate);
+    
+    if (vStart < cStart || vEnd > cEnd) {
+      throw new AppError(`Thời gian của Voucher phải nằm trong khoảng thời gian diễn ra Chiến dịch (từ ${cStart.toLocaleDateString('vi-VN')} đến ${cEnd.toLocaleDateString('vi-VN')})`, 400);
+    }
+  }
   return Voucher.create(data);
 };
 
@@ -74,7 +103,8 @@ export type SerializedCustomerVoucher = {
   discountValue: number;
   maxDiscountAmount: number | null;
   minOrderAmount: number;
-  validUntil: string;
+  startDate: string;
+  endDate: string;
   usageLimit: number | null;
   usedCount: number;
 };
@@ -87,7 +117,8 @@ function serializeCustomerVoucher(voucher: IVoucher): SerializedCustomerVoucher 
     discountValue: Number(voucher.discountValue),
     maxDiscountAmount: voucher.maxDiscountAmount != null ? Number(voucher.maxDiscountAmount) : null,
     minOrderAmount: Number(voucher.minOrderAmount ?? 0),
-    validUntil: voucher.validUntil.toISOString(),
+    startDate: voucher.startDate.toISOString(),
+    endDate: voucher.endDate.toISOString(),
     usageLimit: voucher.usageLimit ?? null,
     usedCount: voucher.usedCount,
   };
@@ -102,7 +133,8 @@ export const getAvailableVouchersForCustomer = async (
   const now = new Date();
   const vouchers = await Voucher.find({
     isActive: true,
-    validUntil: { $gte: now },
+    startDate: { $lte: now },
+    endDate: { $gte: now },
     $or: [{ customer: null }, { customer: customerId }],
     $expr: {
       $or: [
@@ -110,7 +142,18 @@ export const getAvailableVouchersForCustomer = async (
         { $lt: ['$usedCount', '$usageLimit'] },
       ],
     },
-  }).sort({ validUntil: 1 });
+  }).populate('campaign').sort({ endDate: 1 });
 
-  return vouchers.map(serializeCustomerVoucher);
+  // Filter out vouchers belonging to inactive/expired campaigns
+  const validVouchers = vouchers.filter((v) => {
+    if (v.campaign) {
+      const campaign = v.campaign as any;
+      if (!campaign.isActive) return false;
+      if (now < new Date(campaign.startDate)) return false;
+      if (now > new Date(campaign.endDate)) return false;
+    }
+    return true;
+  });
+
+  return validVouchers.map(serializeCustomerVoucher);
 };

@@ -16,6 +16,10 @@ export interface Review {
   comment: string;
   imageUrls: string[];
   isVerified: boolean;
+  isHidden: boolean;
+  replyComment?: string | null;
+  repliedAt?: string | null;
+  repliedBy?: string | null;
   createdAt: string;
   updatedAt: string;
 }

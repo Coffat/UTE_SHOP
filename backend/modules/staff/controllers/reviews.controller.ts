@@ -29,11 +29,8 @@ export const getReview = asyncHandler(async (req: Request, res: Response) => {
 export const moderateReview = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { status, note } = req.body;
-  const userRole = req.user!.role;
-
-  if (status === 'REJECTED' && userRole !== 'ADMIN') {
-    return sendError(res, 403, 'Chỉ Admin mới có quyền từ chối (Reject) đánh giá.');
-  }
+  // const userRole = req.user!.role; 
+  // SALES is now allowed to reject.
 
   const beforeReview = await reviewService.getReviewById(id);
   if (!beforeReview) {
@@ -64,4 +61,33 @@ export const moderateReview = asyncHandler(async (req: Request, res: Response) =
     status === 'APPROVED' ? 'Đã duyệt đánh giá thành công' : 'Đã xóa/từ chối đánh giá thành công',
     updatedReview
   );
+});
+
+/** PATCH /staff/reviews/:id/reply */
+export const handleReply = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { replyComment } = req.body;
+  const userId = req.user!._id.toString();
+
+  const review = await reviewService.replyReview(id, replyComment, userId);
+  if (!review) {
+    return sendError(res, 404, 'Không tìm thấy đánh giá');
+  }
+
+  await writeAuditLog(req, 'REPLY_REVIEW', 'Review', id, {}, review.toObject());
+  return sendSuccess(res, 200, 'Đã phản hồi đánh giá', review);
+});
+
+/** PATCH /staff/reviews/:id/hide */
+export const handleHide = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { isHidden } = req.body;
+
+  const review = await reviewService.toggleHideReview(id, isHidden);
+  if (!review) {
+    return sendError(res, 404, 'Không tìm thấy đánh giá');
+  }
+
+  await writeAuditLog(req, 'HIDE_REVIEW', 'Review', id, { isHidden: !isHidden }, review.toObject());
+  return sendSuccess(res, 200, isHidden ? 'Đã ẩn đánh giá' : 'Đã hiện đánh giá', review);
 });

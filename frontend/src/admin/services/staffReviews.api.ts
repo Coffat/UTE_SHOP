@@ -22,3 +22,13 @@ export async function moderateStaffReview(
   });
   return response.data.data as Review;
 }
+
+export async function replyStaffReview(id: string, replyComment: string): Promise<Review> {
+  const response = await api.patch(`/api/v1/staff/reviews/${id}/reply`, { replyComment });
+  return response.data.data as Review;
+}
+
+export async function hideStaffReview(id: string, isHidden: boolean): Promise<Review> {
+  const response = await api.patch(`/api/v1/staff/reviews/${id}/hide`, { isHidden });
+  return response.data.data as Review;
+}

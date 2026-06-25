@@ -45,7 +45,11 @@ export function Login() {
                   
                   if (userRole === "ADMIN") {
                     navigate("/admin", { replace: true });
-                  } else if (["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(userRole || "")) {
+                  } else if (userRole === "WAREHOUSE_STAFF") {
+                    navigate("/warehouse/dashboard", { replace: true });
+                  } else if (userRole === "STORE_STAFF") {
+                    navigate("/store/dashboard", { replace: true });
+                  } else if (userRole === "SALES") {
                     navigate("/staff/orders", { replace: true });
                   } else {
                     const redirectParam = searchParams.get("redirect");

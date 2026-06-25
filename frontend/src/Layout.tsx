@@ -4,6 +4,8 @@ import { Header } from "@/components/layout/Header";
 import { ToastProvider } from "@/components/ui/ToastContext";
 import { CustomerChatWidget } from "@/features/chat/customer/CustomerChatWidget";
 
+import { CampaignPopup } from "@/components/common/CampaignPopup";
+
 export function Layout() {
   return (
     <ToastProvider>
@@ -13,6 +15,7 @@ export function Layout() {
       </main>
       <Footer />
       <CustomerChatWidget />
+      <CampaignPopup />
     </ToastProvider>
   );
 }

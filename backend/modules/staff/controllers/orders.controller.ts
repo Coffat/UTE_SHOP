@@ -36,9 +36,10 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
     paymentStatus: paymentStatus as string,
     page: page ? +page : undefined,
     limit: limit ? +limit : undefined,
+    includeSummary: true,
   });
 
-  const { items, total, page: currentPage, limit: currentLimit, pages } = result;
+  const { items, total, page: currentPage, limit: currentLimit, pages, summary } = result;
 
   // Apply DTO filtering for list view based on role
   const staffItems = items.map((item: any) => {
@@ -56,6 +57,7 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
       page: currentPage,
       limit: currentLimit,
       pages,
+      summary,
     },
   });
 });

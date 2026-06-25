@@ -16,7 +16,10 @@ export interface OrdersListParams {
   paymentStatus?: string;
   dateFrom?: string;
   dateTo?: string;
+  includeSummary?: boolean;
 }
+
+import type { OrdersSummary } from "./adminOrders.api";
 
 export interface OrdersListResult {
   items: AdminOrderRow[];
@@ -25,13 +28,19 @@ export interface OrdersListResult {
     page: number;
     limit: number;
     pages: number;
+    summary?: OrdersSummary;
   };
 }
 
 export async function fetchStaffOrders(
   params: OrdersListParams = {}
 ): Promise<OrdersListResult> {
-  const response = await api.get("/api/v1/staff/orders", { params });
+  const response = await api.get("/api/v1/staff/orders", {
+    params: {
+      ...params,
+      includeSummary: params.includeSummary ? "true" : undefined,
+    },
+  });
 
   const { items, meta } = response.data.data as {
     items: BackendOrderListItem[];

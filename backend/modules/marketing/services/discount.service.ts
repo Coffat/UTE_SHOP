@@ -36,10 +36,23 @@ export const calculateOrderTotal = async ({
 
   // 1. Calculate Voucher Discount
   if (voucherCode) {
-    const voucher = await Voucher.findOne({ code: voucherCode.toUpperCase(), isActive: true });
+    const voucher = await Voucher.findOne({ code: voucherCode.toUpperCase(), isActive: true }).populate('campaign');
     
     if (!voucher) throw new AppError('Mã voucher không tồn tại hoặc đã bị khóa', 400);
-    if (voucher.validUntil < new Date()) throw new AppError('Mã voucher đã hết hạn', 400);
+
+    // Validate Campaign
+    if (voucher.campaign) {
+      const campaign = voucher.campaign as any;
+      if (!campaign.isActive) throw new AppError('Chiến dịch chứa mã voucher này đang tạm dừng', 400);
+      
+      const now = new Date();
+      if (now < new Date(campaign.startDate)) throw new AppError('Chiến dịch chứa mã voucher này chưa bắt đầu', 400);
+      if (now > new Date(campaign.endDate)) throw new AppError('Chiến dịch chứa mã voucher này đã kết thúc', 400);
+    }
+
+    const now = new Date();
+    if (voucher.startDate > now) throw new AppError('Mã voucher chưa đến thời gian sử dụng', 400);
+    if (voucher.endDate < now) throw new AppError('Mã voucher đã hết hạn', 400);
     
     if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) {
       throw new AppError('Mã voucher đã hết lượt sử dụng', 400);

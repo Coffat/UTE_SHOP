@@ -23,6 +23,7 @@ import productRoutes from '../modules/catalog/routes/product.routes.js';
 import categoryRoutes from '../modules/catalog/routes/category.routes.js';
 import reviewRoutes from '../modules/catalog/routes/review.routes.js';
 import storefrontRoutes from '../modules/catalog/routes/storefront.routes.js';
+import recipeRoutes from '../modules/catalog/routes/recipe.routes.js';
 
 // ─── Module: Inventory ──────────────────────────────────────────────
 import stockRoutes from '../modules/inventory/routes/stock.routes.js';
@@ -30,6 +31,7 @@ import warehouseRoutes from '../modules/inventory/routes/warehouse.routes.js';
 
 // ─── Module: Marketing ────────────────────────────────────────────────────────
 import voucherRoutes from '../modules/marketing/routes/voucher.routes.js';
+import campaignRoutes from '../modules/marketing/routes/campaign.routes.js';
 
 // ─── Module: Order ────────────────────────────────────────────────────────────
 import orderRoutes from '../modules/order/routes/order.routes.js';
@@ -78,6 +80,7 @@ router.use('/admin/orders', adminOrderRoutes);
 router.use('/admin/reviews', adminReviewRoutes);
 router.use('/admin/stock', stockRoutes);
 router.use('/admin/vouchers', voucherRoutes);
+router.use('/admin/campaigns', campaignRoutes);
 router.use('/admin/blogs', adminBlogRoutes); // Admin namespace alias (Phase 5)
 
 // Specific staff routes
@@ -99,6 +102,7 @@ router.use('/storefront', storefrontRoutes);
 router.use('/products', productRoutes);
 router.use('/products/:id/reviews', reviewRoutes);
 router.use('/categories', categoryRoutes);
+router.use('/recipes', recipeRoutes);
 
 // Inventory
 router.use('/stock', stockRoutes);
@@ -107,6 +111,7 @@ router.use('/warehouse', warehouseRoutes);
 
 // Marketing
 router.use('/vouchers', voucherRoutes);
+router.use('/campaigns', campaignRoutes);
 
 // Orders
 router.use('/orders', orderRoutes);

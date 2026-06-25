@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { CampaignTab } from '../components/Marketing/CampaignTab';
 import { VoucherTab } from '../components/Marketing/VoucherTab';
 import { PointsTab } from '../components/Marketing/PointsTab';
 
 export const MarketingManagementPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'vouchers' | 'points'>('vouchers');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'vouchers' | 'points'>('campaigns');
 
   return (
     <div className="admin-page">
@@ -16,6 +17,19 @@ export const MarketingManagementPage: React.FC = () => {
 
       <div className="admin-card" style={{ padding: 0 }}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--adm-border)' }}>
+          <button
+            onClick={() => setActiveTab('campaigns')}
+            style={{
+              flex: 1, padding: '16px', textAlign: 'center', fontSize: '14px', fontWeight: 500,
+              background: activeTab === 'campaigns' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'campaigns' ? '#6366f1' : '#94a3b8',
+              borderBottom: activeTab === 'campaigns' ? '2px solid #6366f1' : '2px solid transparent',
+              cursor: 'pointer', outline: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            Quản lý Chiến dịch
+          </button>
           <button
             onClick={() => setActiveTab('vouchers')}
             style={{
@@ -45,6 +59,7 @@ export const MarketingManagementPage: React.FC = () => {
         </div>
 
         <div style={{ padding: '24px' }}>
+          {activeTab === 'campaigns' && <CampaignTab />}
           {activeTab === 'vouchers' && <VoucherTab />}
           {activeTab === 'points' && <PointsTab />}
         </div>

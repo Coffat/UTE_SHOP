@@ -103,9 +103,9 @@ export function WarehouseDashboardPage() {
         {statCards.map((card) => <StatCardWidget key={card.id} card={card} />)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "20px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "20px", alignItems: "stretch", flex: 1, minHeight: 0, paddingBottom: "40px" }}>
         {/* Bảng cảnh báo tồn kho thấp */}
-        <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px" }}>
+        <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>⚠️ Cảnh báo tồn kho</h3>
             <Link to="/warehouse/stock" style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none" }}>Xem tất cả →</Link>
@@ -118,7 +118,7 @@ export function WarehouseDashboardPage() {
               ✅ Tất cả mặt hàng đang ở mức an toàn
             </div>
           ) : (
-            <div className="admin-table-wrap" style={{ borderRadius: "8px", border: "1px solid var(--adm-border)" }}>
+            <div className="admin-table-wrap" style={{ borderRadius: "8px", border: "1px solid var(--adm-border)", flex: 1, overflowY: "auto" }}>
               <table className="admin-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--adm-border)" }}>
@@ -157,7 +157,7 @@ export function WarehouseDashboardPage() {
         </div>
 
         {/* Giao dịch gần nhất */}
-        <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px" }}>
+        <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Giao dịch gần nhất</h3>
             <Link to="/warehouse/transactions" style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none" }}>Xem tất cả →</Link>
@@ -167,7 +167,7 @@ export function WarehouseDashboardPage() {
           ) : !summary?.recentTransactions?.length ? (
             <div style={{ color: "var(--adm-text-dim)", fontSize: "14px", padding: "24px 0", textAlign: "center" }}>Chưa có giao dịch nào</div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, overflowY: "auto" }}>
               {(summary.recentTransactions as any[]).map((t: any) => {
                 const sl = t.stockLevel || {};
                 const itemName = sl?.material?.name || sl?.productVariant?.sizeName || sl?.productVariant?.sku || "—";

@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
   '/image',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'SALES', 'WAREHOUSE_STAFF', 'STORE_STAFF'),
   uploadImageMiddleware.single('image'),
   asyncHandler(async (req, res) => {
     uploadController.uploadImage(req, res);

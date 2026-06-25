@@ -127,12 +127,12 @@ export const getReviewsByProduct = async (
   { page = 1, limit = 10 }: GetReviewsParams = {}
 ): Promise<ReviewListResponse> => {
   const [items, total] = await Promise.all([
-    Review.find({ product: productId, isVerified: true })
+    Review.find({ product: productId, isVerified: true, isHidden: { $ne: true } })
       .populate('customer', 'fullName')
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 }),
-    Review.countDocuments({ product: productId, isVerified: true }),
+    Review.countDocuments({ product: productId, isVerified: true, isHidden: { $ne: true } }),
   ]);
   return { items, total, page, limit };
 };
@@ -172,4 +172,24 @@ export const getReviewById = async (id: string): Promise<IReview | null> => {
   return Review.findById(id)
     .populate('customer', 'fullName email')
     .populate('product', 'name slug');
+};
+
+export const replyReview = async (reviewId: string, replyComment: string, userId: string): Promise<IReview | null> => {
+  return Review.findByIdAndUpdate(
+    reviewId, 
+    { 
+      replyComment, 
+      repliedAt: new Date(), 
+      repliedBy: userId 
+    }, 
+    { new: true }
+  );
+};
+
+export const toggleHideReview = async (reviewId: string, isHidden: boolean): Promise<IReview | null> => {
+  return Review.findByIdAndUpdate(
+    reviewId,
+    { isHidden },
+    { new: true }
+  );
 };

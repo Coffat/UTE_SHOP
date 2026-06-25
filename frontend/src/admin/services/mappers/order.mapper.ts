@@ -14,7 +14,7 @@ export type BackendPaymentStatus =
   | "FAILED"
   | "REFUNDED";
 
-export type UiOrderStatus = "pending" | "confirmed" | "ready" | "shipping" | "completed" | "cancelled";
+export type UiOrderStatus = "attention" | "pending" | "confirmed" | "ready" | "shipping" | "completed" | "cancelled";
 export type UiPaymentDisplay = "paid" | "cod";
 
 export interface BackendOrderListItem {
@@ -57,6 +57,7 @@ const STATUS_TO_UI: Record<BackendOrderStatus, UiOrderStatus> = {
 };
 
 const UI_TO_STATUS_GROUP: Record<UiOrderStatus, string> = {
+  attention: "attention",
   pending: "pending",
   confirmed: "confirmed",
   ready: "ready",

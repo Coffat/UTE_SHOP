@@ -115,6 +115,13 @@ const WAREHOUSE_NAV_ITEMS: NavItem[] = [
     allowedRoles: ["WAREHOUSE_STAFF"],
   },
   {
+    key: "wh-recipes",
+    label: "Công thức (BOM)",
+    icon: "",
+    path: "/warehouse/recipes",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
+  {
     key: "wh-transactions",
     label: "Lịch sử GD",
     icon: "",
@@ -448,6 +455,7 @@ const ICONS: Record<string, React.FC<any>> = {
   "wh-stock":        IconProducts,
   "wh-import":       IconImport,
   "wh-transactions": IconHistory,
+  "wh-recipes":      IconCategories, // Just use Categories icon for now (or another suitable one)
 };
 
 function getIcon(key: string) {

@@ -33,6 +33,21 @@ export interface OrdersSummaryDto {
   cancelled: number;
   attentionCount: number;
   attentionOrders: AttentionOrderDto[];
+  trends?: {
+    total: number;
+    pending: number;
+    shipping: number;
+    completed: number;
+  };
+  currentMonthStr?: string;
+  lastMonthStr?: string;
+  today?: {
+    total: number;
+    pending: number; // Groups: pending, confirmed, ready
+    shipping: number;
+    completed: number;
+    cancelled: number;
+  };
 }
 
 const ATTENTION_DELIVERY_DAYS = 3;
@@ -59,13 +74,9 @@ export class OrderRepository {
       deliveryCutoff.setDate(deliveryCutoff.getDate() - ATTENTION_DELIVERY_DAYS);
       if (updatedAt <= deliveryCutoff) return 'Quá hạn giao';
     }
-    if (
-      status === OrderStatus.PENDING ||
-      status === OrderStatus.CONFIRMED ||
-      status === OrderStatus.READY
-    ) {
-      return 'Chờ xử lý';
-    }
+    if (status === OrderStatus.PENDING) return 'Chờ xử lý';
+    if (status === OrderStatus.CONFIRMED) return 'Đã xác nhận';
+    if (status === OrderStatus.READY) return 'Chờ lấy hàng';
     return 'Cần xem';
   }
 
@@ -108,10 +119,14 @@ export class OrderRepository {
     dateTo,
   }: Omit<GetOrdersParams, 'page' | 'limit' | 'includeSummary' | 'paymentStatus'>): Record<string, unknown> {
     const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
+    const andConditions: Record<string, unknown>[] = [];
+
     if (customerId) filter.customer = customerId;
 
     if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
       filter.status = status;
+    } else if (statusGroup === 'attention') {
+      andConditions.push(this.buildAttentionFilter());
     } else if (statusGroup && ORDER_STATUS_GROUP_MAP[statusGroup]) {
       filter.status = { $in: ORDER_STATUS_GROUP_MAP[statusGroup] };
     }
@@ -135,30 +150,95 @@ export class OrderRepository {
     if (search?.trim()) {
       const term = search.trim();
       const regex = { $regex: term, $options: 'i' };
-      filter.$or = [
-        { orderCode: regex },
-        { 'recipient.fullName': regex },
-        { 'recipient.phone': regex },
-      ];
+      andConditions.push({
+        $or: [
+          { orderCode: regex },
+          { 'recipient.fullName': regex },
+          { 'recipient.phone': regex },
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
     }
 
     return filter;
   }
 
-  async computeOrdersSummary(baseFilter: Record<string, unknown>): Promise<OrdersSummaryDto> {
-    const [total, pending, confirmed, ready, shipping, completed, cancelled, attentionCount, attentionOrders] =
-      await Promise.all([
-        Order.countDocuments(baseFilter),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.pending } }),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.confirmed } }),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.ready } }),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.shipping } }),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.completed } }),
-        Order.countDocuments({ ...baseFilter, status: { $in: ORDER_STATUS_GROUP_MAP.cancelled } }),
-        this.getAttentionOrdersCount(),
-        this.getAttentionOrders(5),
-      ]);
-    return { total, pending, confirmed, ready, shipping, completed, cancelled, attentionCount, attentionOrders };
+  async computeOrdersSummary(): Promise<OrdersSummaryDto> {
+    const now = new Date();
+    
+    // Current month boundaries
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const currentFilter = { isDeleted: { $ne: true }, createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth } };
+
+    // Last month boundaries
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const lastFilter = { isDeleted: { $ne: true }, createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } };
+
+    // Today boundaries
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const todayFilter = { isDeleted: { $ne: true }, createdAt: { $gte: startOfToday, $lte: endOfToday } };
+
+    const [
+      total, pending, confirmed, ready, shipping, completed, cancelled,
+      lastTotal, lastPending, lastShipping, lastCompleted,
+      todayTotal, todayPending, todayConfirmed, todayReady, todayShipping, todayCompleted, todayCancelled,
+      attentionCount, attentionOrders
+    ] = await Promise.all([
+      Order.countDocuments(currentFilter),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.pending } }),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.confirmed } }),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.ready } }),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.shipping } }),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.completed } }),
+      Order.countDocuments({ ...currentFilter, status: { $in: ORDER_STATUS_GROUP_MAP.cancelled } }),
+
+      Order.countDocuments(lastFilter),
+      Order.countDocuments({ ...lastFilter, status: { $in: ORDER_STATUS_GROUP_MAP.pending } }),
+      Order.countDocuments({ ...lastFilter, status: { $in: ORDER_STATUS_GROUP_MAP.shipping } }),
+      Order.countDocuments({ ...lastFilter, status: { $in: ORDER_STATUS_GROUP_MAP.completed } }),
+
+      Order.countDocuments(todayFilter),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.pending } }),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.confirmed } }),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.ready } }),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.shipping } }),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.completed } }),
+      Order.countDocuments({ ...todayFilter, status: { $in: ORDER_STATUS_GROUP_MAP.cancelled } }),
+
+      this.getAttentionOrdersCount(),
+      this.getAttentionOrders(5),
+    ]);
+
+    const calculateTrend = (current: number, last: number) => {
+      if (last === 0) return current > 0 ? 100 : 0;
+      return ((current - last) / last) * 100;
+    };
+
+    return { 
+      total, pending, confirmed, ready, shipping, completed, cancelled, 
+      attentionCount, attentionOrders,
+      trends: {
+        total: calculateTrend(total, lastTotal),
+        pending: calculateTrend(pending, lastPending),
+        shipping: calculateTrend(shipping, lastShipping),
+        completed: calculateTrend(completed, lastCompleted),
+      },
+      currentMonthStr: `Tháng ${startOfCurrentMonth.getMonth() + 1}`,
+      lastMonthStr: `Tháng ${startOfLastMonth.getMonth() + 1}`,
+      today: {
+        total: todayTotal,
+        pending: todayPending + todayConfirmed + todayReady,
+        shipping: todayShipping,
+        completed: todayCompleted,
+        cancelled: todayCancelled
+      }
+    };
   }
 
   async findOrders(

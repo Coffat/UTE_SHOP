@@ -467,6 +467,11 @@ export const updateOrderStatus = async (
   // Increment soldCount when order reaches completed status.
   if (newStatus === OrderStatus.COMPLETED) {
     await incrementOrderSoldCount(order);
+    
+    // Tự động chuyển trạng thái thanh toán sang Đã thanh toán nếu chưa thanh toán (áp dụng cho COD)
+    if (order.paymentStatus !== OrderPaymentStatus.PAID) {
+      order.paymentStatus = OrderPaymentStatus.PAID;
+    }
   }
 
   // Grant points when completed and not yet granted
@@ -772,7 +777,7 @@ export const getOrders = async ({
   const [rawItems, total, summary] = await Promise.all([
     orderRepository.findOrders(filter, safePage, safeLimit),
     orderRepository.countOrders(filter),
-    includeSummary ? orderRepository.computeOrdersSummary(filter) : Promise.resolve(undefined),
+    includeSummary ? orderRepository.computeOrdersSummary() : Promise.resolve(undefined),
   ]);
 
   const orderIds = (rawItems as IOrder[]).map((o) => String((o as any)._id));
@@ -1015,6 +1020,16 @@ export const toStaffOrderDto = (order: any, role: string) => {
       statusHistory,
       createdAt: orderObj.createdAt,
       updatedAt: orderObj.updatedAt,
+      paymentMethod: orderObj.paymentMethod,
+      paymentStatus: orderObj.paymentStatus,
+      subtotal: decimalToNumber(orderObj.subtotal),
+      shippingFee: decimalToNumber(orderObj.shippingFee),
+      discountAmount: decimalToNumber(orderObj.discountAmount),
+      pointsDiscount: decimalToNumber(orderObj.pointsDiscount),
+      pointsUsed: orderObj.pointsUsed,
+      totalAmount: decimalToNumber(orderObj.totalAmount),
+      finalTotal: decimalToNumber(orderObj.finalTotal || orderObj.totalAmount),
+      note: orderObj.note,
     };
   }
 
@@ -1048,7 +1063,12 @@ export const toStaffOrderDto = (order: any, role: string) => {
     subtotal: decimalToNumber(orderObj.subtotal),
     shippingFee: decimalToNumber(orderObj.shippingFee),
     discountAmount: decimalToNumber(orderObj.discountAmount),
+    pointsDiscount: decimalToNumber(orderObj.pointsDiscount),
+    pointsUsed: orderObj.pointsUsed,
     totalAmount: decimalToNumber(orderObj.totalAmount),
+    finalTotal: decimalToNumber(orderObj.finalTotal || orderObj.totalAmount),
+    paymentMethod: orderObj.paymentMethod,
+    paymentStatus: orderObj.paymentStatus,
     note: orderObj.note,
     createdAt: orderObj.createdAt,
     updatedAt: orderObj.updatedAt,

@@ -85,53 +85,138 @@ export const increaseStock = async (
 };
 
 interface ImportStockParams {
-  warehouseId: string;
+  warehouseId?: string;
   variantId?: string;
   materialId?: string;
+  newMaterialName?: string;
+  newMaterialUnit?: string;
   quantity: number;
+  unitPrice?: number;
+  totalCost?: number;
   performedBy: string;
   reason: string;
+  producedFromMaterials?: boolean;
+  overrides?: Array<{ materialId: string; amount: number }>;
 }
 
-/**
- * Import hàng vào kho (do WAREHOUSE_STAFF thực hiện)
- */
-export const importStock = async ({
-  warehouseId,
-  variantId,
-  materialId,
-  quantity,
-  performedBy,
-  reason
-}: ImportStockParams): Promise<IStockLevel> => {
-  let stockLevel = await StockLevel.findOne({
-    warehouse: warehouseId,
-    ...(variantId ? { productVariant: variantId } : { material: materialId }),
-  });
+export const importStock = async (params: ImportStockParams): Promise<IStockLevel> => {
+  const { variantId, quantity, unitPrice, totalCost, performedBy, reason, producedFromMaterials, overrides, newMaterialName, newMaterialUnit } = params;
+  let { warehouseId, materialId } = params;
 
-  if (!stockLevel) {
-    stockLevel = await StockLevel.create({
-      warehouse: warehouseId,
-      productVariant: variantId || null,
-      material: materialId || null,
-      quantity: mongoose.Types.Decimal128.fromString(quantity.toString()) as any,
-    });
-  } else {
-    const currentQty = Number(stockLevel.quantity.toString());
-    const newQty = currentQty + quantity;
-    stockLevel.quantity = mongoose.Types.Decimal128.fromString(newQty.toString()) as any;
-    await stockLevel.save();
+  if (!warehouseId) {
+    const warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
+    if (!warehouse) throw new Error('Chưa cấu hình kho hàng (Warehouse).');
+    warehouseId = (warehouse._id as mongoose.Types.ObjectId).toString();
   }
 
-  await StockTransaction.create({
-    stockLevel: stockLevel._id,
-    type: TransactionType.IMPORT,
-    quantity,
-    reason,
-    performedBy,
-  });
+  const session = await mongoose.startSession();
+  let finalStockLevel: IStockLevel | null = null;
 
-  return stockLevel;
+  try {
+    await session.withTransaction(async () => {
+      if (newMaterialName && !materialId && !variantId) {
+        const newMat = await Material.create([{ name: newMaterialName.trim(), unit: newMaterialUnit?.trim() || 'Cái' }], { session });
+        materialId = (newMat[0]._id as mongoose.Types.ObjectId).toString();
+      }
+
+      if (producedFromMaterials) {
+        if (!variantId) throw new Error("Phải chọn thành phẩm để sản xuất từ nguyên liệu");
+        // import Recipe
+        const Recipe = (await import('../../catalog/models/Recipe.js')).default;
+        const recipe = await Recipe.findOne({ productVariant: variantId }).session(session);
+        if (!recipe) throw new Error("Chưa có công thức (Recipe) cho thành phẩm này");
+
+        const overrideMap = new Map<string, number>();
+        if (overrides) {
+          overrides.forEach(o => overrideMap.set(o.materialId.toString(), o.amount));
+        }
+
+        let totalCOGS = 0;
+        for (const ingredient of recipe.ingredients) {
+          const matIdStr = ingredient.material.toString();
+          const standardAmount = Number(ingredient.amount.toString());
+          const wastePercent = Number(ingredient.wastePercent.toString());
+          
+          let requiredAmount = (standardAmount * quantity) * (1 + wastePercent / 100);
+          if (overrideMap.has(matIdStr)) {
+            requiredAmount = overrideMap.get(matIdStr)!;
+          }
+
+          const matStock = await StockLevel.findOne({
+            warehouse: warehouseId,
+            material: ingredient.material,
+          }).populate('material', 'costPerUnit').session(session);
+
+          if (!matStock) throw new Error(`Kho không có nguyên liệu ${ingredient.material} để sản xuất`);
+
+          const currentMatQty = Number(matStock.quantity.toString());
+          if (currentMatQty < requiredAmount) {
+            throw new Error(`Không đủ nguyên liệu ${ingredient.material}. Cần: ${requiredAmount}, Có: ${currentMatQty}`);
+          }
+
+          const matCost = matStock.material && (matStock.material as any).costPerUnit ? Number((matStock.material as any).costPerUnit.toString()) : 0;
+          totalCOGS += matCost * requiredAmount;
+
+          const newMatQty = currentMatQty - requiredAmount;
+          matStock.quantity = mongoose.Types.Decimal128.fromString(newMatQty.toString()) as any;
+          await matStock.save({ session });
+
+          await StockTransaction.create([{
+            stockLevel: matStock._id,
+            type: TransactionType.EXPORT,
+            quantity: requiredAmount,
+            reason: `Sản xuất thành phẩm ${variantId}`,
+            performedBy,
+          }], { session });
+        }
+
+        // Set cost for Variant (Optionally average cost)
+        const ProductVariant = mongoose.model('ProductVariant');
+        const variantCost = totalCOGS / quantity;
+        await ProductVariant.findByIdAndUpdate(variantId, { price: variantCost }, { session });
+      }
+
+      let stockLevel = await StockLevel.findOne({
+        warehouse: warehouseId,
+        ...(variantId ? { productVariant: variantId } : { material: materialId }),
+      }).session(session);
+
+      if (!stockLevel) {
+        stockLevel = new StockLevel({
+          warehouse: warehouseId,
+          productVariant: variantId || null,
+          material: materialId || null,
+          quantity: mongoose.Types.Decimal128.fromString(quantity.toString()) as any,
+        });
+        await stockLevel.save({ session });
+      } else {
+        const currentQty = Number(stockLevel.quantity.toString());
+        const newQty = currentQty + quantity;
+        stockLevel.quantity = mongoose.Types.Decimal128.fromString(newQty.toString()) as any;
+        await stockLevel.save({ session });
+      }
+
+      await StockTransaction.create([{
+        stockLevel: stockLevel._id,
+        type: TransactionType.IMPORT,
+        quantity,
+        unitPrice: unitPrice ? mongoose.Types.Decimal128.fromString(unitPrice.toString()) : undefined,
+        totalCost: totalCost ? mongoose.Types.Decimal128.fromString(totalCost.toString()) : undefined,
+        reason,
+        performedBy,
+      }], { session });
+
+      finalStockLevel = stockLevel;
+    });
+  } finally {
+    session.endSession();
+  }
+
+  if (!finalStockLevel) {
+    throw new Error('Không thể import kho');
+  }
+
+  return finalStockLevel;
 };
 
 /**

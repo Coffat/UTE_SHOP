@@ -5,6 +5,8 @@ export interface IStockTransaction extends Document {
   stockLevel: Types.ObjectId;
   type: TransactionType;
   quantity: Types.Decimal128;
+  unitPrice?: Types.Decimal128;
+  totalCost?: Types.Decimal128;
   reason: string;
   performedBy: Types.ObjectId;
   timestamp: Date;
@@ -23,6 +25,8 @@ const stockTransactionSchema = new Schema<IStockTransaction>(
       required: true,
     },
     quantity: { type: Schema.Types.Decimal128, required: true },
+    unitPrice: { type: Schema.Types.Decimal128 },
+    totalCost: { type: Schema.Types.Decimal128 },
     reason: { type: String, default: '' },
     performedBy: {
       type: Schema.Types.ObjectId,

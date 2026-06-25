@@ -20,6 +20,6 @@ describe('isValidOrderStatusTransition', () => {
   it('blocks transitions from terminal states', () => {
     assert.equal(isValidOrderStatusTransition(OrderStatus.COMPLETED, OrderStatus.PENDING), false);
     assert.equal(isValidOrderStatusTransition(OrderStatus.CANCELLED, OrderStatus.PENDING), false);
-    assert.deepEqual(ALLOWED_ORDER_TRANSITIONS[OrderStatus.COMPLETED], []);
+    assert.deepEqual(ALLOWED_ORDER_TRANSITIONS[OrderStatus.COMPLETED], [OrderStatus.RETURNED]);
   });
 });

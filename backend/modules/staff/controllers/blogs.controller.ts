@@ -20,6 +20,12 @@ export const listBlogs = asyncHandler(async (req: Request, res: Response) => {
   return sendSuccess(res, 200, 'Tải danh sách bài viết thành công.', result);
 });
 
+/** GET /staff/blogs/filters */
+export const getBlogFilters = asyncHandler(async (req: Request, res: Response) => {
+  const filters = await blogService.getBlogFilters();
+  return sendSuccess(res, 200, 'Tải danh sách lọc thành công.', filters);
+});
+
 /** GET /staff/blogs/:id */
 export const getBlog = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;

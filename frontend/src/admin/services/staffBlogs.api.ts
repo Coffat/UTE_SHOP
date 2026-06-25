@@ -20,3 +20,8 @@ export async function updateStaffBlog(id: string, payload: Partial<BlogPost>): P
   const response = await api.patch(`/api/v1/staff/blogs/${id}`, payload);
   return response.data.data as BlogPost;
 }
+
+export async function fetchStaffBlogFilters(): Promise<{ categories: string[]; tags: string[] }> {
+  const response = await api.get("/api/v1/staff/blogs/filters");
+  return response.data.data;
+}

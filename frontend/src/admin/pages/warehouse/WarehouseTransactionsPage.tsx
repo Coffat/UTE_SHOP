@@ -53,7 +53,7 @@ export function WarehouseTransactionsPage() {
   const handleFilterChange = () => setPage(1);
 
   return (
-    <div className="admin-page">
+    <div className="admin-page" style={{ paddingBottom: "40px" }}>
       <div className="admin-page-header">
         <div>
           <h2 className="admin-page-title">Lịch sử giao dịch</h2>
@@ -66,7 +66,7 @@ export function WarehouseTransactionsPage() {
         </div>
       </div>
 
-      <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px" }}>
+      <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
         {/* Toolbar */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
           {/* Search */}
@@ -126,7 +126,7 @@ export function WarehouseTransactionsPage() {
           <div style={{ textAlign: "center", padding: "64px", color: "var(--adm-text-dim)" }}>Đang tải...</div>
         ) : (
           <>
-            <div className="admin-table-wrap" style={{ borderRadius: "8px", border: "1px solid var(--adm-border)", overflowX: "auto" }}>
+            <div className="admin-table-wrap" style={{ borderRadius: "8px", border: "1px solid var(--adm-border)", overflowX: "auto", flex: 1, overflowY: "auto" }}>
               <table className="admin-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
                 <thead>
                   <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--adm-border)" }}>

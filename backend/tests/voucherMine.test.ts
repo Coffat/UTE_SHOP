@@ -18,7 +18,8 @@ describe('getAvailableVouchersForCustomer', () => {
           discountValue: 10,
           maxDiscountAmount: null,
           minOrderAmount: 0,
-          validUntil: future,
+          startDate: past,
+          endDate: future,
           usageLimit: null,
           usedCount: 0,
           isActive: true,
@@ -31,7 +32,8 @@ describe('getAvailableVouchersForCustomer', () => {
           discountValue: 20000,
           maxDiscountAmount: null,
           minOrderAmount: 100000,
-          validUntil: future,
+          startDate: past,
+          endDate: future,
           usageLimit: 5,
           usedCount: 1,
           isActive: true,
@@ -44,7 +46,8 @@ describe('getAvailableVouchersForCustomer', () => {
           discountValue: 5000,
           maxDiscountAmount: null,
           minOrderAmount: 0,
-          validUntil: past,
+          startDate: new Date(Date.now() - 86400000 * 2),
+          endDate: past,
           usageLimit: null,
           usedCount: 0,
           isActive: true,
@@ -55,12 +58,12 @@ describe('getAvailableVouchersForCustomer', () => {
         const customerMatch =
           v.customer === null ||
           (or?.some((clause) => clause.customer === 'user123') && v.customer === 'user123');
-        const valid = v.validUntil >= new Date();
+        const valid = v.startDate <= new Date() && v.endDate >= new Date();
         const hasUsage =
           v.usageLimit === null || v.usedCount < (v.usageLimit as number);
         return v.isActive && valid && hasUsage && customerMatch;
       }),
-    })) as typeof Voucher.find;
+    })) as unknown as typeof Voucher.find;
 
     try {
       const result = await getAvailableVouchersForCustomer('user123');
@@ -81,7 +84,7 @@ describe('getAvailableVouchersForCustomer', () => {
 
     Voucher.find = (() => ({
       sort: () => [],
-    })) as typeof Voucher.find;
+    })) as unknown as typeof Voucher.find;
 
     try {
       const result = await getAvailableVouchersForCustomer('user123');
