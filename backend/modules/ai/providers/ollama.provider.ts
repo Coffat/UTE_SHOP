@@ -8,6 +8,7 @@ import type {
   AiProviderFinal,
   EffectiveAiRuntime,
 } from '../types/ai.types.js';
+import { createStreamingThinkingFilter, stripThinkingBlocks } from '../utils/aiThinkingFilter.js';
 
 interface OllamaTagResponse {
   models?: AiModelTag[];
@@ -16,6 +17,8 @@ interface OllamaTagResponse {
 interface OllamaStreamLine {
   message?: {
     content?: string;
+    /** Native Ollama thinking API (Ollama 0.7+): reasoning tokens separate from content */
+    thinking?: string;
   };
   done?: boolean;
 }
@@ -23,6 +26,7 @@ interface OllamaStreamLine {
 interface OllamaChatResponse {
   message?: {
     content?: string;
+    thinking?: string;
   };
 }
 
@@ -174,6 +178,15 @@ export const streamOllamaResponse = async (
     let buffer = '';
     let fullText = '';
 
+    // Filter thinking tokens before they reach the caller.
+    // Handles both native Ollama thinking field and <think> tags in content.
+    const thinkFilter = createStreamingThinkingFilter((filtered) => {
+      if (filtered) {
+        fullText += filtered;
+        onToken(filtered);
+      }
+    });
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -186,12 +199,13 @@ export const streamOllamaResponse = async (
         if (!line) continue;
         const payload = parseJsonSafely<OllamaStreamLine>(line);
         if (!payload) continue;
+        // Skip native thinking field entirely — never forward to user
         const token = payload.message?.content ?? '';
         if (token) {
-          fullText += token;
-          onToken(token);
+          thinkFilter.push(token);
         }
         if (payload.done) {
+          thinkFilter.flush();
           return {
             fullText: fullText.trim(),
             latencyMs: Date.now() - start,
@@ -200,6 +214,7 @@ export const streamOllamaResponse = async (
       }
     }
 
+    thinkFilter.flush();
     return {
       fullText: fullText.trim(),
       latencyMs: Date.now() - start,
@@ -247,7 +262,9 @@ export const completeOllamaResponse = async (
     }
 
     const payload = (await response.json()) as OllamaChatResponse;
-    const fullText = payload.message?.content?.trim() ?? '';
+    // Strip thinking blocks — native field is ignored; tag-embedded thinking is removed
+    const rawText = payload.message?.content?.trim() ?? '';
+    const fullText = stripThinkingBlocks(rawText);
     return {
       fullText,
       latencyMs: Date.now() - start,

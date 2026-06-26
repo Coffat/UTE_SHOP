@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import {
   fetchAdminOrders,
@@ -55,6 +55,15 @@ function getStatusLabel(status: UiOrderStatus) {
   }
 }
 
+function getPaymentMethodLabel(method?: string) {
+  const value = (method || "").toUpperCase();
+  if (value === "CASH") return "Tiền mặt";
+  if (value === "MOMO") return "MoMo";
+  if (value === "VNPAY") return "VNPay";
+  if (value === "COD") return "COD";
+  return "—";
+}
+
 // Inline SVGs for sidebar status items
 function IconPending() {
   return (
@@ -95,8 +104,8 @@ function IconCancelled() {
 export function OrdersPage() {
   const { role } = useAdminAuth();
   const isAdmin = role === "ADMIN";
-  const location = useLocation();
-  const basePath = location.pathname.startsWith("/staff") ? "/staff" : "/admin";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoOpenedOrderRef = useRef<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | UiOrderStatus>("all");
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
@@ -167,6 +176,19 @@ export function OrdersPage() {
       }
     }
   }, [buildListParams, isAdmin]);
+
+  useEffect(() => {
+    const focusOrderId = searchParams.get("focusOrderId");
+    if (!focusOrderId) return;
+    if (autoOpenedOrderRef.current === focusOrderId) return;
+
+    autoOpenedOrderRef.current = focusOrderId;
+    setDetailModalOrderId(focusOrderId);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("focusOrderId");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleExportExcel = async () => {
     if (!isAdmin) return;
@@ -247,9 +269,6 @@ export function OrdersPage() {
 
   const attentionOrders = stats.attentionOrders ?? [];
   const attentionCount = stats.attentionCount ?? 0;
-  const pct = (n: number) =>
-    stats.total > 0 ? ((n / stats.total) * 100).toFixed(1) : "0.0";
-
   const formatAttentionDate = (iso: string) =>
     new Date(iso).toLocaleString("vi-VN", {
       day: "2-digit",
@@ -295,7 +314,7 @@ export function OrdersPage() {
     label === "Đã hủy" ? "#f43f5e" : "#f59e0b";
 
   return (
-    <div className="admin-page">
+    <div className="admin-page" style={{ minHeight: 0 }}>
       {/* Header Block */}
       <div className="admin-page-header">
         <div>
@@ -558,9 +577,9 @@ export function OrdersPage() {
       </div>
 
       {/* Main Grid: List + Widgets */}
-      <div className="admin-grid-2col" style={{ gridTemplateColumns: "3fr 1.3fr", flex: 1 }}>
+      <div className="admin-grid-2col" style={{ gridTemplateColumns: "3fr 1.3fr", flex: 1, alignItems: "stretch", minHeight: 0, alignContent: "stretch" }}>
         {/* Left Column: Orders List Card */}
-        <div className="admin-card" style={{ padding: 0, display: "flex", flexDirection: "column" }}>
+        <div className="admin-card" style={{ padding: 0, display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
           {/* List Header */}
           <div style={{
             display: "flex",
@@ -662,7 +681,7 @@ export function OrdersPage() {
 
 
           {/* List Table */}
-          <div className="admin-table-wrap" style={{ overflowX: "auto" }}>
+          <div className="admin-table-wrap" style={{ overflowX: "auto", flex: 1, minHeight: 0 }}>
             <table className="admin-table" style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -725,7 +744,7 @@ export function OrdersPage() {
                         background: order.payment === "paid" ? "rgba(16, 185, 129, 0.1)" : "rgba(255, 255, 255, 0.05)",
                         color: order.payment === "paid" ? "#10b981" : "#94a3b8"
                       }}>
-                        {order.payment === "paid" ? "Đã thanh toán" : "COD"}
+                        {getPaymentMethodLabel(order.paymentMethod)} • {order.payment === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
                       </span>
                     </td>
                     <td style={{ padding: "14px 20px" }}>
@@ -840,9 +859,9 @@ export function OrdersPage() {
         </div>
 
         {/* Right Column: Widgets */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: 0, height: "100%", width: "100%" }}>
           {/* Widget 1: Tiến độ đơn hàng hôm nay */}
-          <div className="admin-card" style={{ padding: "20px" }}>
+          <div className="admin-card" style={{ padding: "20px", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "20px" }}>
               <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Tiến độ đơn hàng hôm nay</h4>
               <span style={{ color: "#64748b", fontSize: "12px", cursor: "pointer" }} title="Tình hình xử lý đơn hàng hôm nay">ⓘ</span>
@@ -929,8 +948,8 @@ export function OrdersPage() {
           </div>
 
           {/* Widget 2: Đơn cần chú ý */}
-          <div className="admin-card" style={{ padding: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div className="admin-card" style={{ padding: "20px", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexShrink: 0 }}>
               <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Đơn cần chú ý</h4>
               <span 
                 onClick={() => { setStatusFilter("attention"); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -940,7 +959,7 @@ export function OrdersPage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, minHeight: 0, overflowY: "auto" }}>
               {attentionOrders.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Không có đơn cần chú ý.</p>
               ) : (

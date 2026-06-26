@@ -43,7 +43,7 @@ export const parseVndAmount = (raw: string): number | undefined => {
 };
 
 const PHONE_PATTERN = /(?:\+?84|0)(?:[\s.-]?\d){8,10}\b/g;
-const ORDER_CODE_PATTERN = /\b(?:ORD-[A-Z0-9-]{4,}|DH[0-9A-Z-]{2,})\b/gi;
+const ORDER_CODE_PATTERN = /\b(?:UTE\d{8}-\d{4}-(?:COD|MOMO|VNPAY|CASH)|ORD-[A-Z0-9-]{4,}|DH[0-9A-Z-]{2,})\b/gi;
 const MONEY_CONTEXT_PATTERN =
   /\b(tầm|tam|khoảng|khoang|dưới|duoi|<=|tối đa|toi da|ngân sách|ngan sach|vnd|đ|dong|đồng)\b/i;
 

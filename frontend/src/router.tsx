@@ -45,6 +45,7 @@ import { BlogsPage } from "./admin/pages/BlogsPage";
 import { ReviewsPage } from "./admin/pages/ReviewsPage";
 import { MarketingManagementPage } from "./admin/pages/MarketingManagementPage";
 import { StaffChatPage } from "./admin/pages/StaffChatPage";
+import { NotificationsPage } from "./admin/pages/NotificationsPage";
 
 // Warehouse imports
 import { WarehouseDashboardPage } from "./admin/pages/warehouse/WarehouseDashboardPage";
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
           { path: "reviews", element: <ReviewsPage /> },
           { path: "marketing", element: <MarketingManagementPage /> },
           { path: "chat", element: <StaffChatPage /> },
+          { path: "notifications", element: <NotificationsPage /> },
         ],
       },
       // --- Staff Routes ---
@@ -125,6 +127,7 @@ export const router = createBrowserRouter([
           { path: "marketing", element: <MarketingManagementPage /> },
           { path: "chat", element: <StaffChatPage /> },
           { path: "profile", element: <AdminProfilePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
         ],
       },
       // --- Warehouse Routes ---
@@ -145,6 +148,7 @@ export const router = createBrowserRouter([
           { path: "recipes", element: <WarehouseRecipesPage /> },
           { path: "transactions", element: <WarehouseTransactionsPage /> },
           { path: "profile", element: <AdminProfilePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
         ],
       },
       // --- Store Routes ---
@@ -163,6 +167,7 @@ export const router = createBrowserRouter([
           { path: "orders", element: <StoreOrdersPage /> },
           { path: "orders/create", element: <StoreCreateOrderPage /> },
           { path: "profile", element: <AdminProfilePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
         ],
       },
       // --- Social Auth Callback ---

@@ -7,9 +7,48 @@ import {
   getOrCreateWebsiteInfo,
   updateWebsiteInfo,
 } from '../repositories/websiteInfo.repository.js';
-import type { IStoreSettings } from '../models/StoreSettings.js';
+import type { IStoreSettings, WorkingHoursSchedule } from '../models/StoreSettings.js';
+import { DEFAULT_WORKING_HOURS_SCHEDULE } from '../models/StoreSettings.js';
 import { assertValidModelSelection } from '../../ai/config/aiModelCatalog.js';
 import { AppError } from '../../../shared/utils/AppError.js';
+
+const VALID_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const isValidTimeString = (value: unknown): value is string =>
+  typeof value === 'string' && VALID_TIME_RE.test(value);
+
+const sanitizeDaySchedule = (raw: unknown): { enabled: boolean; open: string; close: string } => {
+  if (!raw || typeof raw !== 'object') {
+    return { enabled: true, open: '08:00', close: '21:00' };
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    enabled: typeof r.enabled === 'boolean' ? r.enabled : true,
+    open: isValidTimeString(r.open) ? r.open : '08:00',
+    close: isValidTimeString(r.close) ? r.close : '21:00',
+  };
+};
+
+const sanitizeWorkingHoursSchedule = (raw: unknown): WorkingHoursSchedule => {
+  if (!raw || typeof raw !== 'object') return DEFAULT_WORKING_HOURS_SCHEDULE;
+  const r = raw as Record<string, unknown>;
+  return {
+    monday: sanitizeDaySchedule(r.monday),
+    tuesday: sanitizeDaySchedule(r.tuesday),
+    wednesday: sanitizeDaySchedule(r.wednesday),
+    thursday: sanitizeDaySchedule(r.thursday),
+    friday: sanitizeDaySchedule(r.friday),
+    saturday: sanitizeDaySchedule(r.saturday),
+    sunday: sanitizeDaySchedule(r.sunday),
+  };
+};
+
+const SUPPORTED_TIMEZONES: ReadonlySet<string> = new Set(
+  Intl.supportedValuesOf('timeZone')
+);
+
+const isValidIanaTimezone = (value: unknown): value is string =>
+  typeof value === 'string' && SUPPORTED_TIMEZONES.has(value);
 
 export interface StoreSettingsDto {
   storeName: string;
@@ -18,6 +57,8 @@ export interface StoreSettingsDto {
   address: string;
   openingHours: string;
   timezone: string;
+  timezoneIana: string;
+  workingHoursSchedule: WorkingHoursSchedule;
   vnpayActive: boolean;
   codActive: boolean;
   momoActive: boolean;
@@ -59,6 +100,8 @@ const mapToDto = (doc: IStoreSettings, websiteInfo?: { address?: string; hotline
   address: websiteInfo?.address?.trim() || doc.address,
   openingHours: websiteInfo?.openingHours?.trim() || '',
   timezone: doc.timezone,
+  timezoneIana: doc.timezoneIana || 'Asia/Ho_Chi_Minh',
+  workingHoursSchedule: doc.workingHoursSchedule ?? DEFAULT_WORKING_HOURS_SCHEDULE,
   vnpayActive: doc.vnpayActive,
   codActive: doc.codActive,
   momoActive: doc.momoActive,
@@ -99,7 +142,17 @@ export const putAdminSettings = async (
       throw new AppError('Cấu hình AI provider/model không hợp lệ.', 422);
     }
   }
-  const doc = await updateSettings(payload);
+
+  if (payload.timezoneIana !== undefined && !isValidIanaTimezone(payload.timezoneIana)) {
+    throw new AppError('Múi giờ không hợp lệ. Vui lòng nhập đúng định dạng IANA (ví dụ: Asia/Ho_Chi_Minh).', 422);
+  }
+
+  const sanitizedPayload: typeof payload = { ...payload };
+  if (payload.workingHoursSchedule !== undefined) {
+    sanitizedPayload.workingHoursSchedule = sanitizeWorkingHoursSchedule(payload.workingHoursSchedule);
+  }
+
+  const doc = await updateSettings(sanitizedPayload);
   await updateWebsiteInfo({
     address: payload.address,
     hotline: payload.phone,

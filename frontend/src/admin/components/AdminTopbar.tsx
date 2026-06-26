@@ -1,9 +1,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { resetAuth } from "@/features/auth/authSlice";
 import { resetProfile } from "@/features/profile/profileSlice";
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markAsRead,
+  resetNotifications,
+  type UserNotification,
+} from "@/features/notification/notificationSlice";
+import { subscribeNotificationRealtime } from "@/features/notification/notificationRealtime";
+import {
+  getDashboardNotificationsPath,
+  getDashboardProfilePath,
+  resolveDashboardNotificationLink,
+} from "@/features/notification/notificationRouting";
+import type { AppDispatch, RootState } from "@/store";
 import { api } from "@/lib/api";
 import { clearAuthSessionFlag } from "@/lib/authSession";
 import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
@@ -63,17 +77,12 @@ function HomeIcon() {
   );
 }
 
-const NOTIFICATIONS = [
-  { id: 1, text: "Đơn hàng ORD-2415 cần xác nhận", time: "2 phút trước", unread: true, type: "order" },
-  { id: 2, text: "Sản phẩm SP-004 hết hàng tồn kho", time: "1 giờ trước",  unread: true, type: "product" },
-  { id: 3, text: "Báo cáo tháng 5 đã được tạo",     time: "3 giờ trước",  unread: false, type: "system" },
-  { id: 4, text: "Nhân viên mới đã đăng ký tài khoản", time: "5 giờ trước", unread: false, type: "user" },
-];
-
 export function AdminTopbar() {
   const { user, role } = useAdminAuth();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: notificationItems, unreadCount } = useSelector((state: RootState) => state.notification);
+  const notifications = Array.isArray(notificationItems) ? notificationItems : [];
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [searchVal, setSearchVal] = useState("");
@@ -81,7 +90,64 @@ export function AdminTopbar() {
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = 3; // Fixed to 3 based on image design
+  const latestNotifications = notifications.slice(0, 5);
+
+  const formatTimeAgo = (isoDate: string) => {
+    const createdAt = new Date(isoDate).getTime();
+    const diffMs = Date.now() - createdAt;
+    const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} ngày trước`;
+  };
+
+  const getNotificationTypeClass = (type?: string) => {
+    const normalizedType = (type || "").toUpperCase();
+    if (normalizedType.includes("ORDER") || normalizedType.includes("PAYMENT")) return "order";
+    if (normalizedType.includes("CHAT") || normalizedType === "INFO") return "user";
+    if (normalizedType.includes("SYSTEM")) return "system";
+    return "product";
+  };
+
+  const handleNotificationClick = async (item: UserNotification) => {
+    try {
+      if (!item.isRead) {
+        await dispatch(markAsRead(item._id)).unwrap();
+      }
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu thông báo đã đọc", error);
+    } finally {
+      window.dispatchEvent(new CustomEvent("notification-updated"));
+      setShowNotifs(false);
+      navigate(resolveDashboardNotificationLink(item, role));
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    dispatch(fetchNotifications());
+    dispatch(fetchUnreadCount());
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return subscribeNotificationRealtime(dispatch);
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (!user) return;
+      dispatch(fetchNotifications());
+      dispatch(fetchUnreadCount());
+    };
+
+    window.addEventListener("notification-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("notification-updated", handleUpdate);
+    };
+  }, [dispatch, user]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -106,6 +172,7 @@ export function AdminTopbar() {
       clearAuthSessionFlag();
       dispatch(resetAuth());
       dispatch(resetProfile());
+      dispatch(resetNotifications());
       navigate("/login");
     }
   }
@@ -148,18 +215,39 @@ export function AdminTopbar() {
                 <span className="admin-dropdown-header-badge">{unreadCount} mới</span>
               </div>
               <div className="admin-notif-list">
-                {NOTIFICATIONS.map((n) => (
-                  <div key={n.id} className={`admin-notif-item ${n.unread ? "unread" : ""}`}>
-                    <div className={`admin-notif-dot ${n.type}`} />
+                {latestNotifications.length === 0 ? (
+                  <div className="admin-notif-item">
                     <div className="admin-notif-body">
-                      <p className="admin-notif-text">{n.text}</p>
-                      <p className="admin-notif-time">{n.time}</p>
+                      <p className="admin-notif-text">Chưa có thông báo mới</p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  latestNotifications.map((item) => (
+                    <button
+                      key={item._id}
+                      type="button"
+                      onClick={() => handleNotificationClick(item)}
+                      className={`admin-notif-item ${item.isRead ? "" : "unread"}`}
+                    >
+                      <div className={`admin-notif-dot ${getNotificationTypeClass(item.notification.type)}`} />
+                      <div className="admin-notif-body">
+                        <p className="admin-notif-text">{item.notification.title}</p>
+                        <p className="admin-notif-time">{formatTimeAgo(item.createdAt)}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
               <div className="admin-dropdown-footer">
-                <button className="admin-dropdown-footer-btn">Xem tất cả thông báo</button>
+                <button
+                  className="admin-dropdown-footer-btn"
+                  onClick={() => {
+                    setShowNotifs(false);
+                    navigate(getDashboardNotificationsPath(role));
+                  }}
+                >
+                  Xem tất cả thông báo
+                </button>
               </div>
             </div>
           )}
@@ -211,7 +299,7 @@ export function AdminTopbar() {
                 <span>{user?.email}</span>
               </div>
               <div className="admin-dropdown-menu">
-                <button className="admin-dropdown-item" onClick={() => navigate(role === "ADMIN" ? "/admin/profile" : "/staff/profile")}>
+                <button className="admin-dropdown-item" onClick={() => navigate(getDashboardProfilePath(role))}>
                   Hồ sơ cá nhân
                 </button>
                 {role === "ADMIN" && (

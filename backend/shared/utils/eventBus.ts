@@ -7,6 +7,7 @@ export enum AppEvent {
   ORDER_CREATED = 'order:created',
   ORDER_STATUS_CHANGED = 'order:status_changed',
   CHAT_MESSAGE_RECEIVED = 'chat:message_received',
+  LOW_STOCK = 'inventory:low_stock',
 }
 
 export interface BaseEventPayload {
@@ -14,6 +15,7 @@ export interface BaseEventPayload {
   occurredAt: Date;
   entityId: string;
   actorId?: string;
+  customerId?: string;
 }
 
 export interface PaymentSuccessPayload extends BaseEventPayload {
@@ -53,12 +55,21 @@ export interface ChatMessageReceivedPayload extends BaseEventPayload {
   recipientId: string; // The person receiving the message
 }
 
+export interface LowStockPayload extends BaseEventPayload {
+  stockLevelId: string;
+  variantId: string;
+  quantity: number;
+  threshold: number;
+  status: 'LOW' | 'OUT_OF_STOCK';
+}
+
 export interface EventPayloadMap {
   [AppEvent.PAYMENT_SUCCESS]: PaymentSuccessPayload;
   [AppEvent.PAYMENT_FAILED]: PaymentFailedPayload;
   [AppEvent.ORDER_CREATED]: OrderCreatedPayload;
   [AppEvent.ORDER_STATUS_CHANGED]: OrderStatusChangedPayload;
   [AppEvent.CHAT_MESSAGE_RECEIVED]: ChatMessageReceivedPayload;
+  [AppEvent.LOW_STOCK]: LowStockPayload;
 }
 
 class TypedEventBus {

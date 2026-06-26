@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
-import { fetchCustomers } from "../../services/adminCustomers.api";
 import { fetchManagedProducts } from "../../services/productManagement.api";
-import { createStoreOrder } from "../../services/storeOrders.api";
+import { createStoreOrder, createStoreVnpayPayment, fetchStoreCustomers } from "../../services/storeOrders.api";
+import { api } from "@/lib/api";
 import { normalizeVietnamesePhone, isValidVietnameseMobilePhone } from "@/lib/phone";
 
 interface ProductOption {
@@ -21,6 +21,7 @@ interface LineItemRow {
   productName: string;
   unitPrice: number;
   quantity: number;
+  maxStock: number;
 }
 
 interface CustomerOption {
@@ -41,12 +42,13 @@ export function StoreCreateOrderPage() {
   // Search Product
   const [productSearch, setProductSearch] = useState("");
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Form Data
   const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "MOMO">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "MOMO" | "VNPAY">("CASH");
   const [note, setNote] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +62,7 @@ export function StoreCreateOrderPage() {
         return;
       }
       try {
-        const { items } = await fetchCustomers({ search: customerSearch.trim(), limit: 5, page: 1 });
+        const { items } = await fetchStoreCustomers(customerSearch.trim(), 5);
         setCustomerOptions(
           (items as any[]).map((item) => ({
             id: String(item.id ?? item._id),
@@ -76,35 +78,66 @@ export function StoreCreateOrderPage() {
     return () => clearTimeout(timer);
   }, [customerSearch]);
 
-  // Debounced Product Search
+  // Debounced product search (typeahead): only query when user types
   useEffect(() => {
+    const keyword = productSearch.trim();
+    if (!keyword) {
+      setProductOptions([]);
+      setLoadingProducts(false);
+      return;
+    }
+
+    let cancelled = false;
     const timer = setTimeout(async () => {
-      if (!productSearch.trim()) {
-        setProductOptions([]);
-        return;
-      }
+      setLoadingProducts(true);
       try {
-        const result = await fetchManagedProducts(
-          { search: productSearch.trim(), limit: 8, page: 1, status: "ACTIVE" },
-          "STORE_STAFF"
-        );
-        setProductOptions(
-          result.items
-            .filter((p) => p.stock > 0 && p.primaryVariantId)
-            .map((p) => ({
-              id: p.id,
-              name: p.name,
-              sku: p.sku,
-              price: p.price,
-              stock: p.stock,
-              variantId: p.primaryVariantId as string,
-            }))
-        );
+        const [managedResult, storefrontFirstPage] = await Promise.all([
+          fetchManagedProducts(
+            { limit: 100, page: 1, status: "ACTIVE", search: keyword },
+            "STORE_STAFF"
+          ),
+          api.get("/api/v1/products", {
+            params: { limit: 100, page: 1, status: "ACTIVE", search: keyword },
+          }),
+        ]);
+
+        const storefrontIds = new Set<string>();
+        const firstItems = (storefrontFirstPage.data?.data?.items || []) as Array<{ _id?: string; id?: string }>;
+        firstItems.forEach((item) => {
+          const id = String(item._id || item.id || "");
+          if (id) storefrontIds.add(id);
+        });
+
+        const mapped = managedResult.items
+          .filter((p) => p.primaryVariantId && storefrontIds.has(p.id))
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            price: p.price,
+            stock: p.stock,
+            variantId: p.primaryVariantId as string,
+          }))
+          .slice(0, 20);
+
+        if (!cancelled) {
+          setProductOptions(mapped);
+        }
       } catch {
-        setProductOptions([]);
+        if (!cancelled) {
+          setProductOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingProducts(false);
+        }
       }
-    }, 300);
-    return () => clearTimeout(timer);
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [productSearch]);
 
   const handleSelectCustomer = (customer: CustomerOption) => {
@@ -125,6 +158,7 @@ export function StoreCreateOrderPage() {
   };
 
   const handleAddProduct = (product: ProductOption) => {
+    if (product.stock <= 0) return;
     setLineItems((prev) => {
       const existing = prev.find((item) => item.variantId === product.variantId);
       if (existing) {
@@ -142,6 +176,7 @@ export function StoreCreateOrderPage() {
           productName: product.name,
           unitPrice: product.price,
           quantity: 1,
+          maxStock: product.stock,
         },
       ];
     });
@@ -151,7 +186,11 @@ export function StoreCreateOrderPage() {
 
   const handleQuantityChange = (key: string, qty: number) => {
     setLineItems((prev) =>
-      prev.map((row) => (row.key === key ? { ...row, quantity: Math.max(1, qty) } : row))
+      prev.map((row) => {
+        if (row.key !== key) return row;
+        const nextQty = Math.max(1, Math.min(qty, Math.max(1, row.maxStock)));
+        return { ...row, quantity: nextQty };
+      })
     );
   };
 
@@ -183,7 +222,7 @@ export function StoreCreateOrderPage() {
 
     setSubmitting(true);
     try {
-      await createStoreOrder({
+      const created = await createStoreOrder({
         customerId: selectedCustomer?.id || null,
         items: lineItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
         recipientInfo: {
@@ -194,7 +233,23 @@ export function StoreCreateOrderPage() {
         paymentMethod,
         note,
       });
-      alert("Tạo đơn hàng thành công!");
+
+      if (paymentMethod === "VNPAY") {
+        const orderId = String(created.id || "");
+        if (!orderId) {
+          throw new Error("Không nhận được orderId để tạo thanh toán VNPay.");
+        }
+        const payData = await createStoreVnpayPayment(orderId);
+        const payUrl = payData.paymentUrl || payData.payUrl;
+        if (payUrl) {
+          const popup = window.open(payUrl, "_blank", "noopener,noreferrer");
+          if (!popup) {
+            window.location.href = payUrl;
+          }
+        }
+      }
+
+      alert(paymentMethod === "VNPAY" ? "Đã tạo đơn và mở cổng thanh toán VNPay." : "Tạo đơn hàng thành công!");
       navigate("/store/orders");
     } catch (err: unknown) {
       let message = "Không thể tạo đơn hàng. Vui lòng thử lại.";
@@ -208,7 +263,7 @@ export function StoreCreateOrderPage() {
   };
 
   return (
-    <div className="admin-page">
+    <div className="admin-page" style={{ width: "100%" }}>
       <div className="admin-page-header" style={{ marginBottom: "24px" }}>
         <div>
           <h2 className="admin-page-title">Tạo đơn tại quầy</h2>
@@ -216,9 +271,9 @@ export function StoreCreateOrderPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px", alignItems: "start" }}>
+      <div className="admin-grid-2col" style={{ gap: "24px", flex: 1, alignItems: "stretch" }}>
         {/* Left Col: Products */}
-        <div className="admin-card" style={{ padding: "24px" }}>
+        <div className="admin-card" style={{ padding: "24px", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: "16px" }}>1. Chọn sản phẩm</h3>
           <div style={{ position: "relative", marginBottom: "16px" }}>
             <input
@@ -228,17 +283,28 @@ export function StoreCreateOrderPage() {
               onChange={(e) => setProductSearch(e.target.value)}
               style={{ width: "100%", padding: "10px 14px", background: "rgba(13,21,38,0.5)", border: "1px solid var(--adm-border)", borderRadius: "8px", color: "#fff", outline: "none" }}
             />
-            {productOptions.length > 0 && (
+            {loadingProducts && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>
+                Đang tải sản phẩm...
+              </div>
+            )}
+            {!loadingProducts && productSearch.trim() && productOptions.length === 0 && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "#f59e0b" }}>
+                Không tìm thấy sản phẩm phù hợp.
+              </div>
+            )}
+            {productSearch.trim() && productOptions.length > 0 && (
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "4px", background: "#1e293b", border: "1px solid var(--adm-border)", borderRadius: "8px", zIndex: 10, overflow: "hidden" }}>
                 {productOptions.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleAddProduct(p)}
-                    style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#e2e8f0", cursor: "pointer" }}
+                    disabled={p.stock <= 0}
+                    style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", color: p.stock > 0 ? "#e2e8f0" : "#64748b", cursor: p.stock > 0 ? "pointer" : "not-allowed", opacity: p.stock > 0 ? 1 : 0.65 }}
                   >
                     <div style={{ fontWeight: 500 }}>{p.name}</div>
                     <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
-                      SKU: {p.sku} • {p.price.toLocaleString("vi-VN")}đ • Tồn: {p.stock}
+                      SKU: {p.sku} • {p.price.toLocaleString("vi-VN")}đ • {p.stock > 0 ? `Tồn: ${p.stock}` : "Hết hàng"}
                     </div>
                   </button>
                 ))}
@@ -246,9 +312,9 @@ export function StoreCreateOrderPage() {
             )}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0 }}>
             {lineItems.length === 0 && (
-              <div style={{ padding: "24px", textAlign: "center", color: "#64748b", border: "1px dashed var(--adm-border)", borderRadius: "8px" }}>
+              <div style={{ padding: "24px", textAlign: "center", color: "#64748b", border: "1px dashed var(--adm-border)", borderRadius: "8px", flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 Chưa có sản phẩm nào
               </div>
             )}
@@ -256,7 +322,9 @@ export function StoreCreateOrderPage() {
               <div key={item.key} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "8px" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: "#e2e8f0", fontWeight: 500, fontSize: "14px" }}>{item.productName}</div>
-                  <div style={{ color: "#94a3b8", fontSize: "13px", marginTop: "2px" }}>{item.unitPrice.toLocaleString("vi-VN")}đ</div>
+                  <div style={{ color: "#94a3b8", fontSize: "13px", marginTop: "2px" }}>
+                    {item.unitPrice.toLocaleString("vi-VN")}đ • Tồn: {item.maxStock}
+                  </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <input
@@ -277,7 +345,7 @@ export function StoreCreateOrderPage() {
         </div>
 
         {/* Right Col: Customer & Payment */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px", minHeight: 0, height: "100%" }}>
           <div className="admin-card" style={{ padding: "24px" }}>
             <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: "16px" }}>2. Khách hàng</h3>
             
@@ -329,18 +397,19 @@ export function StoreCreateOrderPage() {
             </div>
           </div>
 
-          <div className="admin-card" style={{ padding: "24px" }}>
+          <div className="admin-card" style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: "16px" }}>3. Thanh toán</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
               <div>
                 <label style={{ display: "block", fontSize: "13px", color: "#94a3b8", marginBottom: "4px" }}>Phương thức thanh toán</label>
                 <select
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as "CASH" | "MOMO")}
+                  onChange={(e) => setPaymentMethod(e.target.value as "CASH" | "MOMO" | "VNPAY")}
                   style={{ width: "100%", padding: "10px 14px", background: "rgba(13,21,38,0.5)", border: "1px solid var(--adm-border)", borderRadius: "8px", color: "#fff", outline: "none" }}
                 >
                   <option value="CASH">Tiền mặt</option>
                   <option value="MOMO">MoMo / Chuyển khoản (Xác nhận ngoài hệ thống)</option>
+                  <option value="VNPAY">VNPay (Thanh toán qua cổng)</option>
                 </select>
               </div>
               <div>
@@ -366,7 +435,7 @@ export function StoreCreateOrderPage() {
                 onClick={handleSubmit}
                 disabled={submitting}
                 className="admin-btn admin-btn-primary"
-                style={{ width: "100%", padding: "12px", fontSize: "15px", fontWeight: 600, justifyContent: "center" }}
+                style={{ width: "100%", padding: "12px", fontSize: "15px", fontWeight: 600, justifyContent: "center", marginTop: "auto" }}
               >
                 {submitting ? "Đang xử lý..." : "TẠO ĐƠN HÀNG"}
               </button>

@@ -1,5 +1,6 @@
 import { toolCallProtocolSchema } from './toolSchemas.js';
 import type { ParsedPass1Decision } from './tool.types.js';
+import { stripThinkingBlocks } from '../utils/aiThinkingFilter.js';
 
 const tryParseJson = (raw: string): unknown | null => {
   try {
@@ -56,7 +57,10 @@ const extractFirstJsonObject = (raw: string): string | null => {
 };
 
 export const parsePass1Decision = (rawText: string): ParsedPass1Decision => {
-  const strictPayload = tryParseJson(rawText.trim());
+  // Strip thinking blocks so chain-of-thought text before the JSON doesn't
+  // corrupt extraction or cause false JSON matches inside reasoning content.
+  const cleaned = stripThinkingBlocks(rawText);
+  const strictPayload = tryParseJson(cleaned.trim());
   if (strictPayload != null) {
     const strictResult = toolCallProtocolSchema.safeParse(strictPayload);
     if (strictResult.success) {
@@ -77,7 +81,7 @@ export const parsePass1Decision = (rawText: string): ParsedPass1Decision => {
     };
   }
 
-  const firstObject = extractFirstJsonObject(rawText);
+  const firstObject = extractFirstJsonObject(cleaned);
   if (firstObject) {
     const extractedPayload = tryParseJson(firstObject);
     if (extractedPayload != null) {

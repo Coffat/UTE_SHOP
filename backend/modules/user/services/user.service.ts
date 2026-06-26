@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import User, { IUser } from '../models/User.js';
 import Customer from '../models/Customer.js';
 import { AppError } from '../../../shared/utils/AppError.js';
+import Order from '../../order/models/Order.js';
+import AuditLog from '../../system/models/AuditLog.js';
+import { UserNotification } from '../../notification/models/Notification.js';
 
 /**
  * Lấy profile của user đang đăng nhập.
@@ -101,4 +104,47 @@ export const removeProductFromFavorites = async (userId: string, productId: stri
   );
 
   return customer;
+};
+
+export interface UserProfileStats {
+  notifications: {
+    unread: number;
+  };
+  operations: {
+    ordersHandled: number;
+    activityLast7Days: number;
+  };
+  performance: {
+    score: number | null;
+  };
+}
+
+export const getUserProfileStats = async (userId: string): Promise<UserProfileStats> => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const [unreadNotifications, ordersHandled, activityLast7Days, profile] = await Promise.all([
+    UserNotification.countDocuments({ user: userId, isRead: false }),
+    Order.countDocuments({ 'statusHistory.changedBy': userId }),
+    AuditLog.countDocuments({ actorId: userId, createdAt: { $gte: sevenDaysAgo } }),
+    User.findById(userId).select('performanceScore'),
+  ]);
+
+  const performanceScore =
+    profile && Object.prototype.hasOwnProperty.call(profile.toObject(), 'performanceScore')
+      ? Number((profile as any).performanceScore)
+      : null;
+
+  return {
+    notifications: {
+      unread: unreadNotifications,
+    },
+    operations: {
+      ordersHandled,
+      activityLast7Days,
+    },
+    performance: {
+      score: Number.isFinite(performanceScore) ? performanceScore : null,
+    },
+  };
 };

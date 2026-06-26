@@ -15,7 +15,7 @@ export type BackendPaymentStatus =
   | "REFUNDED";
 
 export type UiOrderStatus = "attention" | "pending" | "confirmed" | "ready" | "shipping" | "completed" | "cancelled";
-export type UiPaymentDisplay = "paid" | "cod";
+export type UiPaymentDisplay = "paid" | "unpaid";
 
 export interface BackendOrderListItem {
   id: string;
@@ -38,11 +38,13 @@ export interface AdminOrderRow {
   customerName: string;
   customerPhone: string;
   date: string;
+  createdAt: string;
   orderType: string;
   payment: UiPaymentDisplay;
   paymentMethod: string;
   paymentStatus: BackendPaymentStatus | null;
   amount: number;
+  totalAmount: number;
   status: UiOrderStatus;
   backendStatus: BackendOrderStatus;
 }
@@ -72,10 +74,9 @@ export const uiStatusToStatusGroup = (status: UiOrderStatus): string =>
 export const mapPaymentToUi = (
   payment: BackendOrderListItem["payment"]
 ): UiPaymentDisplay => {
-  if (!payment) return "cod";
+  if (!payment) return "unpaid";
   if (payment.status === "SUCCESS") return "paid";
-  if (payment.method === "COD") return "cod";
-  return "cod";
+  return "unpaid";
 };
 
 export const mapBackendOrderToRow = (item: BackendOrderListItem): AdminOrderRow => ({
@@ -91,10 +92,12 @@ export const mapBackendOrderToRow = (item: BackendOrderListItem): AdminOrderRow 
     hour: "2-digit",
     minute: "2-digit",
   }),
+  createdAt: item.createdAt,
   payment: mapPaymentToUi(item.payment),
   paymentMethod: item.payment?.method ?? "",
   paymentStatus: item.payment?.status ?? null,
   amount: item.totalAmount,
+  totalAmount: item.totalAmount,
   status: STATUS_TO_UI[item.status] ?? "pending",
   backendStatus: item.status,
 });

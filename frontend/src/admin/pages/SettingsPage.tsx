@@ -4,6 +4,9 @@ import {
   updateAdminSettings,
   rotateAdminApiKey,
   type StoreSettings,
+  type WorkingHoursSchedule,
+  type DaySchedule,
+  DEFAULT_WORKING_HOURS,
 } from "../services/adminSettings.api";
 import { uploadAdminImage, resolveAssetUrl } from "../services/adminUpload.api";
 import {
@@ -30,6 +33,8 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setAddress: (v: string) => void;
   setOpeningHours: (v: string) => void;
   setTimezone: (v: string) => void;
+  setTimezoneIana: (v: string) => void;
+  setWorkingHours: (v: WorkingHoursSchedule) => void;
   setVnpayActive: (v: boolean) => void;
   setCodActive: (v: boolean) => void;
   setMomoActive: (v: boolean) => void;
@@ -57,6 +62,8 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setters.setAddress(settings.address);
   setters.setOpeningHours(settings.openingHours);
   setters.setTimezone(settings.timezone);
+  setters.setTimezoneIana(settings.timezoneIana ?? "Asia/Ho_Chi_Minh");
+  setters.setWorkingHours(settings.workingHoursSchedule ?? DEFAULT_WORKING_HOURS);
   setters.setVnpayActive(settings.vnpayActive);
   setters.setCodActive(settings.codActive);
   setters.setMomoActive(settings.momoActive);
@@ -93,6 +100,8 @@ export function SettingsPage() {
   const [address, setAddress] = useState("");
   const [openingHours, setOpeningHours] = useState("");
   const [timezone, setTimezone] = useState("(GMT+07:00) Bangkok, Hanoi, Jakarta");
+  const [timezoneIana, setTimezoneIana] = useState("Asia/Ho_Chi_Minh");
+  const [workingHours, setWorkingHours] = useState<WorkingHoursSchedule>(DEFAULT_WORKING_HOURS);
 
   const [vnpayActive, setVnpayActive] = useState(true);
   const [codActive, setCodActive] = useState(true);
@@ -139,6 +148,8 @@ export function SettingsPage() {
           setAddress,
           setOpeningHours,
           setTimezone,
+          setTimezoneIana,
+          setWorkingHours,
           setVnpayActive,
           setCodActive,
           setMomoActive,
@@ -230,6 +241,8 @@ export function SettingsPage() {
     address,
     openingHours,
     timezone,
+    timezoneIana,
+    workingHoursSchedule: workingHours,
     vnpayActive,
     codActive,
     momoActive,
@@ -263,6 +276,8 @@ export function SettingsPage() {
         setAddress,
         setOpeningHours,
         setTimezone,
+        setTimezoneIana,
+        setWorkingHours,
         setVnpayActive,
         setCodActive,
         setMomoActive,
@@ -923,6 +938,142 @@ export function SettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Working Hours Card */}
+          {(() => {
+            const DAY_LABELS: { key: keyof WorkingHoursSchedule; label: string }[] = [
+              { key: "monday",    label: "Thứ 2" },
+              { key: "tuesday",   label: "Thứ 3" },
+              { key: "wednesday", label: "Thứ 4" },
+              { key: "thursday",  label: "Thứ 5" },
+              { key: "friday",    label: "Thứ 6" },
+              { key: "saturday",  label: "Thứ 7" },
+              { key: "sunday",    label: "Chủ nhật" },
+            ];
+            const updateDay = (key: keyof WorkingHoursSchedule, patch: Partial<DaySchedule>) => {
+              setWorkingHours((prev) => ({
+                ...prev,
+                [key]: { ...prev[key], ...patch },
+              }));
+            };
+            return (
+              <div
+                className="admin-card"
+                style={{
+                  padding: "24px",
+                  background: "rgba(13, 21, 38, 0.6)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid var(--adm-border)",
+                  borderRadius: "12px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                  <div style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                  <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Giờ làm việc</h3>
+                  <span style={{ fontSize: "12px", color: "var(--adm-text-muted)", marginLeft: "4px" }}>
+                    — AI trả lời thay nhân viên khi ngoài giờ
+                  </span>
+                </div>
+
+                {/* Day schedule table */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                  {/* Header */}
+                  <div style={{ display: "grid", gridTemplateColumns: "100px 52px 1fr 16px 1fr", gap: "10px", alignItems: "center", paddingBottom: "8px", borderBottom: "1px solid var(--adm-border-2)" }}>
+                    <span style={{ fontSize: "12px", color: "var(--adm-text-muted)", fontWeight: "600" }}>Ngày</span>
+                    <span style={{ fontSize: "12px", color: "var(--adm-text-muted)", fontWeight: "600" }}>Mở cửa</span>
+                    <span style={{ fontSize: "12px", color: "var(--adm-text-muted)", fontWeight: "600" }}>Từ</span>
+                    <span />
+                    <span style={{ fontSize: "12px", color: "var(--adm-text-muted)", fontWeight: "600" }}>Đến</span>
+                  </div>
+                  {DAY_LABELS.map(({ key, label }) => {
+                    const day = workingHours[key];
+                    return (
+                      <div key={key} style={{ display: "grid", gridTemplateColumns: "100px 52px 1fr 16px 1fr", gap: "10px", alignItems: "center" }}>
+                        <span style={{ fontSize: "13.5px", color: day.enabled ? "#fff" : "var(--adm-text-muted)", fontWeight: "500" }}>{label}</span>
+                        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                          <ToggleSwitch
+                            checked={day.enabled}
+                            onChange={() => updateDay(key, { enabled: !day.enabled })}
+                          />
+                        </div>
+                        <input
+                          type="time"
+                          value={day.open}
+                          disabled={!day.enabled}
+                          onChange={(e) => updateDay(key, { open: e.target.value })}
+                          style={{
+                            padding: "7px 10px",
+                            background: day.enabled ? "rgba(13, 21, 38, 0.4)" : "rgba(13, 21, 38, 0.2)",
+                            border: "1px solid var(--adm-border)",
+                            borderRadius: "6px",
+                            color: day.enabled ? "#fff" : "var(--adm-text-muted)",
+                            fontSize: "13px",
+                            outline: "none",
+                            fontFamily: "inherit",
+                            width: "100%",
+                            cursor: day.enabled ? "text" : "not-allowed",
+                            colorScheme: "dark",
+                          }}
+                        />
+                        <span style={{ textAlign: "center", color: "var(--adm-text-muted)", fontSize: "12px" }}>–</span>
+                        <input
+                          type="time"
+                          value={day.close}
+                          disabled={!day.enabled}
+                          onChange={(e) => updateDay(key, { close: e.target.value })}
+                          style={{
+                            padding: "7px 10px",
+                            background: day.enabled ? "rgba(13, 21, 38, 0.4)" : "rgba(13, 21, 38, 0.2)",
+                            border: "1px solid var(--adm-border)",
+                            borderRadius: "6px",
+                            color: day.enabled ? "#fff" : "var(--adm-text-muted)",
+                            fontSize: "13px",
+                            outline: "none",
+                            fontFamily: "inherit",
+                            width: "100%",
+                            cursor: day.enabled ? "text" : "not-allowed",
+                            colorScheme: "dark",
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Timezone IANA */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxWidth: "360px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>
+                    Múi giờ IANA <span style={{ color: "var(--adm-text-muted)", fontWeight: "400" }}>(dùng để tính giờ AI)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={timezoneIana}
+                    onChange={(e) => setTimezoneIana(e.target.value.trim())}
+                    placeholder="Asia/Ho_Chi_Minh"
+                    style={{
+                      padding: "10px 14px",
+                      background: "rgba(13, 21, 38, 0.4)",
+                      border: "1px solid var(--adm-border)",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      fontSize: "13.5px",
+                      outline: "none",
+                      fontFamily: "inherit",
+                      width: "100%",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--adm-text-muted)" }}>
+                    Ví dụ: Asia/Ho_Chi_Minh, Asia/Bangkok, UTC
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
           </>
           )}
 
@@ -1272,6 +1423,9 @@ export function SettingsPage() {
                 </div>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#fff", margin: 0 }}>Thông báo hệ thống</h3>
               </div>
+              <p style={{ margin: "0 0 12px", fontSize: "12px", color: "var(--adm-text-muted)" }}>
+                Các tùy chọn này là policy cấp cửa hàng và được ưu tiên cao hơn tùy chỉnh cá nhân của từng tài khoản.
+              </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 

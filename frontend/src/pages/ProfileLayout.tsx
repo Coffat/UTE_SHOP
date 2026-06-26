@@ -5,6 +5,7 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RoseLineArt } from "@/icons";
 import { fetchProfile, UNAUTH, resetProfile } from "@/features/profile/profileSlice";
 import { resetAuth } from "@/features/auth/authSlice";
+import { resetNotifications } from "@/features/notification/notificationSlice";
 import { api } from "@/lib/api";
 import { clearAuthSessionFlag } from "@/lib/authSession";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -22,6 +23,7 @@ export function ProfileLayout() {
   const navigate = useNavigate();
   const profile = useAppSelector((s) => s.profile.profile);
   const fetchError = useAppSelector((s) => s.profile.fetchError);
+  const unreadCount = useAppSelector((s) => s.notification.unreadCount);
 
   useEffect(() => {
     void dispatch(fetchProfile());
@@ -79,6 +81,11 @@ export function ProfileLayout() {
                   >
                     <MaterialIcon name={item.icon} className="text-[18px]" />
                     <span>{item.label}</span>
+                    {item.path === "notifications" && unreadCount > 0 ? (
+                      <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-pure-ivory">
+                        {unreadCount}
+                      </span>
+                    ) : null}
                   </NavLink>
                 </li>
               ))}
@@ -94,6 +101,7 @@ export function ProfileLayout() {
                       clearAuthSessionFlag();
                       dispatch(resetAuth());
                       dispatch(resetProfile());
+                      dispatch(resetNotifications());
                       navigate("/login");
                     }
                   }}

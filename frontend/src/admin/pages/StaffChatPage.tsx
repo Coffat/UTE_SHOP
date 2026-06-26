@@ -39,6 +39,8 @@ export function StaffChatPage() {
   const [nextBefore, setNextBefore] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
   const [messageError, setMessageError] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
@@ -187,19 +189,29 @@ export function StaffChatPage() {
   }, [activeConversationId, scrollToBottom, upsertMessage]);
 
   const handleAssign = useCallback(async () => {
-    if (!activeConversationId) return;
-    await assignStaffConversation(activeConversationId);
-    await refreshConversations();
-    await loadMessages(activeConversationId);
-  }, [activeConversationId, loadMessages, refreshConversations]);
+    if (!activeConversationId || isAssigning) return;
+    setIsAssigning(true);
+    try {
+      await assignStaffConversation(activeConversationId);
+      await refreshConversations();
+      await loadMessages(activeConversationId);
+    } finally {
+      setIsAssigning(false);
+    }
+  }, [activeConversationId, isAssigning, loadMessages, refreshConversations]);
 
   const handleUpdateStatus = useCallback(
     async (nextStatus: "resolved" | "closed") => {
-      if (!activeConversationId) return;
-      await updateStaffConversationStatus(activeConversationId, nextStatus);
-      await refreshConversations();
+      if (!activeConversationId || isUpdatingStatus) return;
+      setIsUpdatingStatus(true);
+      try {
+        await updateStaffConversationStatus(activeConversationId, nextStatus);
+        await refreshConversations();
+      } finally {
+        setIsUpdatingStatus(false);
+      }
     },
-    [activeConversationId, refreshConversations]
+    [activeConversationId, isUpdatingStatus, refreshConversations]
   );
 
   const send = useCallback(async () => {
@@ -364,27 +376,30 @@ export function StaffChatPage() {
               <button
                 type="button"
                 onClick={() => void handleAssign()}
-                style={{ border: "none", borderRadius: 8, background: "#0ea5e9", color: "#fff", padding: "6px 10px", cursor: "pointer" }}
+                disabled={isAssigning}
+                style={{ border: "none", borderRadius: 8, background: isAssigning ? "#7dd3f8" : "#0ea5e9", color: "#fff", padding: "6px 10px", cursor: isAssigning ? "not-allowed" : "pointer", opacity: isAssigning ? 0.7 : 1 }}
               >
-                Nhận xử lý
+                {isAssigning ? "Đang nhận…" : "Nhận xử lý"}
               </button>
             )}
             {activeConversation?.status === "staff_handling" && (
               <button
                 type="button"
                 onClick={() => void handleUpdateStatus("resolved")}
-                style={{ border: "none", borderRadius: 8, background: "#10b981", color: "#fff", padding: "6px 10px", cursor: "pointer" }}
+                disabled={isUpdatingStatus}
+                style={{ border: "none", borderRadius: 8, background: isUpdatingStatus ? "#6ee7b7" : "#10b981", color: "#fff", padding: "6px 10px", cursor: isUpdatingStatus ? "not-allowed" : "pointer", opacity: isUpdatingStatus ? 0.7 : 1 }}
               >
-                Đánh dấu đã xử lý
+                {isUpdatingStatus ? "Đang lưu…" : "Đánh dấu đã xử lý"}
               </button>
             )}
             {activeConversation?.status === "resolved" && (
               <button
                 type="button"
                 onClick={() => void handleUpdateStatus("closed")}
-                style={{ border: "none", borderRadius: 8, background: "#f43f5e", color: "#fff", padding: "6px 10px", cursor: "pointer" }}
+                disabled={isUpdatingStatus}
+                style={{ border: "none", borderRadius: 8, background: isUpdatingStatus ? "#fb7185" : "#f43f5e", color: "#fff", padding: "6px 10px", cursor: isUpdatingStatus ? "not-allowed" : "pointer", opacity: isUpdatingStatus ? 0.7 : 1 }}
               >
-                Đóng hội thoại
+                {isUpdatingStatus ? "Đang đóng…" : "Đóng hội thoại"}
               </button>
             )}
           </div>

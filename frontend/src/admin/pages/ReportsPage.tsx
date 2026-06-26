@@ -49,137 +49,12 @@ const PRODUCT_AVATARS = [
   { avatarBg: "linear-gradient(135deg, #ef4444, #dc2626)", avatarSymbol: "🌻" },
 ];
 
-/** Legacy mock — giữ fallback khi API lỗi */
-const REVENUE_GROWTH_FALLBACK = [
-  { month: "Th01", value: 2.6, label: "2.6B" },
-  { month: "Th02", value: 2.9, label: "2.9B" },
-  { month: "Th03", value: 3.2, label: "3.2B" },
-  { month: "Th04", value: 3.0, label: "3.0B" },
-  { month: "Th05", value: 3.6, label: "3.6B" },
-  { month: "Th06", value: 3.9, label: "3.9B" },
-  { month: "Th07", value: 4.1, label: "4.1B" },
-  { month: "Th08", value: 4.0, label: "4.0B" },
-  { month: "Th09", value: 4.3, label: "4.3B" },
-  { month: "Th10", value: 4.6, label: "4.6B" },
-  { month: "Th11", value: 4.2, label: "4.2B" },
-  { month: "Th12", value: 4.4, label: "4.4B" },
-];
-
-const CATEGORY_REVENUE_FALLBACK = [
-  { category: "Giày dép", value: 1.8, label: "1.8B" },
-  { category: "Thời trang", value: 1.2, label: "1.2B" },
-  { category: "Phụ kiện", value: 0.86, label: "860M" },
-  { category: "Túi xách", value: 0.52, label: "520M" },
-  { category: "Khác", value: 0.26, label: "260M" },
-];
-
-const ORDER_SOURCES_FALLBACK = [
-  { name: "Website", count: 612, percentage: 49.0, color: "#10b981" },
-  { name: "Shopee", count: 310, percentage: 24.8, color: "#fb923c" },
-  { name: "Lazada", count: 180, percentage: 14.4, color: "#f59e0b" },
-  { name: "Tiktok Shop", count: 96, percentage: 7.7, color: "#ec4899" },
-  { name: "Facebook", count: 50, percentage: 4.0, color: "#3b82f6" },
-];
-
-const TOP_PRODUCTS_FALLBACK = [
-  {
-    id: 1,
-    name: "Giày Thể Thao Nam UltraBoost",
-    sku: "SP-001",
-    sold: 812,
-    revenue: "2,436,000,000 đ",
-    growth: "18.5%",
-    isUp: true,
-    avatarBg: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-    avatarSymbol: "👟"
-  },
-  {
-    id: 2,
-    name: "Áo Hoodie Nam Basic",
-    sku: "SP-045",
-    sold: 627,
-    revenue: "1,128,000,000 đ",
-    growth: "12.3%",
-    isUp: true,
-    avatarBg: "linear-gradient(135deg, #a78bfa, #7c3aed)",
-    avatarSymbol: "🧥"
-  },
-  {
-    id: 3,
-    name: "Giày Sneaker Nữ White Trendy",
-    sku: "SP-012",
-    sold: 542,
-    revenue: "1,028,000,000 đ",
-    growth: "8.7%",
-    isUp: true,
-    avatarBg: "linear-gradient(135deg, #10b981, #059669)",
-    avatarSymbol: "👟"
-  },
-  {
-    id: 4,
-    name: "Balo Laptop 15.6 inch",
-    sku: "SP-030",
-    sold: 318,
-    revenue: "764,000,000 đ",
-    growth: "6.2%",
-    isUp: true,
-    avatarBg: "linear-gradient(135deg, #fb923c, #d97706)",
-    avatarSymbol: "🎒"
-  },
-  {
-    id: 5,
-    name: "Mũ Bucket Nam/Nữ",
-    sku: "SP-067",
-    sold: 287,
-    revenue: "258,000,000 đ",
-    growth: "3.1%",
-    isUp: false,
-    avatarBg: "linear-gradient(135deg, #ef4444, #dc2626)",
-    avatarSymbol: "👒"
-  }
-];
-
-const CHANNEL_PERFORMANCE_FALLBACK = [
-  { name: "Website", revenue: "2,148,600,000 đ", ratio: "49.0%", progress: 86, color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
-  { name: "Shopee", revenue: "1,188,200,000 đ", ratio: "27.1%", progress: 74, color: "#fb923c", bg: "rgba(251,146,60,0.12)" },
-  { name: "Lazada", revenue: "678,000,000 đ", ratio: "15.5%", progress: 62, color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-  { name: "Tiktok Shop", revenue: "268,800,000 đ", ratio: "6.1%", progress: 53, color: "#fb7185", bg: "rgba(251,113,133,0.12)" },
-  { name: "Facebook", revenue: "102,000,000 đ", ratio: "2.3%", progress: 41, color: "#60a5fa", bg: "rgba(96,165,250,0.12)" }
-];
-
-function buildReportsFallback(): ReportsData {
-  return {
-    period: "30d",
-    periodLabel: "Dữ liệu mẫu",
-    stats: [
-      { id: "report-revenue", label: "Doanh thu tháng", value: 4385600000, change: 12.6, changeLabel: "so với tháng trước", color: "indigo", tooltip: "Tổng doanh thu" },
-      { id: "report-profit", label: "Lợi nhuận", value: 985240000, change: 8.8, changeLabel: "so với tháng trước", color: "purple", tooltip: "Lợi nhuận gộp" },
-      { id: "report-aov", label: "AOV", value: 1248000, change: 6.1, changeLabel: "so với tháng trước", color: "cyan", tooltip: "Giá trị TB đơn hàng" },
-      { id: "report-returns", label: "Tỷ lệ hoàn đơn", value: "2.31%", change: -0.42, changeLabel: "so với tháng trước", color: "amber", tooltip: "Tỷ lệ đơn hủy" },
-    ],
-    revenueGrowth: REVENUE_GROWTH_FALLBACK,
-    categoryRevenue: CATEGORY_REVENUE_FALLBACK,
-    orderSources: ORDER_SOURCES_FALLBACK,
-    totalOrdersInPeriod: 1248,
-    topProducts: TOP_PRODUCTS_FALLBACK.map((p) => ({
-      id: String(p.id),
-      name: p.name,
-      sku: p.sku,
-      sold: p.sold,
-      revenue: p.revenue,
-      growth: p.growth,
-      isUp: p.isUp,
-    })),
-    channelPerformance: CHANNEL_PERFORMANCE_FALLBACK,
-    monthlyGoal: { target: "5,000,000,000 đ", achievedPercent: 87.7 },
-  };
-}
-
 export function ReportsPage() {
   const [period, setPeriod] = useState<ReportsPeriod>("30d");
   const [data, setData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [usedFallback, setUsedFallback] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
 
@@ -237,18 +112,18 @@ export function ReportsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     fetchAdminReports(period, 5)
       .then((result) => {
         if (!cancelled) {
           setData(result);
-          setUsedFallback(false);
         }
       })
       .catch((err) => {
         console.error("Failed to fetch reports:", err);
         if (!cancelled) {
-          setData(buildReportsFallback());
-          setUsedFallback(true);
+          setData(null);
+          setError("Không thể tải báo cáo. Vui lòng thử lại.");
         }
       })
       .finally(() => {
@@ -257,44 +132,27 @@ export function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [period, reloadKey]);
 
-  const report = data ?? buildReportsFallback();
-  const revenueGrowth =
-    !usedFallback && report.revenueGrowth.length > 0
-      ? report.revenueGrowth
-      : usedFallback
-        ? REVENUE_GROWTH_FALLBACK
-        : report.revenueGrowth;
-  const categoryRevenue =
-    !usedFallback && report.categoryRevenue.length > 0
-      ? report.categoryRevenue
-      : usedFallback
-        ? CATEGORY_REVENUE_FALLBACK
-        : report.categoryRevenue;
-  const orderSources =
-    !usedFallback && report.orderSources.length > 0
-      ? report.orderSources
-      : usedFallback
-        ? ORDER_SOURCES_FALLBACK
-        : report.orderSources;
-  const topProducts: ReportsTopProduct[] = usedFallback
-    ? TOP_PRODUCTS_FALLBACK.map((p) => ({
-        id: String(p.id),
-        name: p.name,
-        sku: p.sku,
-        sold: p.sold,
-        revenue: p.revenue,
-        growth: p.growth,
-        isUp: p.isUp,
-      }))
-    : report.topProducts;
-  const channelPerformance =
-    !usedFallback && report.channelPerformance.length > 0
-      ? report.channelPerformance
-      : usedFallback
-        ? CHANNEL_PERFORMANCE_FALLBACK
-        : report.channelPerformance;
+  const report: ReportsData =
+    data ??
+    ({
+      period,
+      periodLabel: "Không có dữ liệu",
+      stats: [],
+      revenueGrowth: [],
+      categoryRevenue: [],
+      orderSources: [],
+      totalOrdersInPeriod: 0,
+      topProducts: [],
+      channelPerformance: [],
+      monthlyGoal: { target: "0 đ", achievedPercent: 0 },
+    } as ReportsData);
+  const revenueGrowth = report?.revenueGrowth ?? [];
+  const categoryRevenue = report?.categoryRevenue ?? [];
+  const orderSources = report?.orderSources ?? [];
+  const topProducts: ReportsTopProduct[] = report?.topProducts ?? [];
+  const channelPerformance = report?.channelPerformance ?? [];
   const donutSegments = useMemo(() => buildDonutSegments(orderSources), [orderSources]);
 
   const maxRevenueGrowth = Math.max(...revenueGrowth.map((d) => d.value), 0.5);
@@ -369,6 +227,21 @@ export function ReportsPage() {
     return (
       <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
         Đang tải báo cáo...
+      </div>
+    );
+  }
+
+  if (!loading && !report) {
+    return (
+      <div className="admin-page" style={{ padding: "48px", textAlign: "center" }}>
+        <p style={{ color: "#fda4af", marginBottom: "12px" }}>{error || "Không có dữ liệu báo cáo."}</p>
+        <button
+          type="button"
+          className="admin-btn admin-btn-primary"
+          onClick={() => setReloadKey((prev) => prev + 1)}
+        >
+          Thử tải lại
+        </button>
       </div>
     );
   }

@@ -1,5 +1,31 @@
 import { api } from "../../lib/api";
 
+export interface DaySchedule {
+  enabled: boolean;
+  open: string;  // "HH:mm" 24h
+  close: string; // "HH:mm" 24h
+}
+
+export interface WorkingHoursSchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+export const DEFAULT_WORKING_HOURS: WorkingHoursSchedule = {
+  monday:    { enabled: true,  open: "08:00", close: "21:00" },
+  tuesday:   { enabled: true,  open: "08:00", close: "21:00" },
+  wednesday: { enabled: true,  open: "08:00", close: "21:00" },
+  thursday:  { enabled: true,  open: "08:00", close: "21:00" },
+  friday:    { enabled: true,  open: "08:00", close: "21:00" },
+  saturday:  { enabled: true,  open: "08:00", close: "21:00" },
+  sunday:    { enabled: false, open: "08:00", close: "21:00" },
+};
+
 export interface StoreSettings {
   storeName: string;
   supportEmail: string;
@@ -7,6 +33,8 @@ export interface StoreSettings {
   address: string;
   openingHours: string;
   timezone: string;
+  timezoneIana: string;
+  workingHoursSchedule: WorkingHoursSchedule;
   vnpayActive: boolean;
   codActive: boolean;
   momoActive: boolean;

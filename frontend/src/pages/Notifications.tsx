@@ -4,27 +4,29 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { useToast } from "@/components/ui/ToastContext";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { fetchNotifications, markAsRead, markAllAsRead } from "@/features/notification/notificationSlice";
+import { useNavigate } from "react-router-dom";
+import { fetchNotifications, fetchUnreadCount, markAsRead, markAllAsRead } from "@/features/notification/notificationSlice";
 
 export function Notifications() {
   const { showToast } = useToast();
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { items: notificationItems, status, nextCursor } = useSelector((state: RootState) => state.notification);
   const notifications = Array.isArray(notificationItems) ? notificationItems : [];
   
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
   useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchNotifications());
-    }
-  }, [status, dispatch]);
+    dispatch(fetchNotifications());
+    dispatch(fetchUnreadCount());
+  }, [dispatch]);
 
   const handleMarkAsRead = async (id: string) => {
     try {
       await dispatch(markAsRead(id)).unwrap();
+      window.dispatchEvent(new CustomEvent("notification-updated"));
       showToast("Đã đánh dấu là đã đọc", "success");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       showToast("Lỗi kết nối khi cập nhật thông báo.", "error");
     }
@@ -39,10 +41,20 @@ export function Notifications() {
     
     try {
       await dispatch(markAllAsRead()).unwrap();
+      window.dispatchEvent(new CustomEvent("notification-updated"));
       showToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       showToast("Lỗi khi cập nhật danh sách thông báo.", "error");
+    }
+  };
+
+  const handleOpenNotification = async (id: string, actionUrl?: string, isRead?: boolean) => {
+    if (!isRead) {
+      await handleMarkAsRead(id);
+    }
+    if (actionUrl) {
+      navigate(actionUrl);
     }
   };
 
@@ -154,6 +166,28 @@ export function Notifications() {
               <p className="text-xs font-semibold text-dusk-gray font-home-heading">Đang kiểm tra thông tin...</p>
             </div>
           </motion.div>
+        ) : status === "failed" ? (
+          <motion.div
+            key="failed"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="glass-panel rounded-[24px] text-center py-16 px-6 border border-crystal-border"
+          >
+            <h3 className="font-home-heading text-base font-bold text-deep-plum mb-1">Không tải được thông báo</h3>
+            <p className="text-xs text-dusk-gray max-w-sm mx-auto mb-4">
+              Đã có lỗi khi lấy dữ liệu. Vui lòng thử lại.
+            </p>
+            <button
+              onClick={() => {
+                dispatch(fetchNotifications());
+                dispatch(fetchUnreadCount());
+              }}
+              className="rounded-full bg-primary px-6 py-2 text-xs font-bold text-pure-ivory shadow-sm transition hover:bg-primary/90"
+            >
+              Tải lại
+            </button>
+          </motion.div>
         ) : filteredNotifications.length === 0 ? (
           <motion.div
             key="empty"
@@ -197,6 +231,7 @@ export function Notifications() {
                       ? "border-crystal-border/40 bg-pure-ivory/30 shadow-none hover:bg-pure-ivory/50" 
                       : "border-primary/20 bg-pure-ivory/80 shadow-[0_4px_20px_rgba(168,85,247,0.03)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.06)]"
                   }`}
+                  onClick={() => handleOpenNotification(notif._id, notif.notification.actionUrl, notif.isRead)}
                 >
                   <div className="flex gap-4 items-start">
                     {/* Status indicator Icon */}
@@ -233,7 +268,10 @@ export function Notifications() {
                     {/* Action buttons */}
                     {!notif.isRead && (
                       <button
-                        onClick={() => handleMarkAsRead(notif._id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleMarkAsRead(notif._id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 absolute top-4 right-4 flex size-7 items-center justify-center rounded-full border border-crystal-border bg-pure-ivory text-primary shadow-sm transition-[opacity,background-color,color,transform] duration-300 hover:bg-primary hover:text-pure-ivory hover:scale-105"
                         title="Đánh dấu đã đọc"
                       >

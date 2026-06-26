@@ -61,7 +61,8 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
     id,
     status as OrderStatus,
     note ?? '',
-    req.user!.id
+    req.user!.id,
+    req.user!.role
   );
   sendSuccess(res, 200, 'Cập nhật trạng thái thành công', order);
 });
@@ -70,7 +71,7 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { reason } = req.body;
-  const order = await orderService.cancelOrder(id, reason, req.user!.id);
+  const order = await orderService.cancelOrder(id, reason, req.user!.id, req.user!.role);
   sendSuccess(res, 200, 'Hủy đơn hàng thành công', order);
 });
 

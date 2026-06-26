@@ -3,6 +3,9 @@ import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { sendSuccess } from '../../../shared/utils/apiResponse.js';
 import { AppError } from '../../../shared/utils/AppError.js';
 import { adminService } from '../services/admin.service.js';
+import AuditLog from '../../system/models/AuditLog.js';
+
+const STAFF_ACTIVITY_ROLES = ['ADMIN', 'SALES', 'STORE_STAFF', 'WAREHOUSE_STAFF'];
 
 // ─── Staff Controller Actions ────────────────────────────────────────────────
 export const listStaff = asyncHandler(async (req: Request, res: Response) => {
@@ -192,4 +195,30 @@ export const cancelShift = asyncHandler(async (req: Request, res: Response) => {
   const result = await adminService.cancelShift(id as string, adminUserId as string);
 
   return sendSuccess(res, 200, 'Hủy lịch trực thành công (Soft Cancel)', result);
+});
+
+// GET /api/v1/admin/staff-activities
+export const listStaffActivities = asyncHandler(async (req: Request, res: Response) => {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+  const activities = await AuditLog.find({
+    actorRole: { $in: STAFF_ACTIVITY_ROLES },
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate('actorId', 'fullName role isActive status');
+
+  const items = activities.map((activity) => ({
+    id: activity._id.toString(),
+    actorId: activity.actorId?._id?.toString?.() || activity.actorId?.toString?.() || '',
+    fullName: (activity.actorId as any)?.fullName || 'Nhân sự',
+    role: (activity.actorId as any)?.role || activity.actorRole,
+    isActive: (activity.actorId as any)?.isActive ?? false,
+    status: (activity.actorId as any)?.status || null,
+    action: activity.action,
+    resourceType: activity.resourceType,
+    resourceId: activity.resourceId,
+    createdAt: activity.createdAt,
+  }));
+
+  return sendSuccess(res, 200, 'Lấy hoạt động nhân viên thành công', items);
 });

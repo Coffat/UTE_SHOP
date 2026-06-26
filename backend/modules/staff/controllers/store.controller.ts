@@ -5,21 +5,23 @@ import { sendSuccess, sendError } from '../../../shared/utils/apiResponse.js';
 import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import OrderStatus from '../../../shared/enums/OrderStatus.js';
 import OrderType from '../../../shared/enums/OrderType.js';
+import OrderPaymentStatus from '../../../shared/enums/OrderPaymentStatus.js';
 import { writeAuditLog } from '../../../shared/utils/auditLogger.js';
-import Payment from '../../finance/models/Payment.js';
-import PaymentStatus from '../../../shared/enums/PaymentStatus.js';
+import Customer from '../../user/models/Customer.js';
 
 // GET /api/v1/store/summary — Dashboard stats
 export const getStoreSummary = asyncHandler(async (_req: Request, res: Response) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [todayOrders, needActionOrders, readyOrders] = await Promise.all([
+  const [todayOrders, needActionOrders, readyOrders, deliveringOrders] = await Promise.all([
     // Đơn hôm nay
     orderService.getOrders({ dateFrom: todayStart.toISOString() }),
     // Đơn cần xử lý: CONFIRMED (đang chờ STORE_STAFF chuẩn bị)
     orderService.getOrders({ statusGroup: 'confirmed' }),
-    // Đơn đang sắp giao: READY + DELIVERING
+    // Đơn đã sẵn sàng
+    orderService.getOrders({ statusGroup: 'ready' }),
+    // Đơn đang giao
     orderService.getOrders({ statusGroup: 'shipping' }),
   ]);
 
@@ -38,7 +40,7 @@ export const getStoreSummary = asyncHandler(async (_req: Request, res: Response)
 
   sendSuccess(res, 200, 'OK', {
     needActionCount: needActionOrders.total,
-    readyCount: readyOrders.total,
+    readyCount: readyOrders.total + deliveringOrders.total,
     todayTotal: todayOrders.total,
     completedToday,
     urgentOrders,
@@ -73,16 +75,52 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// GET /api/v1/store/customers
+export const listCustomers = asyncHandler(async (req: Request, res: Response) => {
+  const search = String(req.query.search || '').trim();
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 20);
+
+  const filter: Record<string, unknown> = {
+    role: 'CUSTOMER',
+    deletedAt: null,
+  };
+
+  if (search) {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { fullName: { $regex: escapedSearch, $options: 'i' } },
+      { email: { $regex: escapedSearch, $options: 'i' } },
+      { phone: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const customers = await Customer.find(filter)
+    .select('fullName email phone')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  sendSuccess(res, 200, 'OK', {
+    items: customers.map((customer) => ({
+      id: customer._id.toString(),
+      fullName: customer.fullName,
+      email: customer.email,
+      phone: customer.phone,
+    })),
+    meta: { limit, total: customers.length },
+  });
+});
+
 // GET /api/v1/store/orders/:id
 export const getOrder = asyncHandler(async (req: Request, res: Response) => {
-  const order = await orderService.getOrderById(req.params.id);
+  const order = await orderService.getOrderById(String(req.params.id));
   if (!order) return sendError(res, 404, 'Không tìm thấy đơn hàng');
   sendSuccess(res, 200, 'OK', orderService.toStaffOrderDto(order, 'STORE_STAFF'));
 });
 
 // PATCH /api/v1/store/orders/:id/status
 export const changeStatus = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const { status, note } = req.body;
   const userRole = req.user!.role;
 
@@ -94,7 +132,13 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
   }
 
   const beforeOrder = order.toObject();
-  const updatedOrder = await orderService.updateOrderStatus(id, status as OrderStatus, note ?? '', req.user!.id);
+  const updatedOrder = await orderService.updateOrderStatus(
+    id,
+    status as OrderStatus,
+    note ?? '',
+    req.user!.id,
+    userRole
+  );
 
   await writeAuditLog(req, 'UPDATE_STATUS', 'Order', id, beforeOrder, updatedOrder.toObject());
 
@@ -103,7 +147,7 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
 
 // POST /api/v1/store/orders/:id/cancel
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const { reason } = req.body;
 
   const order = await orderService.getOrderById(id);
@@ -113,45 +157,45 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, 400, 'Chỉ có thể hủy đơn ở trạng thái Chờ xử lý hoặc Đã xác nhận');
   }
 
-  const cancelled = await orderService.cancelOrder(id, reason ?? 'Hủy bởi nhân viên cửa hàng', req.user!.id);
+  const cancelled = await orderService.cancelOrder(
+    id,
+    reason ?? 'Hủy bởi nhân viên cửa hàng',
+    req.user!.id,
+    req.user!.role
+  );
   sendSuccess(res, 200, 'Hủy đơn hàng thành công', orderService.toStaffOrderDto(cancelled, 'STORE_STAFF'));
 });
 
 // POST /api/v1/store/orders/:id/confirm-payment
 // Xác nhận thanh toán thủ công (CASH tại quầy, MOMO kiểm tra ngoài hệ thống)
 export const confirmPaymentManual = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const { paymentMethod, note } = req.body;
 
   const order = await orderService.getOrderById(id);
   if (!order) return sendError(res, 404, 'Không tìm thấy đơn hàng');
-
-  // Tìm payment record hiện tại của đơn
-  const payments = await paymentService.getPaymentsByOrder(id);
-  let payment = payments.find((p) => p.status !== PaymentStatus.SUCCESS);
-
-  if (!payment) {
-    // Nếu chưa có payment record (đơn AT_STORE tạo thủ công), tạo mới
-    payment = await paymentService.createPaymentRecord({
-      orderId: id,
-      amount: (order as any).finalTotal || (order as any).totalAmount,
-      paymentMethod: paymentMethod || 'CASH',
-    });
+  if (order.paymentStatus === OrderPaymentStatus.PAID) {
+    return sendError(res, 400, 'Đơn hàng đã được thanh toán');
+  }
+  if (order.paymentMethod === 'VNPAY') {
+    return sendError(res, 400, 'Đơn thanh toán VNPay phải xác nhận qua cổng VNPay, không thể xác nhận thủ công');
+  }
+  if (paymentMethod === 'VNPAY') {
+    return sendError(res, 400, 'Không hỗ trợ xác nhận thủ công bằng phương thức VNPay');
   }
 
-  // Đánh dấu payment là SUCCESS
-  await Payment.findByIdAndUpdate(payment._id, {
-    status: PaymentStatus.SUCCESS,
-    transactionId: `MANUAL-${Date.now()}`,
+  const payment = await paymentService.confirmManualPaymentByOrder({
+    orderId: id,
+    paymentMethod: (paymentMethod || 'CASH') as 'MOMO' | 'COD' | 'CASH' | 'VNPAY',
+    note,
+    actorId: req.user!.id,
   });
 
-  // Cập nhật paymentStatus trên Order
-  await (order as any).constructor.findByIdAndUpdate(id, {
-    paymentStatus: 'PAID',
-    $push: { statusHistory: { status: order.status, note: note || 'Xác nhận thanh toán thủ công', changedBy: req.user!.id } },
+  sendSuccess(res, 200, 'Xác nhận thanh toán thành công', {
+    orderId: id,
+    paymentId: payment._id,
+    transactionId: payment.transactionId,
   });
-
-  sendSuccess(res, 200, 'Xác nhận thanh toán thành công', { orderId: id });
 });
 
 // POST /api/v1/store/orders — Tạo đơn AT_STORE

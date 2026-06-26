@@ -4,6 +4,10 @@ import { StatCardWidget } from "../components/StatCard";
 import {
   fetchStaffList,
   fetchShifts,
+  fetchStaffActivities,
+  createShift,
+  updateShift,
+  cancelShift,
   createStaffMember,
   updateStaffMember,
   deleteStaffMember,
@@ -85,18 +89,13 @@ const mapFrontendStatusToBackend = (s: string): string => {
   return map[s] || "ACTIVE";
 };
 
-function buildStaffActivityLogs(staff: ExtendedStaffMember[]) {
-  return staff.slice(0, 4).map((s) => ({
-    name: s.fullName,
-    role: s.role,
-    action: s.status === "Đang hoạt động" ? "Đang hoạt động" : "Nghỉ / tạm nghỉ",
-    device: "—",
-    time: "—",
-    active: s.status === "Đang hoạt động",
-    initials: s.avatarText,
-    avatarBg: s.avatarBg,
-  }));
-}
+const mapActivityActionLabel = (action: string, resourceType: string) => {
+  if (action === "UPDATE_STATUS" && resourceType === "Order") return "Cập nhật trạng thái đơn";
+  if (action === "CREATE") return "Tạo dữ liệu mới";
+  if (action === "UPDATE") return "Cập nhật dữ liệu";
+  if (action === "DELETE") return "Xóa dữ liệu";
+  return action;
+};
 
 export function StaffPage() {
   const [staffList, setStaffList] = useState<ExtendedStaffMember[]>([]);
@@ -110,6 +109,7 @@ export function StaffPage() {
   const [avgPerformance, setAvgPerformance] = useState(100);
   const [loading, setLoading] = useState(true);
   const [shifts, setShifts] = useState<any[]>([]);
+  const [loginLogs, setLoginLogs] = useState<any[]>([]);
   
   const [slideoverOpen, setSlideoverOpen] = useState(false);
   const [editStaff, setEditStaff] = useState<ExtendedStaffMember | null>(null);
@@ -123,6 +123,7 @@ export function StaffPage() {
   const [formStatus, setFormStatus] = useState<"Đang hoạt động" | "Nghỉ phép" | "Tạm nghỉ">("Đang hoạt động");
   const [formPerformance, setFormPerformance] = useState(85);
   const [formAvatar, setFormAvatar] = useState<File | null>(null);
+  const [formPassword, setFormPassword] = useState("");
 
   const itemsPerPage = 6;
   const staffListRequestRef = useRef(0);
@@ -181,11 +182,12 @@ export function StaffPage() {
       }),
       fetchStaffList({ page: 1, limit: 1, status: "ACTIVE" }),
       fetchShifts(),
+      fetchStaffActivities(8),
     ]);
 
     if (requestId !== statsRequestRef.current) return;
 
-    const [staffSampleResult, staffActiveResult, shiftResult] = results;
+    const [staffSampleResult, staffActiveResult, shiftResult, activityResult] = results;
 
     if (staffSampleResult.status === "fulfilled") {
       const data = staffSampleResult.value;
@@ -243,9 +245,38 @@ export function StaffPage() {
     } else {
       console.error("Failed to load shifts:", shiftResult.reason);
     }
-  };
 
-  const loginLogs = buildStaffActivityLogs(staffList);
+    if (activityResult.status === "fulfilled") {
+      const roleMap: Record<string, string> = {
+        ADMIN: "Admin",
+        SALES: "Staff",
+        STORE_STAFF: "Quản lý ca",
+        WAREHOUSE_STAFF: "Kho vận",
+      };
+      const activityLogs = activityResult.value.map((activity) => {
+        const initials = (activity.fullName || "NV")
+          .split(" ")
+          .map((n: string) => n[0])
+          .slice(-2)
+          .join("")
+          .toUpperCase() || "NV";
+        return {
+          name: activity.fullName,
+          role: roleMap[activity.role] || activity.role,
+          action: mapActivityActionLabel(activity.action, activity.resourceType),
+          device: activity.resourceType,
+          time: new Date(activity.createdAt).toLocaleString("vi-VN"),
+          active: activity.isActive,
+          initials,
+          avatarBg: "linear-gradient(135deg, #6366f1, #4f46e5)",
+        };
+      });
+      setLoginLogs(activityLogs);
+    } else {
+      console.error("Failed to load staff activities:", activityResult.reason);
+      setLoginLogs([]);
+    }
+  };
 
   useEffect(() => {
     void fetchStaffData();
@@ -280,6 +311,7 @@ export function StaffPage() {
     setFormStatus("Đang hoạt động");
     setFormPerformance(85);
     setFormAvatar(null);
+    setFormPassword("");
     setSlideoverOpen(true);
   };
 
@@ -292,6 +324,7 @@ export function StaffPage() {
     setFormStatus(s.status);
     setFormPerformance(s.performance);
     setFormAvatar(null);
+    setFormPassword("");
     setSlideoverOpen(true);
   };
 
@@ -316,6 +349,10 @@ export function StaffPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName || !formEmail) return;
+    if (!editStaff && !formPassword.trim()) {
+      alert("Vui lòng nhập mật khẩu khởi tạo cho nhân viên.");
+      return;
+    }
 
     try {
       let payload: any;
@@ -330,7 +367,7 @@ export function StaffPage() {
         
         if (!editStaff) {
           payload.append("role", mapFrontendRoleToBackend(formRole));
-          payload.append("password", "Uteshop@123");
+          payload.append("password", formPassword);
         }
       } else {
         payload = {
@@ -342,7 +379,7 @@ export function StaffPage() {
         };
         if (!editStaff) {
           payload.role = mapFrontendRoleToBackend(formRole);
-          payload.password = "Uteshop@123";
+          payload.password = formPassword;
         }
       }
 
@@ -359,13 +396,69 @@ export function StaffPage() {
     }
   };
 
+  const handleCreateShift = async () => {
+    const title = window.prompt("Tên ca trực", "Ca sáng");
+    if (!title) return;
+    const date = window.prompt("Ngày (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+    if (!date) return;
+    const startTime = window.prompt("Giờ bắt đầu (HH:mm)", "08:00");
+    if (!startTime) return;
+    const endTime = window.prompt("Giờ kết thúc (HH:mm)", "12:00");
+    if (!endTime) return;
+    const assignedStaff = staffList.slice(0, 1).map((staff) => staff.id);
+    if (!assignedStaff.length) {
+      alert("Chưa có nhân viên để phân ca.");
+      return;
+    }
+
+    try {
+      await createShift({
+        title,
+        date,
+        startTime,
+        endTime,
+        assignedStaff,
+      });
+      await fetchStatsAndShifts();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Không thể tạo ca trực");
+    }
+  };
+
+  const handleEditShift = async (shift: any) => {
+    const title = window.prompt("Cập nhật tên ca", shift.title);
+    if (!title) return;
+    try {
+      await updateShift(shift.id, { title });
+      await fetchStatsAndShifts();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Không thể cập nhật ca trực");
+    }
+  };
+
+  const handleCancelShift = async (shift: any) => {
+    const accepted = await confirm({
+      title: "Hủy ca trực",
+      message: `Bạn có chắc muốn hủy ca "${shift.title}"?`,
+      variant: "danger",
+      confirmLabel: "Hủy ca",
+    });
+    if (!accepted) return;
+    try {
+      await cancelShift(shift.id);
+      await fetchStatsAndShifts();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Không thể hủy ca trực");
+    }
+  };
+
   const statCards = [
     {
       id: "staff-total",
       label: "Tổng nhân viên",
       value: totalCount,
-      change: 12.0,
-      changeLabel: "so với tháng trước",
+      change: 0,
+      changeLabel: "dữ liệu realtime",
       icon: "users",
       color: "indigo" as const,
       tooltip: "Tổng số nhân sự trong hệ thống",
@@ -375,8 +468,8 @@ export function StaffPage() {
       id: "staff-active",
       label: "Đang hoạt động",
       value: activeCount,
-      change: 14.3,
-      changeLabel: "so với tháng trước",
+      change: 0,
+      changeLabel: "dữ liệu realtime",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -392,8 +485,8 @@ export function StaffPage() {
       id: "staff-shifts",
       label: "Ca hôm nay",
       value: shifts.length,
-      change: 6.7,
-      changeLabel: "so với hôm qua",
+      change: 0,
+      changeLabel: "dữ liệu realtime",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -408,8 +501,8 @@ export function StaffPage() {
       id: "staff-perf",
       label: "Hiệu suất trung bình",
       value: `${avgPerformance}%`,
-      change: -4.5,
-      changeLabel: "so với tháng trước",
+      change: 0,
+      changeLabel: "dữ liệu realtime",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -1309,6 +1402,24 @@ export function StaffPage() {
                         {shift.subtext}
                       </p>
                     )}
+                    <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => handleEditShift(shift)}
+                        className="admin-btn admin-btn-ghost"
+                        style={{ height: "30px", padding: "0 10px", fontSize: "12px" }}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCancelShift(shift)}
+                        className="admin-btn admin-btn-ghost"
+                        style={{ height: "30px", padding: "0 10px", fontSize: "12px", color: "#ef4444", borderColor: "rgba(239,68,68,0.35)" }}
+                      >
+                        Hủy
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1316,19 +1427,20 @@ export function StaffPage() {
 
             {/* View shift details centered bottom link */}
             <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
-              <a
-                href="#shifts-schedule"
+              <button
+                type="button"
+                onClick={handleCreateShift}
                 style={{
                   fontSize: "13px",
                   color: "#6366f1",
-                  textDecoration: "none",
                   fontWeight: "600",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.color = "#818cf8")}
-                onMouseOut={(e) => (e.currentTarget.style.color = "#6366f1")}
               >
-                Xem lịch chi tiết &gt;
-              </a>
+                + Tạo ca trực
+              </button>
             </div>
           </div>
         </div>

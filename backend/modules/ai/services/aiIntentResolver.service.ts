@@ -34,7 +34,7 @@ const STORE_POLICY_PATTERN =
   /\b(đổi trả|doi tra|hoàn tiền|hoan tien|refund|phí hủy|phi huy|hủy đơn|huy don|chính sách giao hàng|chinh sach giao hang|phí giao hàng|phi giao hang)\b/i;
 const SENSITIVE_ACTION_PATTERN =
   /\b(hủy|huy|hoàn tiền|hoan tien|đổi địa chỉ|doi dia chi|thanh toán lỗi|thanh toan loi|khiếu nại|khieu nai|gặp nhân viên|gap nhan vien)\b/i;
-const ORDER_CODE_PATTERN = /\b(?:ORD-[A-Z0-9-]{4,}|DH[0-9A-Z-]{2,})\b/i;
+const ORDER_CODE_PATTERN = /\b(?:UTE\d{8}-\d{4}-(?:COD|MOMO|VNPAY|CASH)|ORD-[A-Z0-9-]{4,}|DH[0-9A-Z-]{2,})\b/i;
 
 const getRecentCustomerTexts = (historyRows: IMessage[], limit = 5): string[] =>
   historyRows
@@ -135,9 +135,10 @@ export const resolveIntentWithPrecedence = (
 };
 
 export const canAiRespondDuringHandoff = (intent: AiPrimaryIntent): boolean => {
-  if (intent === 'store_info') return true;
-  if (intent === 'general_no_tool') return true;
-  return false;
+  // While a handoff is already queued, block only a second handoff request.
+  // All other intents (product search, order status, store info, etc.) should
+  // still be answered so the customer isn't left waiting with no help.
+  return intent !== 'explicit_handoff_or_sensitive';
 };
 
 export const buildSecondaryIntentHint = (secondaryIntents: AiPrimaryIntent[]): string => {

@@ -33,7 +33,7 @@ const validateCreateOrder = [
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Số lượng phải >= 1'),
   body('recipientInfo.fullName').notEmpty().withMessage('Họ tên người nhận là bắt buộc'),
   body('recipientInfo.phone').notEmpty().withMessage('SĐT người nhận là bắt buộc'),
-  body('paymentMethod').optional().isIn(['CASH', 'MOMO']).withMessage('Phương thức thanh toán phải là CASH hoặc MOMO'),
+  body('paymentMethod').optional().isIn(['CASH', 'MOMO', 'VNPAY']).withMessage('Phương thức thanh toán phải là CASH, MOMO hoặc VNPAY'),
   handleValidationErrors,
 ];
 
@@ -42,6 +42,9 @@ router.get('/summary', storeController.getStoreSummary);
 
 // Orders list
 router.get('/orders', validateListOrders, storeController.listOrders);
+
+// Customer lookup (for POS create order)
+router.get('/customers', storeController.listCustomers);
 
 // Order detail
 router.get('/orders/:id', validateOrderId, storeController.getOrder);

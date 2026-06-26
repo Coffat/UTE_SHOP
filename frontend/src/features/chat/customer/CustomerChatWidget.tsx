@@ -13,7 +13,7 @@ import { chatSocket } from "../shared/chat.socket";
 import { startCustomerAiStream } from "../shared/chat.sse";
 
 const createClientMessageId = () => `cmsg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-const shouldDisplayMessage = (message: Message) => message.messageType !== "system_event";
+const shouldDisplayMessage = (_message: Message) => true;
 
 const toCurrency = (value?: number) => {
   if (typeof value !== "number" || Number.isNaN(value)) return null;
@@ -413,9 +413,19 @@ export function CustomerChatWidget() {
         <div
           className="mb-3 flex h-[min(72vh,500px)] w-[calc(100vw-1.5rem)] max-w-[340px] flex-col overflow-hidden rounded-2xl border border-crystal-border bg-pure-ivory shadow-[0_18px_36px_rgba(30,26,33,0.2)]"
         >
-          <div className="flex items-start justify-between border-b border-crystal-border bg-white px-3 py-2.5">
-            <div>
+          <div className="flex items-center justify-between border-b border-crystal-border bg-white px-3 py-2.5">
+            <div className="flex items-center gap-2">
               <p className="font-home-heading text-sm font-bold text-midnight-purple">CSKH-UTESHOP</p>
+              {conversation?.status === "waiting_staff" && (
+                <button
+                  type="button"
+                  onClick={() => void requestHandoff()}
+                  disabled={Boolean(conversation.handoffReason)}
+                  className="active-press rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {conversation.handoffReason ? "Đã chuyển nhân viên" : "Gặp nhân viên"}
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -430,18 +440,9 @@ export function CustomerChatWidget() {
               Đang chờ nhân viên tiếp nhận cuộc trò chuyện. Trong lúc chờ, trợ lý chỉ hỗ trợ thông tin chung.
             </div>
           ) : null}
-          {conversation?.status !== "closed" && (
-            <div className="border-b border-crystal-border bg-white px-3 pb-2">
-              <button
-                type="button"
-                onClick={() => void requestHandoff()}
-                disabled={conversation?.status === "waiting_staff" && Boolean(conversation?.handoffReason)}
-                className="active-press rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {conversation?.status === "waiting_staff" && conversation?.handoffReason
-                  ? "Đã chuyển nhân viên"
-                  : "Gặp nhân viên"}
-              </button>
+          {conversation?.status === "staff_handling" && (
+            <div className="border-b border-crystal-border bg-emerald-50 px-3 py-2 text-[11px] font-medium text-emerald-700">
+              Bạn đang được nhân viên hỗ trợ trực tiếp.
             </div>
           )}
 
@@ -469,6 +470,17 @@ export function CustomerChatWidget() {
                 {messages.map((msg) => {
                   const mine = msg.senderType === "customer";
                   const productSuggestions = msg.senderType === "ai" ? getProductSuggestions(msg) : [];
+
+                  if (msg.messageType === "system_event") {
+                    return (
+                      <div key={msg._id} className="my-2 flex justify-center">
+                        <span className="rounded-full border border-slate-200 bg-slate-100/80 px-3 py-0.5 text-[11px] text-slate-500 italic">
+                          {msg.content}
+                        </span>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={msg._id}

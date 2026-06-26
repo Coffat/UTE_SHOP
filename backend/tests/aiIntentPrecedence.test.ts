@@ -22,9 +22,9 @@ describe('ai intent precedence', () => {
   });
 
   it('prioritizes order_specific over store_info when order code present', () => {
-    const resolved = resolveIntentWithPrecedence('Cho mình xem trạng thái đơn ORD-12345-ABC và địa chỉ shop', []);
+    const resolved = resolveIntentWithPrecedence('Cho mình xem trạng thái đơn UTE25062026-0001-COD và địa chỉ shop', []);
     assert.equal(resolved.primaryIntent, 'order_specific');
-    assert.equal(resolved.orderCode, 'ORD-12345-ABC');
+    assert.equal(resolved.orderCode, 'UTE25062026-0001-COD');
     assert.ok(resolved.secondaryIntents.includes('store_info'));
   });
 
@@ -92,7 +92,7 @@ describe('isStoreInfoIntent — false positives must NOT match', () => {
     expectNotStoreInfo('hôm nay mấy ngày?'));
 
   it('phone number in order context not misread as hours', () =>
-    expectNotStoreInfo('đơn ORD-999 giao sau mấy ngày?'));
+    expectNotStoreInfo('đơn UTE25062026-0999-VNPAY giao sau mấy ngày?'));
 });
 
 // ---------------------------------------------------------------------------

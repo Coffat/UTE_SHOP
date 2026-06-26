@@ -213,3 +213,8 @@ export const emitStaffAssigned = (conversationId: string, payload: unknown) => {
   io.to(getConversationRoom(conversationId)).emit('staff_assigned', payload);
   io.to(STAFF_INBOX_ROOM).emit('staff_assigned', payload);
 };
+
+export const emitNotificationToUser = (userId: string, payload: unknown) => {
+  if (!io || !userId) return;
+  io.to(getUserRoom(userId)).emit('notification:new', payload);
+};

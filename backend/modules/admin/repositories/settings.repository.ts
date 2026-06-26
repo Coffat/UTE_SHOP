@@ -29,6 +29,8 @@ export const updateSettings = async (
     'phone',
     'address',
     'timezone',
+    'timezoneIana',
+    'workingHoursSchedule',
     'vnpayActive',
     'codActive',
     'momoActive',

@@ -115,11 +115,15 @@ export const sendMessage = async ({
   conversation.lastMessagePreview = normalized;
   conversation.lastMessageSenderType = senderType;
 
+  let wasReopened = false;
   if (senderType === 'customer') {
     conversation.lastCustomerMessageAt = now;
     if (shouldReopenConversation(actor.role, conversation.status)) {
       conversation.status = 'waiting_staff';
       conversation.assignedStaffId = null;
+      conversation.handoffReason = null;
+      conversation.aiFailureCount = 0;
+      wasReopened = true;
     }
   }
 
@@ -149,7 +153,7 @@ export const sendMessage = async ({
     }).catch(err => console.error('[EventBus] Error emitting CHAT_MESSAGE_RECEIVED:', err));
   }
 
-  return { message: messageDoc, conversation };
+  return { message: messageDoc, conversation, wasReopened };
 };
 
 export const createSystemEventMessage = async (

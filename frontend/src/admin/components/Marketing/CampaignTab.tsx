@@ -169,8 +169,8 @@ export const CampaignTab: React.FC = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexShrink: 0 }}>
         <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#fff', margin: 0 }}>Danh sách Chiến dịch</h2>
         <button
           onClick={openCreateModal}
@@ -180,7 +180,7 @@ export const CampaignTab: React.FC = () => {
         </button>
       </div>
 
-      <div className="admin-table-wrap">
+      <div className="admin-table-wrap" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <table className="admin-table">
           <thead>
             <tr>

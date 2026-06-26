@@ -100,7 +100,8 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
     id,
     status as OrderStatus,
     note ?? '',
-    req.user!.id
+    req.user!.id,
+    userRole
   );
 
   // Write audit log for staff mutation

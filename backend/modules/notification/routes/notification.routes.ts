@@ -17,6 +17,18 @@ router.get(
   asyncHandler(notifController.getUnreadCount)
 );
 
+router.get(
+  '/preferences',
+  authenticate,
+  asyncHandler(notifController.getPreferences)
+);
+
+router.patch(
+  '/preferences',
+  authenticate,
+  asyncHandler(notifController.updatePreferences)
+);
+
 router.patch(
   '/read-all',
   authenticate,

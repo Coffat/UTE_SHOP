@@ -27,6 +27,19 @@ export interface ShiftPayload {
   assignedStaff: string[];
 }
 
+export interface StaffActivity {
+  id: string;
+  actorId: string;
+  fullName: string;
+  role: string;
+  isActive: boolean;
+  status?: string | null;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  createdAt: string;
+}
+
 export async function fetchStaffList(params: StaffListParams = {}) {
   const response = await api.get("/api/v1/admin/staff", { params });
   const data = response.data.data as { items: unknown[]; meta: StaffListMeta };
@@ -70,4 +83,9 @@ export async function updateShift(id: string, payload: Partial<ShiftPayload>) {
 export async function cancelShift(id: string) {
   const response = await api.delete(`/api/v1/admin/shifts/${id}`);
   return response.data.data;
+}
+
+export async function fetchStaffActivities(limit = 10): Promise<StaffActivity[]> {
+  const response = await api.get("/api/v1/admin/staff-activities", { params: { limit } });
+  return response.data.data as StaffActivity[];
 }

@@ -32,6 +32,7 @@ import {
   createShift,
   updateShift,
   cancelShift,
+  listStaffActivities,
 } from '../controllers/admin.controller.js';
 import * as pointAdminController from '../controllers/point.admin.controller.js';
 
@@ -65,5 +66,8 @@ router.get('/shifts', validateShiftListQuery, listShifts);
 router.post('/shifts', validateCreateShift, createShift);
 router.patch('/shifts/:id', validateUpdateShift, updateShift);
 router.delete('/shifts/:id', validateShiftId, cancelShift);
+
+// ─── Staff Activity Feed ─────────────────────────────────────────────────────
+router.get('/staff-activities', listStaffActivities);
 
 export default router;

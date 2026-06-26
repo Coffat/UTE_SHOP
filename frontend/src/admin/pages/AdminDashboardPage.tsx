@@ -4,7 +4,6 @@ import { StatGrid } from "../components/StatCard";
 import { OrdersTable } from "../components/OrdersTable";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { LowStockList } from "../components/LowStockList";
-import type { StatCard, OrderItem, ActivityItem } from "../types/admin.types";
 import {
   fetchAdminDashboard,
   type DashboardData,
@@ -165,51 +164,28 @@ function AdminDashboard({ data, period, setPeriod }: { data: DashboardData, peri
 
 // Removed StaffDashboard component
 
-const FALLBACK_ADMIN_STATS: StatCard[] = [
-  { id: "revenue", label: "Doanh thu", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "revenue", color: "indigo" },
-  { id: "orders", label: "Đơn hàng", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "orders", color: "purple" },
-  { id: "users", label: "Khách hàng mới", value: 0, change: 0, changeLabel: "Không tải được dữ liệu", icon: "users", color: "emerald" },
-  { id: "rate", label: "Tỷ lệ hoàn thành đơn", value: "—", change: 0, changeLabel: "Không tải được dữ liệu", icon: "rate", color: "amber" },
-];
-
-const FALLBACK_STAFF_STATS: StatCard[] = [
-  { id: "tasks", label: "Nhiệm vụ hôm nay", value: 0, change: 0, changeLabel: "—", icon: "tasks", color: "indigo" },
-  { id: "orders", label: "Đơn cần xử lý", value: 0, change: 0, changeLabel: "—", icon: "orders", color: "emerald" },
-  { id: "products", label: "Sản phẩm cập nhật", value: 0, change: 0, changeLabel: "—", icon: "products", color: "amber" },
-  { id: "completed", label: "Hoàn thành hôm nay", value: "—", change: 0, changeLabel: "—", icon: "completed", color: "rose" },
-];
-
-function buildFallbackDashboard(): DashboardData {
-  return {
-    period: "30d",
-    periodLabel: "Không tải được dữ liệu",
-    stats: FALLBACK_ADMIN_STATS,
-    revenueChart: [],
-    orderStatusBreakdown: [],
-    recentOrders: [] as OrderItem[],
-    lowStock: [],
-    activityFeed: [] as ActivityItem[],
-    staffStats: FALLBACK_STAFF_STATS,
-    pendingOrdersCount: 0,
-  };
-}
-
 export function AdminDashboardPage() {
   const { isAdmin } = useAdminAuth();
   const [period, setPeriod] = useState<DashboardPeriod>("30d");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     fetchAdminDashboard(period)
       .then((result) => {
         if (!cancelled) setData(result);
       })
       .catch((err) => {
         console.error("Failed to fetch dashboard:", err);
-        if (!cancelled) setData(buildFallbackDashboard());
+        if (!cancelled) {
+          setData(null);
+          setError("Không thể tải dashboard. Vui lòng thử lại.");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -217,9 +193,23 @@ export function AdminDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [period, reloadKey]);
 
   if (loading || !data) {
+    if (!loading && !data) {
+      return (
+        <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#fda4af" }}>
+          <p style={{ marginBottom: "12px" }}>{error || "Không có dữ liệu dashboard."}</p>
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            onClick={() => setReloadKey((prev) => prev + 1)}
+          >
+            Thử tải lại
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="admin-page" style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
         Đang tải dashboard...

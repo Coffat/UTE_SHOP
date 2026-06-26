@@ -7,16 +7,16 @@ export const MarketingManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'campaigns' | 'vouchers' | 'points'>('campaigns');
 
   return (
-    <div className="admin-page">
-      <div className="admin-page-header">
+    <div className="admin-page" style={{ minHeight: 0 }}>
+      <div className="admin-page-header" style={{ flexShrink: 0 }}>
         <div>
           <h2 className="admin-page-title">Marketing & Khuyến mãi</h2>
           <p className="admin-page-subtitle">Quản lý Voucher giảm giá và Điểm thưởng khách hàng</p>
         </div>
       </div>
 
-      <div className="admin-card" style={{ padding: 0 }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--adm-border)' }}>
+      <div className="admin-card" style={{ padding: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--adm-border)', flexShrink: 0 }}>
           <button
             onClick={() => setActiveTab('campaigns')}
             style={{
@@ -58,7 +58,7 @@ export const MarketingManagementPage: React.FC = () => {
           </button>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'campaigns' && <CampaignTab />}
           {activeTab === 'vouchers' && <VoucherTab />}
           {activeTab === 'points' && <PointsTab />}

@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getProfile,
+  getProfileStats,
   editProfile,
   changePassword,
   getFavorites,
@@ -18,6 +19,7 @@ const router = express.Router();
 
 // GET /api/v1/users/profile – Lấy profile (mọi role đã đăng nhập)
 router.get('/profile', authenticate, getProfile);
+router.get('/profile/stats', authenticate, getProfileStats);
 
 // PUT /api/v1/users/profile – Cập nhật profile
 router.put(

@@ -19,6 +19,13 @@ export const editProfile = asyncHandler(async (req: Request, res: Response) => {
   sendSuccess(res, 200, 'Cập nhật profile thành công', updated);
 });
 
+// GET /api/v1/users/profile/stats
+export const getProfileStats = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'Unauthorized');
+  const stats = await userService.getUserProfileStats(req.user.id);
+  sendSuccess(res, 200, 'OK', stats);
+});
+
 // POST /api/v1/users/change-password
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) return sendError(res, 401, 'Unauthorized');

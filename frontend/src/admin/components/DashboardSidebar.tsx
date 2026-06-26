@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { useLocation, NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { getAvatarInitial, getDisplayName } from "@/lib/userDisplay";
 import type { NavItem } from "../types/admin.types";
@@ -25,6 +26,13 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     label: "CSKH Chat",
     icon: "",
     path: "/admin/chat",
+    allowedRoles: ["ADMIN"],
+  },
+  {
+    key: "notifications",
+    label: "Thông báo",
+    icon: "",
+    path: "/admin/notifications",
     allowedRoles: ["ADMIN"],
   },
   {
@@ -128,6 +136,13 @@ const WAREHOUSE_NAV_ITEMS: NavItem[] = [
     path: "/warehouse/transactions",
     allowedRoles: ["WAREHOUSE_STAFF"],
   },
+  {
+    key: "notifications",
+    label: "Thông báo",
+    icon: "",
+    path: "/warehouse/notifications",
+    allowedRoles: ["WAREHOUSE_STAFF"],
+  },
 ];
 
 const WAREHOUSE_BOTTOM_ITEMS: NavItem[] = [
@@ -160,6 +175,13 @@ const STAFF_NAV_ITEMS: NavItem[] = [
     label: "CSKH Chat",
     icon: "",
     path: "/staff/chat",
+    allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
+  },
+  {
+    key: "notifications",
+    label: "Thông báo",
+    icon: "",
+    path: "/staff/notifications",
     allowedRoles: ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"],
   },
   {
@@ -255,6 +277,13 @@ const STORE_STAFF_NAV_ITEMS: NavItem[] = [
     path: "/store/orders/create",
     allowedRoles: ["STORE_STAFF"],
   },
+  {
+    key: "notifications",
+    label: "Thông báo",
+    icon: "",
+    path: "/store/notifications",
+    allowedRoles: ["STORE_STAFF"],
+  },
 ];
 
 const STORE_STAFF_BOTTOM_ITEMS: NavItem[] = [
@@ -316,6 +345,15 @@ function IconOrders() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />
+    </svg>
+  );
+}
+function IconCreateOrder() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="12" y1="8" x2="12" y2="16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
     </svg>
   );
 }
@@ -426,6 +464,14 @@ function IconChat() {
     </svg>
   );
 }
+function IconNotifications() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
 function IconCollapse({ collapsed }: { collapsed: boolean }) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -435,7 +481,7 @@ function IconCollapse({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-const ICONS: Record<string, React.FC<any>> = {
+const ICONS: Record<string, React.FC> = {
   dashboard: IconDashboard,
   orders:    IconOrders,
   products:  IconProducts,
@@ -450,7 +496,8 @@ const ICONS: Record<string, React.FC<any>> = {
   reviews:   IconReviews,
   marketing: IconMarketing,
   chat:      IconChat,
-  "create-order": IconOrders,
+  notifications: IconNotifications,
+  "create-order": IconCreateOrder,
   "wh-dashboard":    IconWarehouse,
   "wh-stock":        IconProducts,
   "wh-import":       IconImport,
@@ -472,13 +519,22 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const { user, role } = useAdminAuth();
   const location = useLocation();
+  const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
   const isWarehouse = role === "WAREHOUSE_STAFF";
   const isStore = role === "STORE_STAFF";
   const navItems = role === "ADMIN" ? ADMIN_NAV_ITEMS : isWarehouse ? WAREHOUSE_NAV_ITEMS : isStore ? STORE_STAFF_NAV_ITEMS : STAFF_NAV_ITEMS;
   const bottomItems = role === "ADMIN" ? ADMIN_BOTTOM_ITEMS : isWarehouse ? WAREHOUSE_BOTTOM_ITEMS : isStore ? STORE_STAFF_BOTTOM_ITEMS : STAFF_BOTTOM_ITEMS;
 
-  const visibleItems = navItems.filter((item) => item.allowedRoles.includes(role));
+  const visibleItems = navItems
+    .filter((item) => item.allowedRoles.includes(role))
+    .map((item) => {
+      if (item.key !== "notifications") return item;
+      return {
+        ...item,
+        badge: unreadCount,
+      };
+    });
 
   const visibleBottomItems = bottomItems.filter((item) =>
     item.allowedRoles.includes(role)
@@ -514,14 +570,23 @@ export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps)
       {/* Navigation */}
       <nav className="admin-nav">
         {visibleItems.map((item) => {
-          // Direct comparison or startsWith logic to determine active item
-          const isActive = location.pathname === item.path ||
-            (item.path !== "/admin/dashboard" && location.pathname.startsWith(item.path));
+          // Prevent parent route from being active when a more specific child route matches
+          const hasMoreSpecificMatch = visibleItems.some(
+            (other) =>
+              other.path !== item.path &&
+              other.path.startsWith(item.path) &&
+              location.pathname.startsWith(other.path)
+          );
+          const isActive =
+            location.pathname === item.path ||
+            (item.path !== "/admin/dashboard" &&
+              location.pathname.startsWith(item.path) &&
+              !hasMoreSpecificMatch);
           return (
             <NavLink
               key={item.key}
               to={item.path}
-              className={`admin-nav-item ${isActive ? "active" : ""}`}
+              className={() => `admin-nav-item ${isActive ? "active" : ""}`}
               title={collapsed ? item.label : undefined}
             >
               <span className="admin-nav-icon">{getIcon(item.key)}</span>
@@ -553,7 +618,7 @@ export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps)
             <NavLink
               key={item.key}
               to={item.path}
-              className={`admin-nav-item ${isActive ? "active" : ""}`}
+              className={() => `admin-nav-item ${isActive ? "active" : ""}`}
               title={collapsed ? item.label : undefined}
             >
               <span className="admin-nav-icon">{getIcon(item.key)}</span>

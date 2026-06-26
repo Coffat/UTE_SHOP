@@ -43,9 +43,18 @@ export interface StoreCreateOrderPayload {
   customerId?: string | null;
   items: Array<{ variantId: string; quantity: number }>;
   recipientInfo: { fullName: string; phone: string; deliveryNote?: string };
-  paymentMethod?: "CASH" | "MOMO";
+  paymentMethod?: "CASH" | "MOMO" | "VNPAY";
   note?: string;
   voucherCode?: string;
+}
+
+export interface StoreCustomerLookupResult {
+  items: Array<{
+    id: string;
+    fullName: string;
+    phone?: string;
+    email?: string;
+  }>;
 }
 
 // ─── API Calls ───────────────────────────────────────────────────────────────
@@ -84,4 +93,19 @@ export async function confirmStorePayment(orderId: string, paymentMethod?: strin
 export async function createStoreOrder(payload: StoreCreateOrderPayload) {
   const res = await api.post("/api/v1/store/orders", payload);
   return res.data.data as { id: string; orderCode: string };
+}
+
+export async function createStoreVnpayPayment(orderId: string) {
+  const res = await api.post("/api/v1/payments/vnpay/create", { orderId });
+  return res.data.data as { paymentUrl?: string; payUrl?: string };
+}
+
+export async function fetchStoreCustomers(search: string, limit = 5): Promise<StoreCustomerLookupResult> {
+  const res = await api.get("/api/v1/store/customers", {
+    params: {
+      search,
+      limit,
+    },
+  });
+  return res.data.data as StoreCustomerLookupResult;
 }

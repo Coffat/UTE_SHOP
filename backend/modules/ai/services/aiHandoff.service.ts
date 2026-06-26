@@ -1,5 +1,11 @@
 import type { AiHandoffDecision } from '../types/ai.types.js';
 
+export interface PrecheckHandoffResult extends AiHandoffDecision {
+  /** True when the handoff trigger fired but the shop is outside working hours.
+   *  The assistant should send a soft outside-hours notice instead of escalating. */
+  outsideHours?: boolean;
+}
+
 interface RuleMatcher {
   reason: string;
   patterns: RegExp[];
@@ -30,10 +36,23 @@ export const SENSITIVE_PASS1_HANDOFF_REASONS = new Set([
 export const isSensitivePass1Handoff = (reason: string | undefined | null) =>
   Boolean(reason && SENSITIVE_PASS1_HANDOFF_REASONS.has(reason));
 
-export const evaluatePrecheckHandoff = (content: string): AiHandoffDecision => {
+/**
+ * @param content    The customer message content to evaluate.
+ * @param shopOpen   Whether the shop is currently within working hours.
+ *                   When `false`, sensitive triggers return an outside-hours
+ *                   result instead of a full staff escalation.
+ */
+export const evaluatePrecheckHandoff = (
+  content: string,
+  shopOpen = true
+): PrecheckHandoffResult => {
   const normalized = content.trim();
   for (const rule of HANDOFF_RULES) {
     if (rule.patterns.some((pattern) => pattern.test(normalized))) {
+      if (!shopOpen) {
+        // Shop is closed — acknowledge the sensitive request but don't escalate
+        return { required: false, reason: rule.reason, outsideHours: true };
+      }
       return { required: true, reason: rule.reason };
     }
   }

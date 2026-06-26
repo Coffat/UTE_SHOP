@@ -10,7 +10,9 @@ import { fetchProfile, resetProfile } from "@/features/profile/profileSlice";
 import { fetchWishlist } from "@/features/wishlist/wishlistSlice";
 import { fetchCategories } from "@/features/catalog/categoriesSlice";
 import { resetAuth } from "@/features/auth/authSlice";
-import { fetchNotifications, fetchUnreadCount, markAsRead } from "@/features/notification/notificationSlice";
+import { fetchNotifications, fetchUnreadCount, markAsRead, resetNotifications } from "@/features/notification/notificationSlice";
+import { subscribeNotificationRealtime } from "@/features/notification/notificationRealtime";
+import { getDashboardBasePath } from "@/features/notification/notificationRouting";
 import { clearAuthSessionFlag, hasAuthSessionFlag } from "@/lib/authSession";
 import { getAvatarInitial, getDisplayName, isStorefrontCustomer } from "@/lib/userDisplay";
 
@@ -56,6 +58,11 @@ export function Header() {
       dispatch(fetchNotifications());
       dispatch(fetchUnreadCount());
     }
+  }, [profile, dispatch]);
+
+  useEffect(() => {
+    if (!profile) return;
+    return subscribeNotificationRealtime(dispatch);
   }, [profile, dispatch]);
 
   useEffect(() => {
@@ -288,7 +295,7 @@ export function Header() {
                         Không có thông báo nào
                       </p>
                     ) : (
-                      notifications.slice(0, 3).map((notif: any) => (
+                      notifications.slice(0, 3).map((notif) => (
                         <div
                           key={notif._id}
                           onClick={async () => {
@@ -432,13 +439,18 @@ export function Header() {
                     >
                       <MaterialIcon name="notifications" className="text-[16px]" />
                       <span>Thông báo của tôi</span>
+                      {unreadCount > 0 ? (
+                        <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-pure-ivory">
+                          {unreadCount}
+                        </span>
+                      ) : null}
                     </Link>
                     
                     {/* Admin Dashboard Access */}
                     {(profile.role?.toUpperCase() === "ADMIN" || 
                       ["SALES", "STORE_STAFF", "WAREHOUSE_STAFF"].includes(profile.role?.toUpperCase() || "")) && (
                       <Link
-                        to={profile.role?.toUpperCase() === "ADMIN" ? "/admin" : "/staff/orders"}
+                        to={getDashboardBasePath(profile.role)}
                         className="flex items-center gap-3 rounded-xl bg-primary/5 px-3 py-2 text-left font-home-heading text-xs font-bold text-primary hover:bg-primary hover:text-pure-ivory transition duration-200 border border-primary/10 mt-2"
                       >
                         <MaterialIcon name="admin_panel_settings" className="text-[16px]" />
@@ -459,6 +471,7 @@ export function Header() {
                           clearAuthSessionFlag();
                           dispatch(resetAuth());
                           dispatch(resetProfile());
+                          dispatch(resetNotifications());
                           navigate("/login");
                         }
                       }}

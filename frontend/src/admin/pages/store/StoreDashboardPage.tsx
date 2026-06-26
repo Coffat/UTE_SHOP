@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { fetchStoreSummary, type StoreSummary } from "../../services/storeOrders.api";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  PENDING: { label: "Chờ xử lý", color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.2)" },
-  CONFIRMED: { label: "Đã xác nhận", color: "#0ea5e9", bg: "rgba(14,165,233,0.08)", border: "rgba(14,165,233,0.2)" },
-  READY: { label: "Chờ lấy hàng", color: "#8b5cf6", bg: "rgba(139,92,246,0.08)", border: "rgba(139,92,246,0.2)" },
-  DELIVERING: { label: "Đang giao", color: "#3b82f6", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.2)" },
-  COMPLETED: { label: "Hoàn tất", color: "#10b981", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.2)" },
-  CANCELLED: { label: "Đã hủy", color: "#ef4444", bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)" },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; glow: string }> = {
+  PENDING: { label: "Chờ xử lý", color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.2)", glow: "rgba(245,158,11,0.5)" },
+  CONFIRMED: { label: "Đã xác nhận", color: "#0ea5e9", bg: "rgba(14,165,233,0.08)", border: "rgba(14,165,233,0.2)", glow: "rgba(14,165,233,0.5)" },
+  READY: { label: "Chờ lấy hàng", color: "#8b5cf6", bg: "rgba(139,92,246,0.08)", border: "rgba(139,92,246,0.2)", glow: "rgba(139,92,246,0.5)" },
+  DELIVERING: { label: "Đang giao", color: "#3b82f6", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.2)", glow: "rgba(59,130,246,0.5)" },
+  COMPLETED: { label: "Hoàn tất", color: "#10b981", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.2)", glow: "rgba(16,185,129,0.5)" },
+  CANCELLED: { label: "Đã hủy", color: "#ef4444", bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)", glow: "rgba(239,68,68,0.5)" },
 };
 
 function formatTime(iso: string) {
@@ -120,7 +120,7 @@ export function StoreDashboardPage() {
           >
             ↻ Làm mới
           </button>
-          <Link to="/store/create-order">
+          <Link to="/store/orders/create">
             <button style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", border: "none", borderRadius: "8px", padding: "10px 18px", fontWeight: 600, fontSize: "13.5px", color: "#fff", cursor: "pointer", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}>
               + Tạo đơn tại quầy
             </button>
@@ -157,7 +157,7 @@ export function StoreDashboardPage() {
       </div>
 
       {/* Urgent Orders */}
-      <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px" }}>
+      <div className="admin-card" style={{ padding: "24px", background: "rgba(13,21,38,0.6)", backdropFilter: "blur(12px)", border: "1px solid var(--adm-border)", borderRadius: "12px", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div>
             <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>⚡ Đơn cần xử lý ngay</h3>
@@ -167,9 +167,9 @@ export function StoreDashboardPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "48px", color: "var(--adm-text-dim)", fontSize: "14px" }}>Đang tải...</div>
+          <div style={{ textAlign: "center", padding: "48px", color: "var(--adm-text-dim)", fontSize: "14px", flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>Đang tải...</div>
         ) : !summary?.urgentOrders?.length ? (
-          <div style={{ textAlign: "center", padding: "48px" }}>
+          <div style={{ textAlign: "center", padding: "48px", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
             <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎉</div>
             <p style={{ color: "#10b981", fontSize: "15px", fontWeight: 600, margin: 0 }}>Không có đơn nào cần xử lý!</p>
             <p style={{ color: "var(--adm-text-dim)", fontSize: "13px", marginTop: "4px" }}>Tất cả đơn hàng đều đã được xử lý.</p>
@@ -197,7 +197,7 @@ export function StoreDashboardPage() {
                     <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "20px", background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, fontWeight: 600 }}>
                       {cfg.label}
                     </span>
-                    <Link to={`/store/orders`} style={{ padding: "6px 12px", borderRadius: "6px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "#818cf8", fontSize: "12px", fontWeight: 600, textDecoration: "none", transition: "all 0.2s" }}>
+                    <Link to={`/store/orders?statusGroup=confirmed&focusOrderId=${encodeURIComponent(order.id)}`} style={{ padding: "6px 12px", borderRadius: "6px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "#818cf8", fontSize: "12px", fontWeight: 600, textDecoration: "none", transition: "all 0.2s" }}>
                       Xử lý
                     </Link>
                   </div>

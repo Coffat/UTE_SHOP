@@ -1,5 +1,6 @@
 import mongoose, { ClientSession } from 'mongoose';
 import Order, { IOrder } from '../models/Order.js';
+import OrderDailySequence from '../models/OrderDailySequence.js';
 import Cart, { ICart } from '../models/Cart.js';
 import Product from '../../catalog/models/Product.js';
 import { orderRepository } from '../repositories/order.repository.js';
@@ -35,10 +36,105 @@ import {
 import {
   isValidOrderStatusTransition,
 } from '../constants/orderStatusGroups.js';
-import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
-import crypto from 'crypto';
 
-const generateOrderCode = () => `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+type OrderCodePaymentMethod = 'MOMO' | 'COD' | 'CASH' | 'VNPAY';
+
+const ORDER_CODE_PREFIX = 'UTE';
+const ORDER_CODE_TIMEZONE = 'Asia/Ho_Chi_Minh';
+const ORDER_CODE_SEQUENCE_PAD = 4;
+const ORDER_CODE_MAX_RETRIES = 5;
+
+const getVietnamDateParts = (date = new Date()): { day: string; month: string; year: string } => {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ORDER_CODE_TIMEZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  const parts = formatter.formatToParts(date);
+  const day = parts.find((part) => part.type === 'day')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const year = parts.find((part) => part.type === 'year')?.value;
+  if (!day || !month || !year) {
+    throw new AppError('Không thể tạo mã đơn hàng theo ngày hiện tại', 500);
+  }
+  return { day, month, year };
+};
+
+const buildOrderCode = ({
+  sequence,
+  paymentMethod,
+  date = new Date(),
+}: {
+  sequence: number;
+  paymentMethod: OrderCodePaymentMethod;
+  date?: Date;
+}): string => {
+  const { day, month, year } = getVietnamDateParts(date);
+  const dateKey = `${day}${month}${year}`;
+  const paddedSequence = String(sequence).padStart(ORDER_CODE_SEQUENCE_PAD, '0');
+  return `${ORDER_CODE_PREFIX}${dateKey}-${paddedSequence}-${paymentMethod}`;
+};
+
+const allocateOrderCode = async (
+  paymentMethod: OrderCodePaymentMethod,
+  session?: ClientSession
+): Promise<string> => {
+  const now = new Date();
+  const { day, month, year } = getVietnamDateParts(now);
+  const sequenceKey = `${year}-${month}-${day}`;
+  const counter = await OrderDailySequence.findOneAndUpdate(
+    { _id: sequenceKey },
+    {
+      $inc: { sequence: 1 },
+      $setOnInsert: {
+        businessDate: `${day}${month}${year}`,
+        timezone: ORDER_CODE_TIMEZONE,
+      },
+    },
+    {
+      upsert: true,
+      new: true,
+      session,
+    }
+  );
+
+  if (!counter) {
+    throw new AppError('Không thể cấp số thứ tự mã đơn hàng', 500);
+  }
+  return buildOrderCode({
+    sequence: counter.sequence,
+    paymentMethod,
+    date: now,
+  });
+};
+
+const isDuplicateOrderCodeError = (error: unknown): boolean => {
+  const err = error as { code?: number; message?: string };
+  return err?.code === 11000 && (err?.message || '').includes('orderCode');
+};
+
+const createOrderWithGeneratedCode = async (
+  payload: Omit<Record<string, unknown>, 'orderCode'>,
+  paymentMethod: OrderCodePaymentMethod,
+  session?: ClientSession
+): Promise<IOrder> => {
+  for (let attempt = 0; attempt < ORDER_CODE_MAX_RETRIES; attempt += 1) {
+    const orderCode = await allocateOrderCode(paymentMethod, session);
+    try {
+      const [order] = session
+        ? await Order.create([{ ...payload, orderCode }], { session })
+        : await Order.create([{ ...payload, orderCode }]);
+      return order;
+    } catch (error) {
+      if (isDuplicateOrderCodeError(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new AppError('Không thể tạo mã đơn hàng duy nhất. Vui lòng thử lại.', 500);
+};
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
@@ -201,9 +297,8 @@ export const placeOrderWithoutTransaction = async ({
   const orderPaymentStatus = resolveInitialOrderPaymentStatus(paymentMethod);
 
   // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
-  const [order] = await Order.create([
+  const order = await createOrderWithGeneratedCode(
     {
-      orderCode: generateOrderCode(),
       customer: customerId || null,
       status: OrderStatus.PENDING,
       orderType,
@@ -223,7 +318,8 @@ export const placeOrderWithoutTransaction = async ({
       paymentStatus: orderPaymentStatus,
       statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed (no-transaction fallback)' }],
     },
-  ]);
+    paymentMethod
+  );
 
   // ── STEP 3: Trừ kho (inventory.service) ──────────────────────────────────
   for (const item of cart.items) {
@@ -247,6 +343,7 @@ export const placeOrderWithoutTransaction = async ({
     occurredAt: new Date(),
     entityId: (order._id as mongoose.Types.ObjectId).toString(),
     actorId: customerId,
+    customerId: customerId || undefined,
     orderId: (order._id as mongoose.Types.ObjectId).toString(),
     orderCode: order.orderCode,
     totalAmount: calcResult.finalTotal,
@@ -327,31 +424,29 @@ export const placeOrder = async ({
     const resolved = await resolveRecipientAndAddressId(customerId, recipientInfo, deliveryAddressId);
 
     // ── STEP 2: Tạo Order ─────────────────────────────────────────────────────
-    const [order] = await Order.create(
-      [
-        {
-          orderCode: generateOrderCode(),
-          customer: customerId || null,
-          status: OrderStatus.PENDING,
-          orderType,
-          items: orderItems,
-          recipient: resolved.recipientInfo,
-          deliveryAddress: resolved.deliveryAddressId || null,
-          subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
-          shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
-          discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,
-          pointsUsed: calcResult.pointsUsed,
-          pointsDiscount: mongoose.Types.Decimal128.fromString(calcResult.pointsDiscount.toString()) as any,
-          totalAmount: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
-          finalTotal: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
-          voucher: calcResult.voucherId || null,
-          note: note || '',
-          paymentMethod,
-          paymentStatus: orderPaymentStatus,
-          statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed' }],
-        },
-      ],
-      { session }
+    const order = await createOrderWithGeneratedCode(
+      {
+        customer: customerId || null,
+        status: OrderStatus.PENDING,
+        orderType,
+        items: orderItems,
+        recipient: resolved.recipientInfo,
+        deliveryAddress: resolved.deliveryAddressId || null,
+        subtotal: mongoose.Types.Decimal128.fromString(calcResult.subTotal.toString()) as any,
+        shippingFee: mongoose.Types.Decimal128.fromString(calcResult.shippingFee.toString()) as any,
+        discountAmount: mongoose.Types.Decimal128.fromString(calcResult.voucherDiscount.toString()) as any,
+        pointsUsed: calcResult.pointsUsed,
+        pointsDiscount: mongoose.Types.Decimal128.fromString(calcResult.pointsDiscount.toString()) as any,
+        totalAmount: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+        finalTotal: mongoose.Types.Decimal128.fromString(calcResult.finalTotal.toString()) as any,
+        voucher: calcResult.voucherId || null,
+        note: note || '',
+        paymentMethod,
+        paymentStatus: orderPaymentStatus,
+        statusHistory: [{ status: OrderStatus.PENDING, note: 'Order placed' }],
+      },
+      paymentMethod,
+      session
     );
 
     // ── STEP 3: Trừ kho (inventory.service) ──────────────────────────────────
@@ -378,6 +473,7 @@ export const placeOrder = async ({
       occurredAt: new Date(),
       entityId: (order._id as mongoose.Types.ObjectId).toString(),
       actorId: customerId,
+      customerId: customerId || undefined,
       orderId: (order._id as mongoose.Types.ObjectId).toString(),
       orderCode: order.orderCode,
       totalAmount: calcResult.finalTotal,
@@ -436,12 +532,18 @@ export const updateOrderStatus = async (
   newStatus: OrderStatus,
   note: string,
   changedById: string,
-  role : string
+  role: string
 ): Promise<IOrder> => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
 
   const currentStatus = order.status as OrderStatus;
+  if (!role) {
+    throw new AppError('Không xác định được vai trò người thao tác', 403);
+  }
+  if (!canTransitionOrderStatus(role, currentStatus, newStatus)) {
+    throw new AppError('Bạn không có quyền thực hiện chuyển đổi trạng thái này', 403);
+  }
   if (newStatus === OrderStatus.DELIVERY_FAILED && !['SHIPPER', 'ADMIN'].includes(role)) {
     throw new AppError('Chỉ nhân viên giao hàng hoặc Admin mới được phép đánh dấu Giao thất bại', 403);
   }
@@ -502,6 +604,7 @@ export const updateOrderStatus = async (
     occurredAt: new Date(),
     entityId: (order._id as mongoose.Types.ObjectId).toString(),
     actorId: changedById,
+    customerId: order.customer ? order.customer.toString() : undefined,
     orderId: (order._id as mongoose.Types.ObjectId).toString(),
     orderCode: order.orderCode,
     oldStatus: currentStatus,
@@ -573,6 +676,7 @@ export const cancelOrderWithoutTransaction = async (
     occurredAt: new Date(),
     entityId: (order._id as mongoose.Types.ObjectId).toString(),
     actorId: cancelledById,
+    customerId: order.customer ? order.customer.toString() : undefined,
     orderId: (order._id as mongoose.Types.ObjectId).toString(),
     orderCode: order.orderCode,
     oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
@@ -591,6 +695,7 @@ export const confirmOrderPayment = async (
   const order = await Order.findById(orderId).session(session || null);
   if (!order) throw new Error('Không tìm thấy đơn hàng');
 
+  order.paymentStatus = OrderPaymentStatus.PAID;
   order.status = OrderStatus.CONFIRMED;
   order.statusHistory.push({
     status: OrderStatus.CONFIRMED,
@@ -626,7 +731,7 @@ export const cancelOrder = async (
   orderId: string,
   reason: string,
   cancelledById: string,
-  role: string, // <--- Thêm role
+  role: string,
   session?: ClientSession
 ): Promise<IOrder> => {
   if (session) {
@@ -655,6 +760,7 @@ export const cancelOrder = async (
       occurredAt: new Date(),
       entityId: (order._id as mongoose.Types.ObjectId).toString(),
       actorId: cancelledById,
+      customerId: order.customer ? order.customer.toString() : undefined,
       orderId: (order._id as mongoose.Types.ObjectId).toString(),
       orderCode: order.orderCode,
       oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
@@ -677,6 +783,8 @@ export const cancelOrder = async (
     const order = await orderRepository.findByIdWithSession(orderId, newSession);
     if (!order) throw new Error('Không tìm thấy đơn hàng');
 
+    validateCustomerCancelRule(order, role);
+
     if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
       throw new Error('Không thể hủy đơn hàng ở trạng thái này');
     }
@@ -698,6 +806,7 @@ export const cancelOrder = async (
       occurredAt: new Date(),
       entityId: (order._id as mongoose.Types.ObjectId).toString(),
       actorId: cancelledById,
+      customerId: order.customer ? order.customer.toString() : undefined,
       orderId: (order._id as mongoose.Types.ObjectId).toString(),
       orderCode: order.orderCode,
       oldStatus: order.statusHistory[order.statusHistory.length - 2]?.status || OrderStatus.PENDING,
@@ -972,6 +1081,10 @@ export const canTransitionOrderStatus = (role: string, current: OrderStatus, nex
     if (current === OrderStatus.DELIVERING && next === OrderStatus.COMPLETED) return true;
     return false;
   }
+  if (role === 'SHIPPER') {
+    if (current === OrderStatus.DELIVERING && (next === OrderStatus.COMPLETED || next === OrderStatus.DELIVERY_FAILED)) return true;
+    return false;
+  }
   return false;
 };
 
@@ -1112,6 +1225,7 @@ export const requestReturnOrder = async (orderId: string, userId: string, reason
     occurredAt: new Date(),
     entityId: (order._id as mongoose.Types.ObjectId).toString(),
     actorId: userId,
+    customerId: order.customer ? order.customer.toString() : undefined,
     orderId: (order._id as mongoose.Types.ObjectId).toString(),
     orderCode: order.orderCode,
     oldStatus: OrderStatus.COMPLETED,

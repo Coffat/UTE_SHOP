@@ -2,9 +2,39 @@ import mongoose, { ClientSession } from 'mongoose';
 import StockLevel, { IStockLevel } from '../models/StockLevel.js';
 import StockTransaction from '../models/StockTransaction.js';
 import Material from '../models/Material.js';
+import Warehouse from '../models/Warehouse.js';
 import ProductVariant from '../../catalog/models/ProductVariant.js';
 import TransactionType from '../../../shared/enums/TransactionType.js';
 import StockStatus from '../../../shared/enums/StockStatus.js';
+import { eventBus, AppEvent } from '../../../shared/utils/eventBus.js';
+import crypto from 'crypto';
+
+const emitLowStockIfNeeded = async (params: {
+  stockLevelId: string;
+  variantId: string;
+  previousQty: number;
+  quantity: number;
+  threshold: number;
+  performedBy: string;
+}) => {
+  const { stockLevelId, variantId, previousQty, quantity, threshold, performedBy } = params;
+  const crossedLowThreshold = threshold > 0 && previousQty > threshold && quantity <= threshold;
+  const becameOutOfStock = previousQty > 0 && quantity <= 0;
+
+  if (!crossedLowThreshold && !becameOutOfStock) return;
+
+  await eventBus.emitAsync(AppEvent.LOW_STOCK, {
+    eventId: crypto.randomUUID(),
+    occurredAt: new Date(),
+    entityId: variantId,
+    actorId: performedBy,
+    stockLevelId,
+    variantId,
+    quantity,
+    threshold,
+    status: quantity <= 0 ? 'OUT_OF_STOCK' : 'LOW',
+  });
+};
 
 /**
  * ⚡ HÀM NÀY ĐƯỢC GỌI BỞI order.service.js (Cross-Module Communication)
@@ -49,6 +79,14 @@ export const decreaseStock = async (
       : StockStatus.IN_STOCK;
 
   await ProductVariant.findByIdAndUpdate(variantId, { stockStatus: newStatus }, { session });
+  await emitLowStockIfNeeded({
+    stockLevelId: stockLevel._id.toString(),
+    variantId,
+    previousQty: currentQty,
+    quantity: newQty,
+    threshold: minThresholdVal,
+    performedBy,
+  });
 };
 
 /**

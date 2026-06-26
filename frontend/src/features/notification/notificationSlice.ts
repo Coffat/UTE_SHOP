@@ -11,9 +11,10 @@ export interface UserNotification {
     title: string;
     body: string;
     type: string;
+    referenceId?: string | null;
     actionUrl?: string;
     priority?: string;
-    data?: any;
+    data?: unknown;
     createdAt: string;
   };
 }
@@ -87,17 +88,23 @@ const notificationSlice = createSlice({
     },
     // Allows injecting real-time notification
     addRealtimeNotification: (state, action: PayloadAction<UserNotification>) => {
+      const exists = state.items.some((item) => item._id === action.payload._id);
+      if (exists) return;
       state.items.unshift(action.payload);
-      state.unreadCount += 1;
+      if (!action.payload.isRead) {
+        state.unreadCount += 1;
+      }
     }
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchNotifications.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        state.error = null;
         const incoming = Array.isArray(action.payload.data) ? action.payload.data : [];
         // If it's a new fetch without cursor, replace items. Else append.
         if (!action.meta.arg) {

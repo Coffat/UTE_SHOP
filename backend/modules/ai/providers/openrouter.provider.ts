@@ -6,6 +6,7 @@ import type {
   AiProviderFinal,
   EffectiveAiRuntime,
 } from '../types/ai.types.js';
+import { createStreamingThinkingFilter, stripThinkingBlocks } from '../utils/aiThinkingFilter.js';
 
 interface OpenRouterModelRow {
   id?: string;
@@ -17,14 +18,24 @@ interface OpenRouterModelsResponse {
 
 interface OpenRouterStreamChunk {
   choices?: Array<{
-    delta?: { content?: string };
+    delta?: {
+      content?: string;
+      /** OpenRouter reasoning field for thinking models (e.g. deepseek-r1, qwq) */
+      reasoning_content?: string;
+      /** Some providers call it 'thinking' */
+      thinking?: string;
+    };
     message?: { content?: string };
   }>;
 }
 
 interface OpenRouterChatResponse {
   choices?: Array<{
-    message?: { content?: string };
+    message?: {
+      content?: string;
+      /** Reasoning content in non-streaming response */
+      reasoning_content?: string;
+    };
   }>;
 }
 
@@ -275,6 +286,14 @@ export const streamOpenRouterResponse = async (
     let buffer = '';
     let fullText = '';
 
+    // Filter thinking tokens before they reach the caller.
+    const thinkFilter = createStreamingThinkingFilter((filtered) => {
+      if (filtered) {
+        fullText += filtered;
+        onToken(filtered);
+      }
+    });
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -287,14 +306,17 @@ export const streamOpenRouterResponse = async (
         if (!line || !line.startsWith('data:')) continue;
         const payloadText = line.slice(5).trim();
         if (payloadText === '[DONE]') {
+          thinkFilter.flush();
           return { fullText: fullText.trim(), latencyMs: Date.now() - start };
         }
         try {
           const payload = JSON.parse(payloadText) as OpenRouterStreamChunk;
-          const token = payload.choices?.[0]?.delta?.content ?? '';
+          const delta = payload.choices?.[0]?.delta;
+          // Skip reasoning/thinking fields — never forward to user
+          if (delta?.reasoning_content || delta?.thinking) continue;
+          const token = delta?.content ?? '';
           if (token) {
-            fullText += token;
-            onToken(token);
+            thinkFilter.push(token);
           }
         } catch {
           // skip malformed SSE chunk
@@ -302,6 +324,7 @@ export const streamOpenRouterResponse = async (
       }
     }
 
+    thinkFilter.flush();
     return { fullText: fullText.trim(), latencyMs: Date.now() - start };
   } finally {
     finished = true;
@@ -349,7 +372,8 @@ export const completeOpenRouterResponse = async (
     }
 
     const payload = (await response.json()) as OpenRouterChatResponse;
-    const fullText = payload.choices?.[0]?.message?.content?.trim() ?? '';
+    const rawText = payload.choices?.[0]?.message?.content?.trim() ?? '';
+    const fullText = stripThinkingBlocks(rawText);
     return { fullText, latencyMs: Date.now() - start };
   } finally {
     finished = true;

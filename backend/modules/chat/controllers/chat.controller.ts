@@ -24,8 +24,12 @@ const extractUserId = (value: any): string | null => {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'object') {
+    // Populated Mongoose document: { _id: ObjectId, ... }
     if (value._id) return value._id.toString();
-    if (value.id) return value.id.toString();
+    // Bare Mongoose/BSON ObjectId — .toString() returns the 24-char hex string.
+    // Do NOT use value.id here: on Mongoose ObjectId that property is a raw Buffer.
+    const str = String(value);
+    if (str && str !== '[object Object]') return str;
   }
   return null;
 };
@@ -92,6 +96,20 @@ export const customerSendMessage = asyncHandler(async (req: Request, res: Respon
     emitNewMessage(conversationId, result.message, getParticipantUserIds(result.conversation), {
       includeStaffInbox: shouldBroadcastMessageToStaffInbox(result.conversation),
     });
+
+    // When a resolved conversation is reopened by the customer, emit a notice
+    // so both sides know AI is handling the conversation again.
+    if (result.wasReopened) {
+      const reopenMsg = await createSystemEventMessage(
+        result.conversation._id,
+        'Trợ lý AI đang hỗ trợ bạn. Bạn có thể tiếp tục đặt câu hỏi.',
+        { event: 'conversation_reopened' }
+      );
+      emitNewMessage(conversationId, reopenMsg, getParticipantUserIds(result.conversation), {
+        includeStaffInbox: true,
+      });
+    }
+
     emitConversationUpdated(conversationId, result.conversation);
     emitStaffInboxConversationUpdated(result.conversation);
 
@@ -129,10 +147,14 @@ export const staffAssignConversation = asyncHandler(async (req: Request, res: Re
     const conversationId = req.params.conversationId as string;
     const conversation = await assignConversation(conversationId, actor);
 
+    // assignedStaffId is populated by assignConversation — use the real name when available.
+    const staffDoc = conversation.assignedStaffId as any;
+    const staffName: string = staffDoc?.fullName || staffDoc?.email || actor.id;
+
     const systemMessage = await createSystemEventMessage(
       conversation._id,
-      `Nhân viên ${actor.id} đã nhận cuộc trò chuyện`,
-      { event: 'staff_assigned', staffId: actor.id }
+      `Nhân viên ${staffName} đã nhận cuộc trò chuyện`,
+      { event: 'staff_assigned', staffId: actor.id, staffName }
     );
 
     emitNewMessage(conversationId, systemMessage, getParticipantUserIds(conversation), {
@@ -141,6 +163,7 @@ export const staffAssignConversation = asyncHandler(async (req: Request, res: Re
     emitStaffAssigned(conversationId, {
       conversationId,
       staffId: actor.id,
+      staffName,
       assignedAt: new Date().toISOString(),
     });
     emitConversationUpdated(conversationId, conversation);
@@ -188,6 +211,12 @@ export const staffSendMessage = asyncHandler(async (req: Request, res: Response)
   }
 });
 
+const CONVERSATION_STATUS_LABELS: Record<string, string> = {
+  staff_handling: 'Nhân viên đang hỗ trợ',
+  resolved: 'Đã được xử lý',
+  closed: 'Đã đóng',
+};
+
 export const staffUpdateConversationStatus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const actor = getActor(req);
@@ -196,9 +225,10 @@ export const staffUpdateConversationStatus = asyncHandler(async (req: Request, r
 
     const conversation = await updateConversationStatus(conversationId, status, actor);
 
+    const statusLabel = CONVERSATION_STATUS_LABELS[status] ?? status;
     const systemMessage = await createSystemEventMessage(
       conversation._id,
-      `Hội thoại được chuyển sang trạng thái ${status}`,
+      statusLabel,
       { event: 'conversation_status_updated', status }
     );
 

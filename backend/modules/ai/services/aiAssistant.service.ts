@@ -32,6 +32,10 @@ import {
   isSensitivePass1Handoff,
 } from './aiHandoff.service.js';
 import {
+  isShopCurrentlyOpen,
+  buildOutsideHoursHandoffMessage,
+} from './workingHours.service.js';
+import {
   completeActiveProviderResponse,
   streamActiveProviderResponse,
 } from '../providers/aiProvider.router.js';
@@ -320,9 +324,13 @@ const resolvePass1Decision = async (
   );
   const parsed = parsePass1Decision(pass1Result.fullText);
   if (!parsed.ok || !parsed.decision) {
+    // PASS1 returned unparseable text (common for models that add prose around
+    // JSON). Falling back to a handoff here causes the "internal mode" message.
+    // A safe no_tool fallback lets PASS2 generate a natural reply instead.
+    const noToolFallback: AiPass1Decision = { type: 'no_tool', reason: 'general_question' };
     return {
-      parsed,
-      decision: buildFallbackDecision(FALLBACK_HANDOFF_REASON),
+      parsed: { ok: true, strategy: 'strict_json', decision: noToolFallback, error: null, rawText: JSON.stringify(noToolFallback) },
+      decision: noToolFallback,
       usedModelId: pass1Result.usedModelId,
       wasFallback: pass1Result.wasFallback,
     };
@@ -623,8 +631,39 @@ export const streamAiReplyForCustomer = async ({
     });
 
   try {
-    const precheck = evaluatePrecheckHandoff(customerMessage.content);
+    // Check working hours once — used by both precheck and intent-based handoff paths.
+    const shopOpen = await isShopCurrentlyOpen();
+
+    const precheck = evaluatePrecheckHandoff(customerMessage.content, shopOpen);
     const customerQuery = customerMessage.content;
+
+    // Outside working hours: sensitive topic matched but shop is closed.
+    // Inform the customer without escalating to staff queue.
+    if (precheck.outsideHours) {
+      const outsideMsg = buildOutsideHoursHandoffMessage();
+      streamDeterministicTokens(outsideMsg, onToken);
+      await assertAiFinalizeEligibility(conversation._id.toString());
+      const outsideMeta = buildChatMetadata({
+        responseMode: 'deterministic',
+        source: 'outside_working_hours',
+        handoffReason: 'outside_working_hours',
+        originalReason: precheck.reason,
+      });
+      const outsideMessage = await persistAiMessage(
+        conversation,
+        outsideMsg,
+        outsideMeta,
+        null
+      );
+      return {
+        aiMessageId: outsideMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        handoffReason: null,
+        finalContent: outsideMsg,
+        metadata: outsideMeta,
+      };
+    }
+
     if (precheck.required) {
       const safeMessage = buildSafeHandoffMessage();
       onToken(safeMessage);
@@ -760,7 +799,44 @@ export const streamAiReplyForCustomer = async ({
         error: null,
         rawText: JSON.stringify(decision),
       };
+    } else if (resolvedIntent.primaryIntent === 'general_no_tool') {
+      // Simple greetings, casual messages, and general chitchat don't need PASS1.
+      // Sending them through the LLM router causes JSON parse failures and bad
+      // fallback responses. Skip straight to PASS2 with a no_tool context.
+      decision = { type: 'no_tool', reason: 'general_question' };
+      parsed = {
+        ok: true,
+        strategy: 'strict_json',
+        decision,
+        error: null,
+        rawText: JSON.stringify(decision),
+      };
     } else if (resolvedIntent.primaryIntent === 'explicit_handoff_or_sensitive') {
+      // When the shop is outside working hours, replace staff escalation with a
+      // soft outside-hours notice so customers are informed rather than queued.
+      if (!shopOpen) {
+        const outsideMsg = buildOutsideHoursHandoffMessage();
+        streamDeterministicTokens(outsideMsg, onToken);
+        await assertAiFinalizeEligibility(conversation._id.toString());
+        const outsideMeta = buildChatMetadata({
+          responseMode: 'deterministic',
+          source: 'outside_working_hours',
+          handoffReason: 'outside_working_hours',
+        });
+        const outsideMessage = await persistAiMessage(
+          conversation,
+          outsideMsg,
+          outsideMeta,
+          null
+        );
+        return {
+          aiMessageId: outsideMessage._id.toString(),
+          conversationId: conversation._id.toString(),
+          handoffReason: null,
+          finalContent: outsideMsg,
+          metadata: outsideMeta,
+        };
+      }
       decision = {
         type: 'handoff',
         reason: 'customer_requested_staff',
@@ -874,6 +950,31 @@ export const streamAiReplyForCustomer = async ({
     }
 
     if (isExplicitStaffHandoffDecision(decision) && handoffReason) {
+      // Soft outside-hours override: LLM decided to hand off but shop is closed.
+      if (!shopOpen) {
+        const outsideMsg = buildOutsideHoursHandoffMessage();
+        streamDeterministicTokens(outsideMsg, onToken);
+        await assertAiFinalizeEligibility(conversation._id.toString());
+        const outsideMeta = buildChatMetadata({
+          responseMode: 'deterministic',
+          source: 'outside_working_hours',
+          handoffReason: 'outside_working_hours',
+          originalReason: handoffReason,
+        });
+        const outsideMessage = await persistAiMessage(
+          conversation,
+          outsideMsg,
+          outsideMeta,
+          null
+        );
+        return {
+          aiMessageId: outsideMessage._id.toString(),
+          conversationId: conversation._id.toString(),
+          handoffReason: null,
+          finalContent: outsideMsg,
+          metadata: outsideMeta,
+        };
+      }
       notifyHandoff(handoffReason);
       const safeMessage = buildSafeHandoffMessage();
       onToken(safeMessage);

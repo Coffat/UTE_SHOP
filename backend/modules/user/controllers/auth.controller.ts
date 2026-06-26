@@ -34,8 +34,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     ADMIN: '/admin/dashboard',
     CUSTOMER: '/user/profile',
     SALES: '/staff/orders',
-    WAREHOUSE_STAFF: '/staff/inventory',
-    STORE_STAFF: '/staff/pos',
+    WAREHOUSE_STAFF: '/warehouse/dashboard',
+    STORE_STAFF: '/store/dashboard',
   };
 
   sendSuccess(res, 200, 'Đăng nhập thành công', {
@@ -120,8 +120,8 @@ export const socialTokenExchange = asyncHandler(async (req: Request, res: Respon
     ADMIN: '/admin/dashboard',
     CUSTOMER: '/user/profile',
     SALES: '/staff/orders',
-    WAREHOUSE_STAFF: '/staff/inventory',
-    STORE_STAFF: '/staff/pos',
+    WAREHOUSE_STAFF: '/warehouse/dashboard',
+    STORE_STAFF: '/store/dashboard',
   };
 
   sendSuccess(res, 200, 'Đăng nhập mạng xã hội thành công', {
