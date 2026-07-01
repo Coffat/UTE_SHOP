@@ -29,53 +29,53 @@ const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/uteshop';
 // Beautiful aesthetic flower images from Unsplash (categorized for absolute precision)
 const FLOWER_IMAGES = {
   red_rose: [
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop', // Red Rose Bouquet
-    'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=600&auto=format&fit=crop', // Dark Red Rose
-    'https://images.unsplash.com/photo-1520763185298-1b434c919102?q=80&w=600&auto=format&fit=crop'  // Bright Red Rose
+    'https://images.unsplash.com/photo-1548894175-ea255e2d6b3a?q=80&w=600&auto=format&fit=crop', // Red Rose Bouquet
+    'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?q=80&w=600&auto=format&fit=crop', // Dark Red Rose
+    'https://images.unsplash.com/photo-1533604861209-7b6eb37243b7?q=80&w=600&auto=format&fit=crop'  // Bright Red Rose
   ],
   pink_rose: [
-    'https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=600&auto=format&fit=crop', // Pink Rose Bouquet
+    'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?q=80&w=600&auto=format&fit=crop', // Pink Rose Bouquet
     'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=600&auto=format&fit=crop', // Luxury Pink Rose
     'https://images.unsplash.com/photo-1494972308805-463bc619d34e?q=80&w=600&auto=format&fit=crop'  // Pastel Pink Rose
   ],
   white_rose: [
-    'https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=600&auto=format&fit=crop', // Beautiful White Rose Bouquet
+    'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806?q=80&w=600&auto=format&fit=crop', // Beautiful White Rose Bouquet
     'https://images.unsplash.com/photo-1434064511983-18c6dae20ed5?q=80&w=600&auto=format&fit=crop', // Simple White Rose
-    'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600&auto=format&fit=crop'  // White bouquet
+    'https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=600&auto=format&fit=crop'  // White bouquet
   ],
   cream_rose: [
-    'https://images.unsplash.com/photo-1558350315-8aa00e8e4590?q=80&w=600&auto=format&fit=crop', // Cream Rose
-    'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=600&auto=format&fit=crop'  // Peach-cream rose
+    'https://images.unsplash.com/photo-1525648128964-c9ab217e1a4c?q=80&w=600&auto=format&fit=crop', // Cream Rose
+    'https://images.unsplash.com/photo-1508610048659-a06b669e3a71?q=80&w=600&auto=format&fit=crop'  // Peach-cream rose
   ],
   orange_rose: [
     'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop', // Orange rose bouquet
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop', // Orange roses detail
-    'https://images.unsplash.com/photo-1558350315-8aa00e8e4590?q=80&w=600&auto=format&fit=crop'  // Sweet cream-orange rose
+    'https://images.unsplash.com/photo-1612457814421-2e9603099039?q=80&w=600&auto=format&fit=crop', // Orange roses detail
+    'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?q=80&w=600&auto=format&fit=crop'  // Sweet cream-orange rose
   ],
   tulip_white: [
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop', // White tulips in vase
-    'https://images.unsplash.com/photo-1434064511983-18c6dae20ed5?q=80&w=600&auto=format&fit=crop'  // Pure white tulip bouquet
+    'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=600&auto=format&fit=crop', // White tulips in vase
+    'https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?q=80&w=600&auto=format&fit=crop'  // Pure white tulip bouquet
   ],
   tulip_yellow: [
     'https://images.unsplash.com/photo-1550950158-d0d960dff51b?q=80&w=600&auto=format&fit=crop', // Yellow Tulip
     'https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?q=80&w=600&auto=format&fit=crop'  // Vibrant yellow tulips
   ],
   tulip_pink: [
-    'https://images.unsplash.com/photo-1520763185298-1b434c919102?q=80&w=600&auto=format&fit=crop', // Tulip pink field
-    'https://images.unsplash.com/photo-1457089328109-e5d9bd499191?q=80&w=600&auto=format&fit=crop'  // Tulip blush
+    'https://images.unsplash.com/photo-1521997534047-48b1596dd024?q=80&w=600&auto=format&fit=crop', // Tulip pink field
+    'https://images.unsplash.com/photo-1520763185298-1b434c919102?q=80&w=600&auto=format&fit=crop'  // Tulip blush
   ],
   tulip_blue: [
     'https://images.unsplash.com/photo-1582967788606-a171c1080cb0?q=80&w=600&auto=format&fit=crop', // Soft aesthetic blue
-    'https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=600&auto=format&fit=crop'  // Ice blue representation
+    'https://images.unsplash.com/photo-1447875569521-09a5a392534b?q=80&w=600&auto=format&fit=crop'  // Ice blue representation
   ],
   sunflower: [
     'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?q=80&w=600&auto=format&fit=crop', // Sunflower Macro
     'https://images.unsplash.com/photo-1590004953392-5aba2e72269a?q=80&w=600&auto=format&fit=crop', // Beautiful Sunflowers Bouquet
-    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600&auto=format&fit=crop'  // Sunflowers field
+    'https://images.unsplash.com/photo-1541256996761-85df2eff3139?q=80&w=600&auto=format&fit=crop'  // Sunflowers field
   ],
   lavender: [
     'https://images.unsplash.com/photo-1471922694854-ff1b63b20054?q=80&w=600&auto=format&fit=crop', // Lavender field
-    'https://images.unsplash.com/photo-1565118531796-763e5082d113?q=80&w=600&auto=format&fit=crop'  // Lavender bouquet
+    'https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?q=80&w=600&auto=format&fit=crop'  // Lavender bouquet
   ],
   lily_white: [
     'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600&auto=format&fit=crop', // White Lily Bouquet
@@ -91,46 +91,46 @@ const FLOWER_IMAGES = {
   ],
   hydrangea_blue: [
     'https://images.unsplash.com/photo-1589244159943-460088ed5c92?q=80&w=600&auto=format&fit=crop', // Blue Hydrangea
-    'https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=600&auto=format&fit=crop'  // Blue hydrangea macro
+    'https://images.unsplash.com/photo-1507504038482-7621c518d50b?q=80&w=600&auto=format&fit=crop'  // Blue hydrangea macro
   ],
   hydrangea_pink: [
     'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=600&auto=format&fit=crop', // Hydrangea pink
     'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=600&auto=format&fit=crop'  // Sweet Pink Hydrangeas
   ],
   lotus: [
-    'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600&auto=format&fit=crop', // Pink lotus
-    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=600&auto=format&fit=crop'  // Lotus pond
+    'https://images.unsplash.com/photo-1618218168350-6e7c81151b64?q=80&w=600&auto=format&fit=crop', // Pink lotus
+    'https://images.unsplash.com/photo-1509024640771-4a34b2f15908?q=80&w=600&auto=format&fit=crop'  // Lotus pond
   ],
   orchid_white: [
     'https://images.unsplash.com/photo-1566393028639-d108a42c46a7?q=80&w=600&auto=format&fit=crop', // Elegant White Orchid Bouquet
-    'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600&auto=format&fit=crop'  // White Orchid elegant
+    'https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?q=80&w=600&auto=format&fit=crop'  // White Orchid elegant
   ],
   orchid_purple: [
     'https://images.unsplash.com/photo-1521133573892-e44906baee46?q=80&w=600&auto=format&fit=crop', // Gorgeous Purple Orchid Bouquet
-    'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600&auto=format&fit=crop'  // Purple orchids elegant
+    'https://images.unsplash.com/photo-1569429547055-3511eb087f58?q=80&w=600&auto=format&fit=crop'  // Purple orchids elegant
   ],
   chamomile: [
-    'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=600&auto=format&fit=crop', // Chamomiles
-    'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?q=80&w=600&auto=format&fit=crop'  // White daisies/chamomile
+    'https://images.unsplash.com/photo-1600180758890-6b94e61025a5?q=80&w=600&auto=format&fit=crop', // Chamomiles
+    'https://images.unsplash.com/photo-1596272875729-ed2ff7d6d9c5?q=80&w=600&auto=format&fit=crop'  // White daisies/chamomile
   ],
   gerbera: [
     'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=600&auto=format&fit=crop', // Red Gerbera
     'https://images.unsplash.com/photo-1558350315-8aa00e8e4590?q=80&w=600&auto=format&fit=crop'  // Orange Gerbera
   ],
   dahlia: [
-    'https://images.unsplash.com/photo-1457089328109-e5d9bd499191?q=80&w=600&auto=format&fit=crop', // Red dahlia
-    'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=600&auto=format&fit=crop'  // Pink Dahlia
+    'https://images.unsplash.com/photo-1549490353-b0f3408f654f?q=80&w=600&auto=format&fit=crop', // Red dahlia
+    'https://images.unsplash.com/photo-1504198266287-1659872e6590?q=80&w=600&auto=format&fit=crop'  // Pink Dahlia
   ],
   carnation: [
-    'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=600&auto=format&fit=crop'  // Carnation
+    'https://images.unsplash.com/photo-1559715544-33be625347f3?q=80&w=600&auto=format&fit=crop'  // Carnation
   ],
   mixed: [
     'https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=600&auto=format&fit=crop', // Aesthetic mixed bouquet
     'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600&auto=format&fit=crop', // Gorgeous garden flowers
-    'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=600&auto=format&fit=crop'  // Wildflowers bouquet
+    'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=600&auto=format&fit=crop'  // Wildflowers bouquet
   ],
   condolence: [
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop', // Pure White Lilies bouquet
+    'https://images.unsplash.com/photo-1508610048659-a06b669e3a71?q=80&w=600&auto=format&fit=crop', // Pure White Lilies bouquet
     'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop'  // Quiet white flower condolence arrangement
   ],
   combo: [
@@ -177,14 +177,14 @@ const seedCatalog = async () => {
     console.log('📁 Seeding 12 Categories...');
     const categoriesData = [
       { name: 'Hoa Sinh Nhật', slug: 'hoa-sinh-nhat', description: 'Món quà sinh nhật rực rỡ, mang niềm vui và lời chúc tuổi mới trọn vẹn.', imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop' },
-      { name: 'Hoa Tình Yêu', slug: 'hoa-tinh-yeu', description: 'Sắc hồng, sắc đỏ nồng nàn minh chứng cho tình yêu lãng mạn vĩnh cửu.', imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Tình Yêu', slug: 'hoa-tinh-yeu', description: 'Sắc hồng, sắc đỏ nồng nàn minh chứng cho tình yêu lãng mạn vĩnh cửu.', imageUrl: 'https://images.unsplash.com/photo-1548894175-ea255e2d6b3a?q=80&w=600&auto=format&fit=crop' },
       { name: 'Hoa Khai Trương', slug: 'hoa-khai-truong', description: 'Kệ hoa, lẵng hoa sang trọng chúc mừng hồng phát, thành công rực rỡ.', imageUrl: 'https://images.unsplash.com/photo-1590004953392-5aba2e72269a?q=80&w=600&auto=format&fit=crop' },
-      { name: 'Bình Hoa Nghệ Thuật', slug: 'binh-hoa-nghe-thuat', description: 'Những tác phẩm hoa cắm bình gốm, bình thủy tinh sang trọng cho không gian sống.', imageUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop' },
-      { name: 'Giỏ Hoa Đồng Quê', slug: 'gio-hoa-dong-que', description: 'Vẻ đẹp mộc mạc, bình dị từ giỏ mây tre đan đan cài hoa dại, cúc họa mi.', imageUrl: 'https://images.unsplash.com/photo-1565118531796-763e5082d113?q=80&w=600&auto=format&fit=crop' },
-      { name: 'Bó Hoa Ngân Sách', slug: 'hoa-ngan-sach', description: 'Những bó hoa xinh xắn thiết kế tối giản với giá cả cực kỳ hợp lý dưới 250,000đ.', imageUrl: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Bình Hoa Nghệ Thuật', slug: 'binh-hoa-nghe-thuat', description: 'Những tác phẩm hoa cắm bình gốm, bình thủy tinh sang trọng cho không gian sống.', imageUrl: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Giỏ Hoa Đồng Quê', slug: 'gio-hoa-dong-que', description: 'Vẻ đẹp mộc mạc, bình dị từ giỏ mây tre đan đan cài hoa dại, cúc họa mi.', imageUrl: 'https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Bó Hoa Ngân Sách', slug: 'hoa-ngan-sach', description: 'Những bó hoa xinh xắn thiết kế tối giản với giá cả cực kỳ hợp lý dưới 250,000đ.', imageUrl: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?q=80&w=600&auto=format&fit=crop' },
       { name: 'Combo Gấu & Hoa', slug: 'combo-gau-va-hoa', description: 'Sự kết hợp hoàn hảo ngọt ngào giữa đóa hoa tươi và chú gấu bông dễ thương.', imageUrl: 'https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=600&auto=format&fit=crop' },
       { name: 'Hoa Chia Buồn', slug: 'hoa-chia-buon', description: 'Vòng hoa kính viếng trang trọng, gửi gắm lời chia buồn sâu sắc và thành kính nhất.', imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop' },
-      { name: 'Hoa Kỷ Niệm', slug: 'hoa-ky-niem', description: 'Gửi trao yêu thương, kỷ niệm những khoảnh khắc ngọt ngào bên nhau.', imageUrl: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=600&auto=format&fit=crop' },
+      { name: 'Hoa Kỷ Niệm', slug: 'hoa-ky-niem', description: 'Gửi trao yêu thương, kỷ niệm những khoảnh khắc ngọt ngào bên nhau.', imageUrl: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?q=80&w=600&auto=format&fit=crop' },
       { name: 'Hoa Chúc Mừng', slug: 'hoa-chuc-mung', description: 'Chúc mừng tốt nghiệp, kỷ niệm ngày thành lập hay thăng tiến sự nghiệp.', imageUrl: 'https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?q=80&w=600&auto=format&fit=crop' },
       { name: 'Loại hoa lẻ', slug: 'loai-hoa-le', description: 'Tự do lựa chọn từng cành hoa yêu thích cắm trang trí phòng tại nhà.', imageUrl: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=600&auto=format&fit=crop' },
       { name: 'Tiệc & Sự kiện', slug: 'tiec-va-su-kien', description: 'Thiết kế hoa bàn tiệc, cổng hoa cưới và decor trọn gói sự kiện sang trọng.', imageUrl: 'https://images.unsplash.com/photo-1566393028639-d108a42c46a7?q=80&w=600&auto=format&fit=crop' }

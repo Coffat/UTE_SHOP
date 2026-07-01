@@ -42,15 +42,6 @@ export function Categories() {
     <div className="min-h-screen bg-gradient-to-b from-pure-ivory via-lavender-mist/10 to-pure-ivory pt-24 pb-16 md:pt-32">
       <div className="mx-auto w-[calc(100%-32px)] max-w-[1440px] px-2 md:px-6">
         
-        {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-dusk-gray">
-          <Link to="/" className="hover:text-primary transition-colors">
-            Trang chủ
-          </Link>
-          <MaterialIcon name="chevron_right" className="text-[14px]" />
-          <span className="font-semibold text-midnight-purple">Danh mục sản phẩm</span>
-        </nav>
-
         {/* Header Section */}
         <section className="text-center max-w-2xl mx-auto mb-12">
           <motion.span 
@@ -115,7 +106,7 @@ export function Categories() {
                   {/* Image Container with Zoom effect */}
                   <div className="aspect-[4/3] w-full overflow-hidden border-b border-crystal-border/80 bg-lavender-mist relative">
                     <img
-                      src={cat.imageUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600"}
+                      src={cat.imageUrl || "https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=600"}
                       alt={cat.name}
                       className="h-full w-full object-cover image-hover-zoom"
                       loading="lazy"

@@ -25,7 +25,7 @@ export function FeaturedCategories() {
           </p>
         </div>
         <Link
-          to="#"
+          to="/categories"
           className="font-home-heading mt-2 flex shrink-0 items-center gap-1 self-start text-sm font-semibold text-primary hover:text-deep-plum sm:mt-0 sm:self-auto"
         >
           Xem tất cả

@@ -6,7 +6,8 @@ import crypto from 'crypto';
 import NotificationChannel from '../../../shared/enums/NotificationChannel.js';
 import { getOrCreateSettings } from '../../admin/repositories/settings.repository.js';
 import { emitNotificationToUser } from '../../chat/socket/chat.socket.js';
-import { sendNotificationEmail } from '../../../shared/utils/email.js';
+import { sendNotificationEmail, sendOrderSuccessEmail } from '../../../shared/utils/email.js';
+import Order from '../../order/models/Order.js';
 import {
   createPendingLog,
   markDeliveryFailed,
@@ -427,12 +428,24 @@ const deliverNotification = async (params: DeliverNotificationParams) => {
         }
 
         try {
-          const providerMessageId = await sendNotificationEmail({
-            toEmail: targetUser.email,
-            title: params.title,
-            body: params.body,
-            actionUrl: params.actionUrl,
-          });
+          let providerMessageId: string | undefined;
+
+          if (params.type === 'ORDER' && params.payload?.audience === 'customer' && params.payload?.orderId) {
+            const order = await Order.findById(params.payload.orderId);
+            if (order) {
+              providerMessageId = await sendOrderSuccessEmail(targetUser.email, order);
+            }
+          }
+
+          if (!providerMessageId) {
+            providerMessageId = await sendNotificationEmail({
+              toEmail: targetUser.email,
+              title: params.title,
+              body: params.body,
+              actionUrl: params.actionUrl,
+            });
+          }
+
           await markDeliverySent(emailLog._id.toString(), providerMessageId);
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to send notification email';

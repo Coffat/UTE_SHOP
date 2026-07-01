@@ -54,12 +54,6 @@ export function CategoryProductList() {
         
         {/* Header Section (Glassmorphic Banner & Breadcrumb) */}
         <div className="mb-12 flex flex-col items-center justify-center text-center">
-          <nav className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-dusk-gray/70">
-            <a href="/" className="hover:text-deep-plum transition">Trang Chủ</a>
-            <span>•</span>
-            <span className="text-primary uppercase">Danh mục</span>
-          </nav>
-
           {showSkeleton ? (
             // Shimmer Header
             <div className="w-full flex flex-col items-center justify-center animate-pulse">

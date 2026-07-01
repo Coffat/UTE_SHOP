@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import Customer from '../models/Customer.js';
 import User from '../models/User.js';
 import redisClient from '../../../config/redis.js';
-import { sendOtpEmail } from '../../../shared/utils/email.js';
+import { sendOtpEmail, sendWelcomeEmail } from '../../../shared/utils/email.js';
 import { hashToken } from '../../../shared/utils/hash.js';
 import { generateAccessToken, generateRefreshToken } from '../../../shared/utils/jwt.js';
 import UserStatus from '../../../shared/enums/UserStatus.js';
@@ -58,6 +58,11 @@ export const verifyRegistrationOtp = async (email: string, otp: string): Promise
   if (!user) throw new Error('Không tìm thấy người dùng');
 
   await redisClient.del(`otp_register:${email}`);
+
+  // Gửi email chào mừng khách hàng mới (chạy background)
+  sendWelcomeEmail(user.email, user.fullName).catch((err) => {
+    console.error('[AuthService] Lỗi khi gửi email chào mừng:', err);
+  });
 
   return { message: 'Xác minh email thành công. Tài khoản đã được kích hoạt.' };
 };

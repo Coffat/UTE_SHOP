@@ -108,15 +108,6 @@ export function Support() {
     <div className="min-h-screen bg-gradient-to-b from-pure-ivory via-lavender-mist/10 to-pure-ivory pt-24 pb-16 md:pt-32">
       <div className="mx-auto w-[calc(100%-32px)] max-w-[1440px] px-2 md:px-6">
         
-        {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-dusk-gray">
-          <Link to="/" className="hover:text-primary transition-colors">
-            Trang chủ
-          </Link>
-          <MaterialIcon name="chevron_right" className="text-[14px]" />
-          <span className="font-semibold text-midnight-purple">Trung tâm hỗ trợ</span>
-        </nav>
-
         {/* Center Animated Headline */}
         <section className="text-center max-w-2xl mx-auto mb-16">
           <motion.span 

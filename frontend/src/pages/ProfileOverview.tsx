@@ -292,21 +292,23 @@ export function ProfileOverview() {
           </div>
 
           <div className="rounded-2xl border border-white/60 bg-pure-ivory/55 p-2">
-            {quickActions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={() => handleQuickAction(action.id)}
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition hover:bg-white/60 ${
-                  (action.id === "edit" && editingProfile) || (action.id === "password" && changingPassword)
-                    ? "bg-soft-amethyst/50 text-deep-plum font-semibold"
-                    : "text-midnight-purple"
-                }`}
-              >
-                <MaterialIcon name={action.icon} className="text-[18px] text-dusk-gray" />
-                {action.label}
-              </button>
-            ))}
+            {quickActions
+              .filter((action) => !(action.id === "password" && (profile?.googleId || profile?.facebookId)))
+              .map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => handleQuickAction(action.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition hover:bg-white/60 ${
+                    (action.id === "edit" && editingProfile) || (action.id === "password" && changingPassword)
+                      ? "bg-soft-amethyst/50 text-deep-plum font-semibold"
+                      : "text-midnight-purple"
+                  }`}
+                >
+                  <MaterialIcon name={action.icon} className="text-[18px] text-dusk-gray" />
+                  {action.label}
+                </button>
+              ))}
           </div>
         </div>
 

@@ -39,7 +39,7 @@ export const MOCK_CATEGORIES: CategoryItem[] = [
     name: "Hoa Tình Yêu",
     slug: "hoa-tinh-yeu",
     description: "Sắc hồng, sắc đỏ nồng nàn minh chứng cho tình yêu lãng mạn vĩnh cửu.",
-    imageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1548894175-ea255e2d6b3a?q=80&w=600&auto=format&fit=crop",
     isActive: true,
     parent: null
   },
@@ -57,7 +57,7 @@ export const MOCK_CATEGORIES: CategoryItem[] = [
     name: "Bình Hoa Nghệ Thuật",
     slug: "binh-hoa-nghe-thuat",
     description: "Những tác phẩm hoa cắm bình gốm, bình thủy tinh sang trọng cho không gian sống.",
-    imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=600&auto=format&fit=crop",
     isActive: true,
     parent: null
   },
@@ -66,7 +66,7 @@ export const MOCK_CATEGORIES: CategoryItem[] = [
     name: "Giỏ Hoa Đồng Quê",
     slug: "gio-hoa-dong-que",
     description: "Vẻ đẹp mộc mạc, bình dị từ giỏ mây tre đan đan cài hoa dại, cúc họa mi.",
-    imageUrl: "https://images.unsplash.com/photo-1565118531796-763e5082d113?q=80&w=600&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?q=80&w=600&auto=format&fit=crop",
     isActive: true,
     parent: null
   },
@@ -75,7 +75,7 @@ export const MOCK_CATEGORIES: CategoryItem[] = [
     name: "Bó Hoa Ngân Sách",
     slug: "hoa-ngan-sach",
     description: "Những bó hoa xinh xắn thiết kế tối giản với giá cả cực kỳ hợp lý dưới 250,000đ.",
-    imageUrl: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=600&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?q=80&w=600&auto=format&fit=crop",
     isActive: true,
     parent: null
   },
@@ -102,7 +102,7 @@ export const MOCK_CATEGORIES: CategoryItem[] = [
     name: "Hoa Kỷ Niệm",
     slug: "hoa-ky-niem",
     description: "Gửi trao yêu thương, kỷ niệm những khoảnh khắc ngọt ngào bên nhau.",
-    imageUrl: "https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=600&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?q=80&w=600&auto=format&fit=crop",
     isActive: true,
     parent: null
   },

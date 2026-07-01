@@ -281,15 +281,6 @@ export function ProductDetail() {
           </div>
         )}
 
-        {/* Breadcrumb */}
-        <nav className="mb-8 flex items-center gap-2 text-sm text-dusk-gray">
-          <a href="/" className="hover:text-deep-plum transition">Trang chủ</a>
-          <MaterialIcon name="chevron_right" className="text-[16px]" />
-          <a href="/products" className="hover:text-deep-plum transition">Bộ Sưu Tập</a>
-          <MaterialIcon name="chevron_right" className="text-[16px]" />
-          <span className="text-deep-plum font-medium">{selectedProduct.name}</span>
-        </nav>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mb-20">
           
           {/* Left Column: Swiper Images (Focus Mode) */}

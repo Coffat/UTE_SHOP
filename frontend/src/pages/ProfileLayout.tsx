@@ -39,6 +39,16 @@ export function ProfileLayout() {
   const displayEmail = profile?.email || "--";
   const membership = profile?.role === "admin" ? "VIP Admin" : "VIP";
 
+  const getAvatarInitial = (name: string) => {
+    if (!name) return "?";
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    const first = words[0].charAt(0);
+    const last = words[words.length - 1].charAt(0);
+    return (first + last).toUpperCase();
+  };
+  const avatarInitial = getAvatarInitial(displayName);
+
   return (
     <section className="mx-auto w-full max-w-[1440px] px-margin-mobile pt-28 pb-16 md:max-w-[1600px] md:px-margin-desktop md:pt-32 lg:pt-36 2xl:max-w-[1760px] 3xl:max-w-[1920px]">
       <div className="grid gap-6 xl:grid-cols-12">
@@ -46,8 +56,12 @@ export function ProfileLayout() {
           <div className="glass-panel relative overflow-hidden rounded-[24px] p-6 text-center shadow-[0_10px_40px_rgba(168,85,247,0.05)]">
             <RoseLineArt className="pointer-events-none absolute -right-1 top-2 h-28 w-24 text-soft-amethyst/25" />
             <div className="relative mx-auto mb-4 size-24 rounded-full border border-white/60 bg-soft-amethyst/60 p-1">
-              <div className="flex size-full items-center justify-center rounded-full bg-soft-amethyst/40">
-                <AppLogo variant="profile" className="h-[72px] w-[72px]" alt="UTESHOP logo avatar" />
+              <div className="flex size-full items-center justify-center rounded-full bg-soft-amethyst/40 text-primary text-2xl font-bold shadow-inner overflow-hidden">
+                {profile?.avatar ? (
+                  <img src={profile.avatar} alt={displayName} className="h-full w-full object-cover" />
+                ) : (
+                  avatarInitial
+                )}
               </div>
               <button
                 type="button"

@@ -1,0 +1,4509 @@
+[
+  {
+    "modelName": "StoreSettings",
+    "fields": [
+      {
+        "name": "key",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "storeName",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "supportEmail",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "address",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "timezone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "timezoneIana",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "workingHoursSchedule",
+        "type": "Embedded",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "vnpayActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "codActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "momoActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "vat",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "roundPrice",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "currency",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "notifyEmail",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "notifySMS",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lowStock",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "newOrder",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "tfaActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "sessionTimeout",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "apiKey",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "defaultShippingFee",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "freeShippingThreshold",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "webhookUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "webhookEnabled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "logoUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "aiProvider",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "aiModelId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "WebsiteInfo",
+    "fields": [
+      {
+        "name": "key",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "address",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "hotline",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "supportEmail",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "openingHours",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "AiToolCall",
+    "fields": [
+      {
+        "name": "conversationId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Conversation(id)",
+        "description": "",
+        "ref": "Conversation"
+      },
+      {
+        "name": "messageId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Message(id)",
+        "description": "",
+        "ref": "Message"
+      },
+      {
+        "name": "actorId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "actorRole",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "toolName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "parserStrategy",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "arguments",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "result",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "errorCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "errorMessage",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "durationMs",
+        "type": "Number",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "provider",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "modelName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Category",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "slug",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "imageUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "parent",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Category(id)",
+        "description": "",
+        "ref": "Category"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Product",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "slug",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "mainImageUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "category",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Category(id)",
+        "description": "",
+        "ref": "Category"
+      },
+      {
+        "name": "tags",
+        "type": "Array<ObjectId>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "minifiedVariants",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "reviewStats.averageRating",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "reviewStats.totalReviews",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "views",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "soldCount",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "weight",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "length",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "width",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "height",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "ProductVariant",
+    "fields": [
+      {
+        "name": "product",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Product(id)",
+        "description": "",
+        "ref": "Product"
+      },
+      {
+        "name": "sku",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "sizeName",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "price",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "stockStatus",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "imageUrls",
+        "type": "Array<String>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Recipe",
+    "fields": [
+      {
+        "name": "productVariant",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, UNIQUE, FOREIGN KEY REFERENCES ProductVariant(id)",
+        "description": "",
+        "ref": "ProductVariant"
+      },
+      {
+        "name": "ingredients",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Review",
+    "fields": [
+      {
+        "name": "product",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Product(id)",
+        "description": "",
+        "ref": "Product"
+      },
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "rating",
+        "type": "Number",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "comment",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "imageUrls",
+        "type": "Array<String>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isVerified",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isHidden",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "replyComment",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "repliedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "repliedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Tag",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "slug",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Conversation",
+    "fields": [
+      {
+        "name": "customerId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "assignedStaffId",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "aiEnabled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastAiResponseAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "handoffReason",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "aiFailureCount",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastMessageAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastMessagePreview",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastMessageSenderType",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastCustomerMessageAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "lastStaffMessageAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "customerLastReadAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "staffLastReadAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "resolvedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "closedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Message",
+    "fields": [
+      {
+        "name": "conversationId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Conversation(id)",
+        "description": "",
+        "ref": "Conversation"
+      },
+      {
+        "name": "senderType",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "senderId",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "clientMessageId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "messageType",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "content",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "metadata",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Dispute",
+    "fields": [
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "resolution",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "evidenceUrls",
+        "type": "Array<String>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "resolvedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Payment",
+    "fields": [
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "method",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "MOMO",
+    "fields": [
+      {
+        "name": "gatewayTransactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "method",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "VNPAY",
+    "fields": [
+      {
+        "name": "gatewayTransactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "method",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "COD",
+    "fields": [
+      {
+        "name": "shipperNote",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "method",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "CASH",
+    "fields": [
+      {
+        "name": "cashTendered",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "changeDue",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "method",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "PaymentTransaction",
+    "fields": [
+      {
+        "name": "orderId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "provider",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "transactionRef",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "providerTransactionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "requestPayload",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "responsePayload",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "callbackPayload",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Refund",
+    "fields": [
+      {
+        "name": "payment",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Payment(id)",
+        "description": "",
+        "ref": "Payment"
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "amount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "approvedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "processedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Material",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "unit",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "costPerUnit",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "shelfLifeDays",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "StockLevel",
+    "fields": [
+      {
+        "name": "warehouse",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Warehouse(id)",
+        "description": "",
+        "ref": "Warehouse"
+      },
+      {
+        "name": "productVariant",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES ProductVariant(id)",
+        "description": "",
+        "ref": "ProductVariant"
+      },
+      {
+        "name": "material",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Material(id)",
+        "description": "",
+        "ref": "Material"
+      },
+      {
+        "name": "quantity",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "minThreshold",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "StockTransaction",
+    "fields": [
+      {
+        "name": "stockLevel",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES StockLevel(id)",
+        "description": "",
+        "ref": "StockLevel"
+      },
+      {
+        "name": "type",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "quantity",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "unitPrice",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "totalCost",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "performedBy",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "timestamp",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Warehouse",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "address",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Address",
+    "fields": [
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "label",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "street",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "city",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "district",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "ward",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isDefault",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "ShippingProvider",
+    "fields": [
+      {
+        "name": "providerName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "apiEndpoint",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Waybill",
+    "fields": [
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, UNIQUE, FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "provider",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES ShippingProvider(id)",
+        "description": "",
+        "ref": "ShippingProvider"
+      },
+      {
+        "name": "trackingCode",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "estimatedDelivery",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Campaign",
+    "fields": [
+      {
+        "name": "name",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "bannerUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "showPopup",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "startDate",
+        "type": "Date",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "endDate",
+        "type": "Date",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Voucher",
+    "fields": [
+      {
+        "name": "code",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "discountType",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "discountValue",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "maxDiscountAmount",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "minOrderAmount",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "startDate",
+        "type": "Date",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "endDate",
+        "type": "Date",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "usageLimit",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "usedCount",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "campaign",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Campaign(id)",
+        "description": "",
+        "ref": "Campaign"
+      },
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "usedBy",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Notification",
+    "fields": [
+      {
+        "name": "title",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "body",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "type",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "channel",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "referenceType",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "referenceId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "actionUrl",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "priority",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "data",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "dedupeKey",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "sourceEventId",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "UserNotification",
+    "fields": [
+      {
+        "name": "user",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "notification",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Notification(id)",
+        "description": "",
+        "ref": "Notification"
+      },
+      {
+        "name": "isRead",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "readAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "NotificationDeliveryLog",
+    "fields": [
+      {
+        "name": "notification",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES Notification(id)",
+        "description": "",
+        "ref": "Notification"
+      },
+      {
+        "name": "user",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "attemptCount",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "provider",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "providerMessageId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "errorCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "errorMessage",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "skipReason",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "sentAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "NotificationPreference",
+    "fields": [
+      {
+        "name": "user",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, UNIQUE, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "channels.inAppEnabled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "channels.emailEnabled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "channels.pushEnabled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "types",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "ui.sidebarAutoCollapse",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Cart",
+    "fields": [
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "sessionId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "items",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Order",
+    "fields": [
+      {
+        "name": "orderCode",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "customer",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "orderType",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "items",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "recipient",
+        "type": "Embedded",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deliveryAddress",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Address(id)",
+        "description": "",
+        "ref": "Address"
+      },
+      {
+        "name": "subtotal",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "shippingFee",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "discountAmount",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "pointsUsed",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "pointsDiscount",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "finalTotal",
+        "type": "Decimal128",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "totalAmount",
+        "type": "Decimal128",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "note",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "paymentMethod",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "paymentStatus",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "voucher",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Voucher(id)",
+        "description": "",
+        "ref": "Voucher"
+      },
+      {
+        "name": "handledBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "statusHistory",
+        "type": "Array<undefined>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isDeleted",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isSoldCountIncremented",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "OrderDailySequence",
+    "fields": [
+      {
+        "name": "_id",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "businessDate",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "sequence",
+        "type": "Number",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "timezone",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "AuditLog",
+    "fields": [
+      {
+        "name": "actorId",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "actorRole",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "action",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "resourceType",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "resourceId",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "before",
+        "type": "Map",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "before.$*",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "after",
+        "type": "Map",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "after.$*",
+        "type": "Mixed",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "BlogPost",
+    "fields": [
+      {
+        "name": "title",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "slug",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "content",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "excerpt",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "author",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "coverImage",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "tags",
+        "type": "Array<String>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "views",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isPublished",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "publishedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "SupportTicket",
+    "fields": [
+      {
+        "name": "fullName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "subject",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "message",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "userId",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "User",
+    "fields": [
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "ADMIN",
+    "fields": [
+      {
+        "name": "ownerName",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "CUSTOMER",
+    "fields": [
+      {
+        "name": "fullName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isEmailVerified",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "loyalty.points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "loyalty.tier",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "favorites",
+        "type": "Array<ObjectId>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "PointLedger",
+    "fields": [
+      {
+        "name": "user",
+        "type": "ObjectId",
+        "constraints": "NOT NULL, FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "order",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Order(id)",
+        "description": "",
+        "ref": "Order"
+      },
+      {
+        "name": "createdBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "amount",
+        "type": "Number",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "type",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "Shift",
+    "fields": [
+      {
+        "name": "title",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "startTime",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "endTime",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "color",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "bg",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "date",
+        "type": "Date",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "assignedStaff",
+        "type": "Array<ObjectId>",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isCancelled",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "cancelledAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "cancelledBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "SALES",
+    "fields": [
+      {
+        "name": "fullName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "hiredAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "performanceScore",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isOnline",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "WAREHOUSE_STAFF",
+    "fields": [
+      {
+        "name": "fullName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "hiredAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "performanceScore",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "assignedWarehouse",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES Warehouse(id)",
+        "description": "",
+        "ref": "Warehouse"
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  },
+  {
+    "modelName": "STORE_STAFF",
+    "fields": [
+      {
+        "name": "fullName",
+        "type": "String",
+        "constraints": "NOT NULL",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "hiredAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "status",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "performanceScore",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "counterId",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "storeLocation",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "_id",
+        "type": "ObjectId",
+        "constraints": "",
+        "description": "ID tự động sinh",
+        "ref": null
+      },
+      {
+        "name": "email",
+        "type": "String",
+        "constraints": "NOT NULL, UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "passwordHash",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "googleId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "facebookId",
+        "type": "String",
+        "constraints": "UNIQUE",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "phone",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpCode",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "otpExpires",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "isActive",
+        "type": "Boolean",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "avatar",
+        "type": "String",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "points",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "deletedBy",
+        "type": "ObjectId",
+        "constraints": "FOREIGN KEY REFERENCES User(id)",
+        "description": "",
+        "ref": "User"
+      },
+      {
+        "name": "createdAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày tạo",
+        "ref": null
+      },
+      {
+        "name": "updatedAt",
+        "type": "Date",
+        "constraints": "",
+        "description": "Ngày cập nhật",
+        "ref": null
+      },
+      {
+        "name": "__v",
+        "type": "Number",
+        "constraints": "",
+        "description": "",
+        "ref": null
+      },
+      {
+        "name": "role",
+        "type": "String",
+        "constraints": "",
+        "description": "Vai trò",
+        "ref": null
+      }
+    ]
+  }
+]

@@ -47,6 +47,9 @@ export type UserProfileDto = {
   role?: string;
   is_active?: boolean;
   loyalty?: { points: number; tier: string };
+  googleId?: string;
+  facebookId?: string;
+  avatar?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

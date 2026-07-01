@@ -201,7 +201,7 @@ export function Header() {
                         >
                           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-crystal-border/80 bg-lavender-mist">
                             <img
-                              src={cat.imageUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=150"}
+                              src={cat.imageUrl || "https://images.unsplash.com/photo-1596436889106-be35e843f974?q=80&w=150"}
                               alt={cat.name}
                               className="h-full w-full object-cover transition-transform duration-550 group-hover:scale-110"
                             />
@@ -374,10 +374,14 @@ export function Header() {
                   type="button"
                   aria-label="Tài khoản"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-soft-amethyst/30 border border-crystal-border/80 font-home-heading text-sm font-bold text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press shadow-sm cursor-pointer"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-soft-amethyst/30 border border-crystal-border/80 font-home-heading text-sm font-bold text-deep-plum transition-colors hover:bg-soft-amethyst/40 hover:text-primary active-press shadow-sm cursor-pointer overflow-hidden"
                   title={`Chào ${displayName}`}
                 >
-                  {avatarInitial}
+                  {profile?.avatar ? (
+                    <img src={profile.avatar} alt={displayName} className="h-full w-full object-cover" />
+                  ) : (
+                    avatarInitial
+                  )}
                 </button>
 
                 {/* Glassmorphic Dropdown User Menu */}
@@ -390,8 +394,12 @@ export function Header() {
                 >
                   {/* User Profile Info */}
                   <div className="flex flex-col items-center border-b border-crystal-border pb-4 mb-3 text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-soft-amethyst/60 text-primary border border-white/60 text-xl font-bold shadow-inner mb-2.5">
-                      {avatarInitial}
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-soft-amethyst/60 text-primary border border-white/60 text-xl font-bold shadow-inner mb-2.5 overflow-hidden">
+                      {profile?.avatar ? (
+                        <img src={profile.avatar} alt={displayName} className="h-full w-full object-cover" />
+                      ) : (
+                        avatarInitial
+                      )}
                     </div>
                     <h4 className="font-home-heading text-sm font-bold text-midnight-purple leading-snug truncate w-full">
                       {displayName}

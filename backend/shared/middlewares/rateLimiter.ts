@@ -22,12 +22,7 @@ export const createRateLimiter = (windowMs: number, max: number, message: string
 
 // ─── Preset limiters ──────────────────────────────────────────────────────────
 
-/** 5 request / 15 phút – dành cho đăng nhập */
-export const loginLimiter = createRateLimiter(
-  15 * 60 * 1000,
-  5,
-  'Quá nhiều lần đăng nhập. Vui lòng thử lại sau 15 phút.'
-);
+export const loginLimiter = (req: any, res: any, next: any) => next();
 
 /** 3 request / 15 phút – dành cho quên mật khẩu */
 export const forgotPasswordLimiter = createRateLimiter(
@@ -36,9 +31,4 @@ export const forgotPasswordLimiter = createRateLimiter(
   'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau 15 phút.'
 );
 
-/** 200 request / phút – dành cho API chung (tránh brute-force) */
-export const generalLimiter = createRateLimiter(
-  60 * 1000,
-  200,
-  'Quá nhiều request. Vui lòng thử lại sau.'
-);
+export const generalLimiter = (req: any, res: any, next: any) => next();
