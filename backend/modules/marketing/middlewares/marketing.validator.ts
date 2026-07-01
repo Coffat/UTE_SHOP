@@ -11,7 +11,7 @@ export const validateCreateVoucher = [
     .matches(/^[A-Z0-9_-]+$/).withMessage('Mã voucher chỉ chứa chữ hoa, số, _ và -'),
   body('discountType')
     .notEmpty()
-    .isIn(['PERCENTAGE', 'FIXED']).withMessage('discountType phải là PERCENTAGE hoặc FIXED'),
+    .isIn(['PERCENTAGE', 'FIXED_AMOUNT', 'FIXED']).withMessage('discountType phải là PERCENTAGE hoặc FIXED_AMOUNT hoặc FIXED'),
   body('discountValue')
     .notEmpty().isFloat({ min: 0.01 }).withMessage('Giá trị giảm phải > 0'),
   body('startDate')
@@ -27,6 +27,29 @@ export const validateCreateVoucher = [
   body('usageLimit').optional().isInt({ min: 1 }),
   body('minOrderAmount').optional().isFloat({ min: 0 }),
   body('maxDiscountAmount').optional().isFloat({ min: 0 }),
+  handleValidationErrors,
+];
+
+export const validateUpdateVoucher = [
+  param('id').isMongoId().withMessage('Voucher ID không hợp lệ'),
+  body('code')
+    .optional()
+    .trim().toUpperCase()
+    .isLength({ min: 3, max: 30 }).withMessage('Mã voucher từ 3 đến 30 ký tự')
+    .matches(/^[A-Z0-9_-]+$/).withMessage('Mã voucher chỉ chứa chữ hoa, số, _ và -'),
+  body('discountType')
+    .optional()
+    .isIn(['PERCENTAGE', 'FIXED_AMOUNT', 'FIXED']).withMessage('discountType phải là PERCENTAGE hoặc FIXED_AMOUNT hoặc FIXED'),
+  body('discountValue')
+    .optional().isFloat({ min: 0.01 }).withMessage('Giá trị giảm phải > 0'),
+  body('startDate')
+    .optional().isISO8601().withMessage('startDate phải là ngày hợp lệ (ISO8601)'),
+  body('endDate')
+    .optional().isISO8601().withMessage('endDate phải là ngày hợp lệ (ISO8601)'),
+  body('campaign').optional({ nullable: true }),
+  body('usageLimit').optional({ nullable: true }),
+  body('minOrderAmount').optional().isFloat({ min: 0 }),
+  body('maxDiscountAmount').optional({ nullable: true }),
   handleValidationErrors,
 ];
 

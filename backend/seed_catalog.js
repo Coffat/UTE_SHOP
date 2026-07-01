@@ -17,6 +17,7 @@ import ProductVariant from './modules/catalog/models/ProductVariant.js';
 import Review from './modules/catalog/models/Review.js';
 import Warehouse from './modules/inventory/models/Warehouse.js';
 import StockLevel from './modules/inventory/models/StockLevel.js';
+import StockTransaction from './modules/inventory/models/StockTransaction.js';
 import Customer from './modules/user/models/Customer.js';
 
 import ProductStatus from './shared/enums/ProductStatus.js';
@@ -158,6 +159,7 @@ const seedCatalog = async () => {
     await Review.deleteMany({});
     await Warehouse.deleteMany({});
     await StockLevel.deleteMany({});
+    await StockTransaction.deleteMany({});
     try {
       await StockLevel.collection.dropIndex('warehouse_1_material_1');
       console.log('🧹 Dropped index warehouse_1_material_1');

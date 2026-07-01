@@ -36,6 +36,13 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     allowedRoles: ["ADMIN"],
   },
   {
+    key: "support",
+    label: "Hỗ trợ KH",
+    icon: "",
+    path: "/admin/support",
+    allowedRoles: ["ADMIN"],
+  },
+  {
     key: "products",
     label: "Sản phẩm",
     icon: "",
@@ -213,6 +220,13 @@ const STAFF_NAV_ITEMS: NavItem[] = [
     allowedRoles: ["SALES"],
   },
   {
+    key: "support",
+    label: "Hỗ trợ KH",
+    icon: "",
+    path: "/staff/support",
+    allowedRoles: ["SALES"],
+  },
+  {
     key: "marketing",
     label: "Marketing",
     icon: "",
@@ -304,6 +318,15 @@ const STORE_STAFF_BOTTOM_ITEMS: NavItem[] = [
 ];
 
 // ── SVG Icons ────────────────────────────────────────────────────────────────
+function IconSupport() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <circle cx="12" cy="11" r="3" />
+      <line x1="12" y1="14" x2="12" y2="17" />
+    </svg>
+  );
+}
 function IconWarehouse() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -497,6 +520,7 @@ const ICONS: Record<string, React.FC> = {
   marketing: IconMarketing,
   chat:      IconChat,
   notifications: IconNotifications,
+  support:   IconSupport,
   "create-order": IconCreateOrder,
   "wh-dashboard":    IconWarehouse,
   "wh-stock":        IconProducts,

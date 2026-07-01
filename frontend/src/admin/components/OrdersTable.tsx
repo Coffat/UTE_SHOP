@@ -1,16 +1,19 @@
 import type { OrderItem } from "../types/admin.types";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
-const STATUS_CONFIG = {
-  pending:    { label: "Chờ xử lý",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
-  processing: { label: "Đang xử lý",  color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
-  shipped:    { label: "Đang giao",    color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
-  delivered:  { label: "Đã giao",      color: "#10b981", bg: "rgba(16,185,129,0.12)" },
-  cancelled:  { label: "Đã hủy",       color: "#f43f5e", bg: "rgba(244,63,94,0.12)" },
+const STATUS_CONFIG: Record<OrderItem["status"], { label: string; color: string; bg: string }> = {
+  PENDING:         { label: "Chờ xử lý",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+  CONFIRMED:       { label: "Đã xác nhận",  color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
+  READY:           { label: "Sẵn sàng giao", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
+  DELIVERING:      { label: "Đang giao",    color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
+  COMPLETED:       { label: "Đã giao",      color: "#10b981", bg: "rgba(16,185,129,0.12)" },
+  CANCELLED:       { label: "Đã hủy",       color: "#f43f5e", bg: "rgba(244,63,94,0.12)" },
+  DELIVERY_FAILED: { label: "Giao thất bại", color: "#ec4899", bg: "rgba(236,72,153,0.12)" },
+  RETURNED:        { label: "Đã trả hàng",   color: "#6b7280", bg: "rgba(107,114,128,0.12)" },
 };
 
 function StatusBadge({ status }: { status: OrderItem["status"] }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = STATUS_CONFIG[status] || { label: status, color: "#cbd5e1", bg: "rgba(203,213,225,0.12)" };
   return (
     <span
       className="admin-status-badge"
@@ -91,7 +94,7 @@ export function OrdersTable({ orders, compact = false }: OrdersTableProps) {
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
-                    {isAdmin && order.status !== "cancelled" && (
+                    {isAdmin && order.status !== "CANCELLED" && (
                       <button className="admin-action-btn delete" title="Hủy đơn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="3 6 5 6 21 6" />

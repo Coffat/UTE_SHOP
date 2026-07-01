@@ -10,59 +10,63 @@ describe('getAvailableVouchersForCustomer', () => {
     const past = new Date(Date.now() - 86400000);
 
     Voucher.find = ((query: Record<string, unknown>) => ({
-      sort: () => [
-        {
-          _id: 'v1',
-          code: 'GLOBAL10',
-          discountType: 'PERCENTAGE',
-          discountValue: 10,
-          maxDiscountAmount: null,
-          minOrderAmount: 0,
-          startDate: past,
-          endDate: future,
-          usageLimit: null,
-          usedCount: 0,
-          isActive: true,
-          customer: null,
-        },
-        {
-          _id: 'v2',
-          code: 'MINE20',
-          discountType: 'FIXED',
-          discountValue: 20000,
-          maxDiscountAmount: null,
-          minOrderAmount: 100000,
-          startDate: past,
-          endDate: future,
-          usageLimit: 5,
-          usedCount: 1,
-          isActive: true,
-          customer: 'user123',
-        },
-        {
-          _id: 'v3',
-          code: 'EXPIRED',
-          discountType: 'FIXED',
-          discountValue: 5000,
-          maxDiscountAmount: null,
-          minOrderAmount: 0,
-          startDate: new Date(Date.now() - 86400000 * 2),
-          endDate: past,
-          usageLimit: null,
-          usedCount: 0,
-          isActive: true,
-          customer: null,
-        },
-      ].filter((v) => {
-        const or = query.$or as Array<Record<string, unknown>> | undefined;
-        const customerMatch =
-          v.customer === null ||
-          (or?.some((clause) => clause.customer === 'user123') && v.customer === 'user123');
-        const valid = v.startDate <= new Date() && v.endDate >= new Date();
-        const hasUsage =
-          v.usageLimit === null || v.usedCount < (v.usageLimit as number);
-        return v.isActive && valid && hasUsage && customerMatch;
-      }),
+      populate: function() {
+        return {
+          sort: () => [
+            {
+              _id: 'v1',
+              code: 'GLOBAL10',
+              discountType: 'PERCENTAGE',
+              discountValue: 10,
+              maxDiscountAmount: null,
+              minOrderAmount: 0,
+              startDate: past,
+              endDate: future,
+              usageLimit: null,
+              usedCount: 0,
+              isActive: true,
+              customer: null,
+            },
+            {
+              _id: 'v2',
+              code: 'MINE20',
+              discountType: 'FIXED',
+              discountValue: 20000,
+              maxDiscountAmount: null,
+              minOrderAmount: 100000,
+              startDate: past,
+              endDate: future,
+              usageLimit: 5,
+              usedCount: 1,
+              isActive: true,
+              customer: 'user123',
+            },
+            {
+              _id: 'v3',
+              code: 'EXPIRED',
+              discountType: 'FIXED',
+              discountValue: 5000,
+              maxDiscountAmount: null,
+              minOrderAmount: 0,
+              startDate: new Date(Date.now() - 86400000 * 2),
+              endDate: past,
+              usageLimit: null,
+              usedCount: 0,
+              isActive: true,
+              customer: null,
+            },
+          ].filter((v) => {
+            const or = query.$or as Array<Record<string, unknown>> | undefined;
+            const customerMatch =
+              v.customer === null ||
+              (or?.some((clause) => clause.customer === 'user123') && v.customer === 'user123');
+            const valid = v.startDate <= new Date() && v.endDate >= new Date();
+            const hasUsage =
+              v.usageLimit === null || v.usedCount < (v.usageLimit as number);
+            return v.isActive && valid && hasUsage && customerMatch;
+          })
+        };
+      }
     })) as unknown as typeof Voucher.find;
 
     try {
@@ -83,7 +87,11 @@ describe('getAvailableVouchersForCustomer', () => {
     const future = new Date(Date.now() + 86400000);
 
     Voucher.find = (() => ({
-      sort: () => [],
+      populate: function() {
+        return {
+          sort: () => [],
+        };
+      }
     })) as unknown as typeof Voucher.find;
 
     try {

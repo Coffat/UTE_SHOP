@@ -57,6 +57,7 @@ import staffCategoryRoutes from '../modules/staff/routes/categories.routes.js';
 import staffOrderRoutes from '../modules/staff/routes/orders.routes.js';
 import staffBlogRoutes from '../modules/staff/routes/blogs.routes.js';
 import staffReviewRoutes from '../modules/staff/routes/reviews.routes.js';
+import staffSupportRoutes from '../modules/staff/routes/support.routes.js';
 import storeRoutes from '../modules/staff/routes/store.routes.js';
 import adminOrderRoutes from '../modules/admin/routes/orders.routes.js';
 import adminReviewRoutes from '../modules/admin/routes/reviews.routes.js';
@@ -89,6 +90,7 @@ router.use('/staff/categories', staffCategoryRoutes);
 router.use('/staff/orders', staffOrderRoutes);
 router.use('/staff/blogs', staffBlogRoutes);
 router.use('/staff/reviews', staffReviewRoutes);
+router.use('/staff/support', staffSupportRoutes);
 
 // Store staff routes
 router.use('/store', storeRoutes);

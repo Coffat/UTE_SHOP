@@ -46,6 +46,7 @@ import { ReviewsPage } from "./admin/pages/ReviewsPage";
 import { MarketingManagementPage } from "./admin/pages/MarketingManagementPage";
 import { StaffChatPage } from "./admin/pages/StaffChatPage";
 import { NotificationsPage } from "./admin/pages/NotificationsPage";
+import SupportPage from "./admin/pages/SupportPage";
 
 // Warehouse imports
 import { WarehouseDashboardPage } from "./admin/pages/warehouse/WarehouseDashboardPage";
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
           { path: "marketing", element: <MarketingManagementPage /> },
           { path: "chat", element: <StaffChatPage /> },
           { path: "notifications", element: <NotificationsPage /> },
+          { path: "support", element: <SupportPage /> },
         ],
       },
       // --- Staff Routes ---
@@ -128,6 +130,7 @@ export const router = createBrowserRouter([
           { path: "chat", element: <StaffChatPage /> },
           { path: "profile", element: <AdminProfilePage /> },
           { path: "notifications", element: <NotificationsPage /> },
+          { path: "support", element: <SupportPage /> },
         ],
       },
       // --- Warehouse Routes ---

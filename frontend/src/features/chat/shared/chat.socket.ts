@@ -14,6 +14,11 @@ function resolveSocketBaseUrl(): string | undefined {
     return apiBase;
   }
 
+  if (import.meta.env.DEV) {
+    // Let Vite dev server proxy handle /socket.io to avoid direct cross-origin WebSocket failures
+    return undefined;
+  }
+
   // Undefined => same origin. In dev, Vite proxies /socket.io to backend.
   return undefined;
 }

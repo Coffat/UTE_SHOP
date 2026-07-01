@@ -6,7 +6,7 @@ import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import mongoose from 'mongoose';
 
 export const getUsersPoints = asyncHandler(async (req: Request, res: Response) => {
-  const users = await User.find({ role: 'customer' })
+  const users = await User.find({ role: 'CUSTOMER' })
     .select('fullName email phone points createdAt')
     .sort({ createdAt: -1 });
 

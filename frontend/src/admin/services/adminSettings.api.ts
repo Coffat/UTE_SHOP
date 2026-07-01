@@ -50,6 +50,10 @@ export interface StoreSettings {
   apiKeyMasked: string;
   defaultShippingFee: number;
   freeShippingThreshold: number;
+  ghnApiUrl: string;
+  ghnApiToken: string;
+  ghnShopId: string;
+  ghnFromDistrictId: number;
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;

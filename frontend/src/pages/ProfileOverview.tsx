@@ -258,13 +258,13 @@ export function ProfileOverview() {
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <div>
+          <div className="min-w-0">
             <p className="font-ui-label text-sm text-dusk-gray">Chào mừng trở lại,</p>
             <h1 className="mt-1 flex items-center gap-2 font-section-title text-[44px] leading-tight text-deep-plum">
-              {displayName}
-              <MaterialIcon name="verified" className="text-[22px] text-primary" />
+              <span className="truncate">{displayName}</span>
+              <MaterialIcon name="verified" className="text-[22px] text-primary shrink-0" />
             </h1>
-            <p className="mt-1 italic text-midnight-purple/75">"Mỗi bó hoa là một lời nhắn gửi yêu thương."</p>
+            <p className="mt-1 truncate italic text-midnight-purple/75">"Mỗi bó hoa là một lời nhắn gửi yêu thương."</p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/60 bg-pure-ivory/60 px-4 py-3">
@@ -431,7 +431,7 @@ export function ProfileOverview() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <article className="glass-panel rounded-[22px] p-5 shadow-[0_10px_40px_rgba(168,85,247,0.04)]">
+        <article className="min-w-0 glass-panel rounded-[22px] p-5 shadow-[0_10px_40px_rgba(168,85,247,0.04)]">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-section-title text-[32px] text-deep-plum">Đơn hàng gần đây</h3>
             <button
@@ -470,7 +470,7 @@ export function ProfileOverview() {
                   <button
                     type="button"
                     onClick={() => goToOrders(order.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-white/60 bg-pure-ivory/65 px-4 py-3 text-left hover:bg-white transition-colors"
+                    className="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-white/60 bg-pure-ivory/65 px-4 py-3 text-left hover:bg-white transition-colors"
                   >
                     <div className="flex size-10 items-center justify-center rounded-xl bg-soft-amethyst/60 text-primary">
                       <MaterialIcon name="inventory_2" className="text-[20px]" />

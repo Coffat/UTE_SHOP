@@ -20,3 +20,9 @@ export const toggleVoucher = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   sendSuccess(res, 200, 'OK', await voucherService.toggleVoucher(id, req.body.isActive));
 };
+
+export const updateVoucher = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const updated = await voucherService.updateVoucher(id, req.body);
+  sendSuccess(res, 200, 'Cập nhật voucher thành công', updated);
+});

@@ -69,3 +69,8 @@ export async function changeStaffOrderStatus(
   });
   return response.data.data;
 }
+
+export async function updateStaffOrderDetails(orderId: string, payload: any) {
+  const response = await api.put(`/api/v1/staff/orders/${orderId}`, payload);
+  return response.data.data;
+}

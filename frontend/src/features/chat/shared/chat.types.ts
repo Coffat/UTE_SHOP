@@ -14,8 +14,10 @@ export interface ProductSuggestion {
 }
 
 export interface AiMessageMetadata {
-  templateType?: "plain_text" | "product_suggestions";
+  templateType?: "plain_text" | "product_suggestions" | "clarifying";
   productSuggestions?: ProductSuggestion[];
+  /** Clarifying question chips rendered below the AI bubble (Pass3 output) */
+  clarifyingQuestions?: string[];
   [key: string]: unknown;
 }
 

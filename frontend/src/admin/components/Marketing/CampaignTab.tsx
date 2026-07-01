@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { uploadAdminImage, resolveAssetUrl } from '../../services/adminUpload.api';
-import { CrudModal, Slideover, FormField, FormInput, FormTextarea } from '../AdminUI';
+import { CrudModal, Modal, FormField, FormInput, FormTextarea } from '../AdminUI';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/themes/dark.css';
 
@@ -339,21 +339,22 @@ export const CampaignTab: React.FC = () => {
         </div>
       </CrudModal>
 
-      <Slideover
+      <Modal
         isOpen={isStatsOpen}
         title="Thống kê Chiến dịch"
         onClose={() => setIsStatsOpen(false)}
+        size="md"
       >
         {selectedCampaign && (
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--adm-border)' }}>
-            <h4 style={{ margin: '0 0 4px', color: '#fff' }}>{selectedCampaign.name}</h4>
+          <div style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid var(--adm-border)' }}>
+            <h4 style={{ margin: '0 0 4px', color: '#fff', fontSize: '16px', fontWeight: 600 }}>{selectedCampaign.name}</h4>
             <p style={{ margin: 0, color: '#94a3b8', fontSize: '13px' }}>
-              {new Date(selectedCampaign.startDate).toLocaleDateString()} - {new Date(selectedCampaign.endDate).toLocaleDateString()}
+              {new Date(selectedCampaign.startDate).toLocaleDateString('vi-VN')} - {new Date(selectedCampaign.endDate).toLocaleDateString('vi-VN')}
             </p>
           </div>
         )}
         
-        <div style={{ padding: '16px' }}>
+        <div>
           {isStatsLoading ? (
             <p style={{ textAlign: 'center', color: '#94a3b8' }}>Đang tải...</p>
           ) : stats ? (
@@ -375,7 +376,7 @@ export const CampaignTab: React.FC = () => {
              <p style={{ textAlign: 'center', color: '#94a3b8' }}>Không có dữ liệu.</p>
           )}
         </div>
-      </Slideover>
+      </Modal>
     </div>
   );
 };

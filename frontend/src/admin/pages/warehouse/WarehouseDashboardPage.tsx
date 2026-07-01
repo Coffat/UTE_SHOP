@@ -3,8 +3,15 @@ import { Link } from "react-router-dom";
 import { StatCardWidget } from "../../components/StatCard";
 import { fetchWarehouseSummary, type WarehouseSummary } from "../../services/warehouse.api";
 
-function formatQty(n: number) {
-  return Number.isInteger(n) ? n : n.toFixed(2);
+function formatQty(n: any): string {
+  if (n === null || n === undefined) return "0";
+  // Handle MongoDB Decimal128 format from JSON
+  if (typeof n === "object" && n.$numberDecimal !== undefined) {
+    const num = Math.abs(Number(n.$numberDecimal));
+    return Number.isNaN(num) ? "0" : (Number.isInteger(num) ? String(num) : num.toFixed(2));
+  }
+  const num = typeof n === "object" ? Math.abs(Number(n.toString())) : Math.abs(Number(n));
+  return Number.isNaN(num) ? "0" : (Number.isInteger(num) ? String(num) : num.toFixed(2));
 }
 
 function formatTime(iso: string) {
@@ -169,8 +176,10 @@ export function WarehouseDashboardPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, overflowY: "auto" }}>
               {(summary.recentTransactions as any[]).map((t: any) => {
-                const sl = t.stockLevel || {};
-                const itemName = sl?.material?.name || sl?.productVariant?.sizeName || sl?.productVariant?.sku || "—";
+                const sl = t.stockLevel || {} as any;
+                const pName = sl?.productVariant?.product?.name;
+                const variantDetails = sl?.productVariant?.sizeName ? ` (${sl.productVariant.sizeName})` : (sl?.productVariant?.sku ? ` (${sl.productVariant.sku})` : '');
+                const itemName = sl?.material?.name || (pName ? `${pName}${variantDetails}` : sl?.productVariant?.sku || "—");
                 const unit = sl?.material?.unit || "cái";
                 return (
                   <div key={t._id} style={{ padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid var(--adm-border)" }}>
@@ -182,7 +191,7 @@ export function WarehouseDashboardPage() {
                         color: t.type === "IMPORT" ? "#10b981" : "#ef4444",
                         border: `1px solid ${t.type === "IMPORT" ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
                       }}>
-                        {t.type === "IMPORT" ? "Nhập" : "Xuất"} {formatQty(Number(t.quantity?.toString?.() ?? t.quantity))} {unit}
+                        {t.type === "IMPORT" ? "Nhập" : "Xuất"} {formatQty(t.quantity)} {unit}
                       </span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>

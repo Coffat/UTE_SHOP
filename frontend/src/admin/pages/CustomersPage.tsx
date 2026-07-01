@@ -17,17 +17,26 @@ interface Customer {
   joinDate: string;
   isActive: boolean;
   segment: "VIP" | "Tiềm năng" | "Mới" | "Ngủ quên";
-  statusText: "Hoạt động" | "Ít hoạt động" | "Không hoạt động";
+  statusText: "Hoạt động" | "Bị khóa";
   lastPurchaseDate: string;
   avatarColor: string;
   isFemale: boolean;
   avatarUrl?: string;
+  points?: number;
 }
+
+const getMemberTier = (points: number = 0) => {
+  if (points < 100) return { name: "Đồng", color: "#b08d57", bg: "rgba(176, 141, 87, 0.12)" };
+  if (points < 500) return { name: "Bạc", color: "#a0a0a0", bg: "rgba(160, 160, 160, 0.12)" };
+  if (points < 1000) return { name: "Vàng", color: "#e5b80b", bg: "rgba(229, 184, 11, 0.12)" };
+  return { name: "Kim cương", color: "#4fa3e3", bg: "rgba(79, 163, 227, 0.12)" };
+};
 
 export function CustomersPage() {
   const { confirm, ModalEl } = useConfirm();
   const [searchQuery, setSearchQuery] = useState("");
   const [segmentFilter, setSegmentFilter] = useState("Tất cả");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
   // Form states for adding customer
@@ -37,6 +46,7 @@ export function CustomersPage() {
   const [newSegment, setNewSegment] = useState<"VIP" | "Tiềm năng" | "Mới" | "Ngủ quên">("Mới");
   const [newStatus, setNewStatus] = useState<"Hoạt động" | "Ít hoạt động" | "Không hoạt động">("Hoạt động");
   const [newAvatar, setNewAvatar] = useState<File | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,16 +60,14 @@ export function CustomersPage() {
     const ordersCount = bCust.ordersCount || 0;
 
     // Status mapping
-    let statusText: "Hoạt động" | "Ít hoạt động" | "Không hoạt động" = "Hoạt động";
-    if (status === "SUSPENDED" || status === "PENDING") {
-      statusText = "Ít hoạt động";
-    } else if (status === "BANNED") {
-      statusText = "Không hoạt động";
+    let statusText: "Hoạt động" | "Bị khóa" = "Hoạt động";
+    if (status === "BANNED") {
+      statusText = "Bị khóa";
     }
 
     // Segment mapping
     let segment: "VIP" | "Tiềm năng" | "Mới" | "Ngủ quên" = "Mới";
-    if (status === "SUSPENDED" || status === "BANNED") {
+    if (status === "BANNED") {
       segment = "Ngủ quên";
     } else if (totalSpent >= 10000000 || ordersCount >= 10) {
       segment = "VIP";
@@ -97,6 +105,7 @@ export function CustomersPage() {
       avatarColor: avatarColor,
       isFemale: Math.random() > 0.5,
       avatarUrl: bCust.avatar || "",
+      points: bCust.points || 0,
     };
   };
 
@@ -109,10 +118,8 @@ export function CustomersPage() {
         search: searchQuery || undefined,
       };
       
-      if (segmentFilter === "Ngủ quên") {
-        params.status = "SUSPENDED";
-      } else if (segmentFilter === "VIP" || segmentFilter === "Tiềm năng" || segmentFilter === "Mới") {
-        params.status = "ACTIVE";
+      if (statusFilter !== "All") {
+        params.status = statusFilter;
       }
 
       const { items, meta } = await fetchCustomersApi(params);
@@ -130,7 +137,7 @@ export function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-  }, [currentPage, searchQuery, segmentFilter]);
+  }, [currentPage, searchQuery, segmentFilter, statusFilter]);
 
   // Handle addition of a new customer
   const handleCreateCustomer = async (e: React.FormEvent) => {
@@ -152,7 +159,7 @@ export function CustomersPage() {
         payload.append("email", newEmail);
         if (newPhone) payload.append("phone", newPhone);
         payload.append("status", mappedStatus);
-        payload.append("password", "Uteshop@123");
+        payload.append("password", newPassword || "Uteshop@123");
         payload.append("avatar", newAvatar);
       } else {
         payload = {
@@ -160,7 +167,7 @@ export function CustomersPage() {
           email: newEmail,
           phone: newPhone || undefined,
           status: mappedStatus,
-          password: "Uteshop@123",
+          password: newPassword || "Uteshop@123",
         };
       }
 
@@ -172,6 +179,7 @@ export function CustomersPage() {
       setNewSegment("Mới");
       setNewStatus("Hoạt động");
       setNewAvatar(null);
+      setNewPassword("");
       setSlideoverOpen(false);
 
       fetchCustomers();
@@ -180,26 +188,50 @@ export function CustomersPage() {
     }
   };
 
-  // Handle deletion of a customer
-  const handleDeleteCustomer = async (cust: Customer) => {
+  const handleToggleCustomerStatus = async (cust: Customer) => {
+    const isCurrentlyActive = cust.statusText === "Hoạt động";
+    const nextStatus = isCurrentlyActive ? "BANNED" : "ACTIVE";
+    const actionName = isCurrentlyActive ? "khóa" : "kích hoạt lại";
+    
     const isConfirmed = await confirm({
-      title: "Xóa/Khóa khách hàng",
-      message: `Bạn có chắc chắn muốn khóa tài khoản khách hàng "${cust.fullName}" (${cust.id})? Hành động này sẽ chuyển trạng thái của khách hàng thành Không hoạt động.`,
-      confirmLabel: "Khóa tài khoản",
-      variant: "danger",
+      title: `${isCurrentlyActive ? "Khóa" : "Kích hoạt"} tài khoản`,
+      message: `Bạn có chắc muốn ${actionName} tài khoản "${cust.fullName}"?`,
+      confirmLabel: isCurrentlyActive ? "Khóa tài khoản" : "Kích hoạt tài khoản",
+      variant: isCurrentlyActive ? "danger" : "info",
     });
 
     if (isConfirmed) {
       try {
-        await updateCustomerStatus(cust.id, "BANNED");
+        await updateCustomerStatus(cust.id, nextStatus);
         fetchCustomers();
       } catch (err: any) {
-        alert(err.response?.data?.message || "Không thể khóa tài khoản khách hàng");
+        alert(err.response?.data?.message || `Không thể ${actionName} tài khoản khách hàng`);
       }
     }
   };
 
-  const filteredCustomers = customers;
+  const filteredCustomers = useMemo(() => {
+    if (segmentFilter === "Tất cả") return customers;
+    return customers.filter((cust) => getMemberTier(cust.points).name === segmentFilter);
+  }, [customers, segmentFilter]);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   const stats = useMemo(() => {
     const total = totalCount;
@@ -386,7 +418,7 @@ export function CustomersPage() {
                 />
               </div>
 
-              {/* Segment Dropdown */}
+              {/* Rank Dropdown */}
               <div style={{ position: "relative" }}>
                 <select
                   className="admin-form-select"
@@ -404,11 +436,38 @@ export function CustomersPage() {
                   value={segmentFilter}
                   onChange={(e) => setSegmentFilter(e.target.value)}
                 >
-                  <option value="Tất cả">Phân khúc: Tất cả</option>
-                  <option value="VIP">VIP</option>
-                  <option value="Tiềm năng">Tiềm năng</option>
-                  <option value="Mới">Mới</option>
-                  <option value="Ngủ quên">Ngủ quên</option>
+                  <option value="Tất cả">Hạng: Tất cả</option>
+                  <option value="Đồng">Đồng</option>
+                  <option value="Bạc">Bạc</option>
+                  <option value="Vàng">Vàng</option>
+                  <option value="Kim cương">Kim cương</option>
+                </select>
+              </div>
+
+              {/* Status Dropdown */}
+              <div style={{ position: "relative" }}>
+                <select
+                  className="admin-form-select"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid var(--adm-border)",
+                    borderRadius: "6px",
+                    color: "var(--adm-text-dim)",
+                    fontSize: "13px",
+                    padding: "8px 36px 8px 12px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    height: "38px",
+                  }}
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="All">Trạng thái: Tất cả</option>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="BANNED">Bị khóa</option>
                 </select>
               </div>
 
@@ -458,6 +517,8 @@ export function CustomersPage() {
                   <th>Email</th>
                   <th style={{ textAlign: "center" }}>Số đơn</th>
                   <th style={{ textAlign: "right" }}>Tổng chi tiêu</th>
+                  <th style={{ textAlign: "center" }}>Điểm tích lũy</th>
+                  <th style={{ textAlign: "center" }}>Mức hạng</th>
                   <th style={{ paddingLeft: "16px" }}>Phân khúc</th>
                   <th>Trạng thái</th>
                   <th style={{ width: "40px" }}></th>
@@ -547,6 +608,39 @@ export function CustomersPage() {
                       {cust.totalSpent === 0 ? "0 đ" : `${cust.totalSpent.toLocaleString("vi-VN")} đ`}
                     </td>
 
+                    {/* Points column */}
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontFamily: "var(--adm-mono)",
+                        fontWeight: 650,
+                        color: "var(--adm-text-bright)",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {cust.points?.toLocaleString("vi-VN") || 0}
+                    </td>
+
+                    {/* Member tier column */}
+                    <td style={{ textAlign: "center" }}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "11.5px",
+                          fontWeight: 650,
+                          color: getMemberTier(cust.points).color,
+                          backgroundColor: getMemberTier(cust.points).bg,
+                          border: `1px solid ${getMemberTier(cust.points).color}25`,
+                        }}
+                      >
+                        {getMemberTier(cust.points).name}
+                      </span>
+                    </td>
+
                     {/* Segment badge column */}
                     <td style={{ paddingLeft: "16px" }}>
                       {cust.segment === "VIP" && (
@@ -634,8 +728,6 @@ export function CustomersPage() {
                           color:
                             cust.statusText === "Hoạt động"
                               ? "#10b981"
-                              : cust.statusText === "Ít hoạt động"
-                              ? "#eab308"
                               : "#ef4444",
                           fontSize: "12.5px",
                         }}
@@ -646,8 +738,6 @@ export function CustomersPage() {
                             background:
                               cust.statusText === "Hoạt động"
                                 ? "#10b981"
-                                : cust.statusText === "Ít hoạt động"
-                                ? "#eab308"
                                 : "#ef4444",
                             marginRight: "2px",
                           }}
@@ -659,14 +749,34 @@ export function CustomersPage() {
                     {/* Actions column */}
                     <td>
                       <button
-                        className="admin-action-btn delete"
-                        title="Xóa"
-                        style={{ border: "none", width: "24px", height: "24px", padding: 0 }}
-                        onClick={() => handleDeleteCustomer(cust)}
+                        className={cust.statusText === "Hoạt động" ? "admin-action-btn delete" : "admin-action-btn edit"}
+                        title={cust.statusText === "Hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                        style={{
+                          border: "none",
+                          width: "28px",
+                          height: "28px",
+                          padding: 0,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          borderRadius: "6px",
+                          background: "rgba(255,255,255,0.03)",
+                          color: cust.statusText === "Hoạt động" ? "#ef4444" : "#10b981"
+                        }}
+                        onClick={() => handleToggleCustomerStatus(cust)}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        </svg>
+                        {cust.statusText === "Hoạt động" ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                          </svg>
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -699,57 +809,71 @@ export function CustomersPage() {
             <span className="admin-table-muted" style={{ fontSize: "12.5px" }}>
               Hiển thị {totalCount === 0 ? 0 : (currentPage - 1) * 10 + 1} - {Math.min(currentPage * 10, totalCount)} / {totalCount} khách hàng
             </span>
-            <div style={{ display: "flex", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <button
+                className="admin-action-btn options"
+                style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
                 disabled={currentPage === 1 || loading}
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--adm-border)",
-                  color: currentPage === 1 ? "rgba(255,255,255,0.15)" : "var(--adm-text-muted)",
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "6px",
-                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
               >
-                &lt;
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
               </button>
+
+              {getPageNumbers().map((page, index) => {
+                if (page === "...") {
+                  return (
+                    <span key={`dots-${index}`} style={{ color: "#64748b", padding: "0 4px", fontSize: "13px" }}>
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = page === currentPage;
+                return (
+                  <button
+                    key={`page-${page}`}
+                    onClick={() => setCurrentPage(Number(page))}
+                    className={isCurrent ? "" : "admin-action-btn options"}
+                    style={
+                      isCurrent
+                        ? {
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "6px",
+                            background: "#6366f1",
+                            color: "#fff",
+                            border: "none",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }
+                        : {
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "6px",
+                            color: "#94a3b8",
+                            border: "none",
+                            background: "transparent",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }
+                    }
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+
               <button
-                style={{
-                  background: "rgba(99, 102, 241, 0.15)",
-                  border: "1px solid var(--adm-accent)",
-                  color: "#818cf8",
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "6px",
-                  cursor: "default",
-                  fontWeight: 600,
-                  fontSize: "12.5px",
-                }}
-              >
-                {currentPage}
-              </button>
-              <button
+                className="admin-action-btn options"
+                style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
                 disabled={currentPage === totalPages || loading}
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--adm-border)",
-                  color: currentPage === totalPages ? "rgba(255,255,255,0.15)" : "var(--adm-text-muted)",
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "6px",
-                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
               >
-                &gt;
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </button>
             </div>
           </div>

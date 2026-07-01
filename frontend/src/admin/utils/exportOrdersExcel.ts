@@ -8,6 +8,7 @@ const STATUS_LABELS: Record<AdminOrderRow["status"], string> = {
   shipping: "Đang giao",
   completed: "Hoàn tất",
   cancelled: "Đã hủy",
+  attention: "Cần lưu ý",
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {

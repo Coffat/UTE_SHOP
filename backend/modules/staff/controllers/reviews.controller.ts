@@ -67,7 +67,7 @@ export const moderateReview = asyncHandler(async (req: Request, res: Response) =
 export const handleReply = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { replyComment } = req.body;
-  const userId = req.user!._id.toString();
+  const userId = (req.user as any).id || (req.user as any)._id?.toString();
 
   const review = await reviewService.replyReview(id, replyComment, userId);
   if (!review) {

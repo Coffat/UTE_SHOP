@@ -16,6 +16,7 @@ describe('validateAndCalculateVoucher with customer ownership', () => {
       isActive: true,
       customer: 'user123',
       minOrderAmount: 0,
+      populate: function() { return this; },
     })) as any;
 
     try {
@@ -38,6 +39,7 @@ describe('validateAndCalculateVoucher with customer ownership', () => {
       isActive: true,
       customer: 'user123',
       minOrderAmount: 0,
+      populate: function() { return this; },
     })) as any;
 
     try {
@@ -62,6 +64,7 @@ describe('validateAndCalculateVoucher with customer ownership', () => {
       isActive: true,
       customer: null,
       minOrderAmount: 0,
+      populate: function() { return this; },
     })) as any;
 
     try {

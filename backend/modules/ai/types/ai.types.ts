@@ -1,5 +1,46 @@
 export type AiStreamEventName = 'token' | 'handoff' | 'done' | 'error';
 
+// ---------------------------------------------------------------------------
+// Typed AI message metadata
+// ---------------------------------------------------------------------------
+
+/**
+ * Typed metadata attached to AI-generated messages.
+ * Prefer adding named fields here over using the index signature catch-all.
+ * The index signature exists only for backward compatibility during migration.
+ */
+export interface AiMessageMetadata {
+  templateType?: 'plain_text' | 'product_suggestions' | 'clarifying';
+  /** Inline product suggestion cards rendered below the AI bubble */
+  productSuggestions?: Array<{
+    id: string;
+    name: string;
+    slug?: string;
+    description?: string;
+    mainImageUrl?: string;
+    priceFrom?: number;
+    inStock?: boolean;
+  }>;
+  /** Clarifying question chips rendered below the AI bubble (Pass3 output) */
+  clarifyingQuestions?: string[];
+  /** Intent confidence score from the resolver (0–1) */
+  confidence?: number;
+  /** Handoff reason code if this message triggered staff escalation */
+  handoffReason?: string | null;
+  /** How the response was generated */
+  responseMode?: 'stream' | 'deterministic';
+  /** Which internal handler produced this message */
+  source?: string;
+  /** Total latency in ms from request to final token */
+  latencyMs?: number;
+  /** AI provider id used for this response */
+  provider?: string | null;
+  /** Model id used for this response */
+  model?: string | null;
+  /** Catch-all for legacy fields — narrow over time */
+  [key: string]: unknown;
+}
+
 export interface AiTokenEventData {
   text: string;
 }

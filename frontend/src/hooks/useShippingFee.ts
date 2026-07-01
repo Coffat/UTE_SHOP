@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { env } from '../lib/env'; // Adjust according to your frontend env setup or use import.meta.env
 import { useSelector } from 'react-redux';
-import { RootState } from '../store/store'; // Adjust path if needed
+import type { RootState } from '../store';
 
 interface UseShippingFeeProps {
   toDistrictId?: number | string | null;
@@ -38,7 +37,7 @@ export const useShippingFee = ({ toDistrictId, toWardCode, subtotal }: UseShippi
         const payload = {
           to_district_id: Number(toDistrictId),
           to_ward_code: toWardCode,
-          cart_items: cartItems.map(item => ({
+          cart_items: cartItems.map((item: any) => ({
             productId: item.productId,
             quantity: item.quantity,
             weight: item.product?.weight,

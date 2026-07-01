@@ -1234,3 +1234,45 @@ export const requestReturnOrder = async (orderId: string, userId: string, reason
 
   return order;
 };
+
+export const updateOrderDetails = async (
+  orderId: string,
+  updateData: {
+    recipient?: {
+      fullName?: string;
+      phone?: string;
+      deliveryNote?: string;
+    };
+    paymentMethod?: string;
+    paymentStatus?: string;
+    note?: string;
+  }
+): Promise<IOrder | null> => {
+  const order = await Order.findById(orderId);
+  if (!order) return null;
+
+  if (updateData.recipient) {
+    if (updateData.recipient.fullName !== undefined) {
+      order.recipient.fullName = updateData.recipient.fullName;
+    }
+    if (updateData.recipient.phone !== undefined) {
+      order.recipient.phone = updateData.recipient.phone;
+    }
+    if (updateData.recipient.deliveryNote !== undefined) {
+      order.recipient.deliveryNote = updateData.recipient.deliveryNote;
+    }
+  }
+
+  if (updateData.paymentMethod !== undefined) {
+    order.paymentMethod = updateData.paymentMethod as any;
+  }
+  if (updateData.paymentStatus !== undefined) {
+    order.paymentStatus = updateData.paymentStatus as any;
+  }
+  if (updateData.note !== undefined) {
+    order.note = updateData.note;
+  }
+
+  await order.save();
+  return order;
+};

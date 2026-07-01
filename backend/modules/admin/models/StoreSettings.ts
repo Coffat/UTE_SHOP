@@ -55,6 +55,10 @@ export interface IStoreSettings extends Document {
   apiKey: string;
   defaultShippingFee: number;
   freeShippingThreshold: number;
+  ghnApiUrl: string;
+  ghnApiToken: string;
+  ghnShopId: string;
+  ghnFromDistrictId: number;
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;
@@ -106,6 +110,10 @@ const storeSettingsSchema = new Schema<IStoreSettings>(
     apiKey: { type: String, default: '' },
     defaultShippingFee: { type: Number, default: 30000 },
     freeShippingThreshold: { type: Number, default: 0 },
+    ghnApiUrl: { type: String, default: 'https://dev-online-gateway.ghn.vn/shiip/public-api' },
+    ghnApiToken: { type: String, default: '' },
+    ghnShopId: { type: String, default: '' },
+    ghnFromDistrictId: { type: Number, default: 0 },
     webhookUrl: { type: String, default: '' },
     webhookEnabled: { type: Boolean, default: false },
     logoUrl: { type: String, default: '' },

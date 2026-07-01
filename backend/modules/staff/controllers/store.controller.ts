@@ -95,17 +95,18 @@ export const listCustomers = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const customers = await Customer.find(filter)
-    .select('fullName email phone')
+    .select('fullName email phone points')
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
 
   sendSuccess(res, 200, 'OK', {
-    items: customers.map((customer) => ({
+    items: customers.map((customer: any) => ({
       id: customer._id.toString(),
       fullName: customer.fullName,
       email: customer.email,
       phone: customer.phone,
+      points: customer.points || 0,
     })),
     meta: { limit, total: customers.length },
   });

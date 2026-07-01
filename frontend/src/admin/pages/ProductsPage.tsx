@@ -129,8 +129,14 @@ function getProductIcon(iconType: string) {
   }
 }
 
-function getProductStatusStyle(stock: number, status: string) {
-  if (status === "inactive" || stock === 0) {
+function getProductStatusStyle(stock: number, _status: string, backendStatus?: string) {
+  if (backendStatus === "DISCONTINUED") {
+    return { background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", border: "1px solid rgba(244, 63, 94, 0.2)" };
+  }
+  if (backendStatus === "DRAFT") {
+    return { background: "rgba(255, 255, 255, 0.05)", color: "#94a3b8", border: "1px solid rgba(255, 255, 255, 0.08)" };
+  }
+  if (stock === 0) {
     return { background: "rgba(255, 255, 255, 0.05)", color: "#94a3b8", border: "1px solid rgba(255, 255, 255, 0.08)" };
   }
   if (stock > 0 && stock <= 50) {
@@ -139,9 +145,15 @@ function getProductStatusStyle(stock: number, status: string) {
   return { background: "rgba(16, 185, 129, 0.12)", color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.25)" };
 }
 
-function getProductStatusLabel(stock: number, status: string) {
-  if (status === "inactive" || stock === 0) {
-    return "Ẩn";
+function getProductStatusLabel(stock: number, _status: string, backendStatus?: string) {
+  if (backendStatus === "DISCONTINUED") {
+    return "Ngừng bán";
+  }
+  if (backendStatus === "DRAFT") {
+    return "Nháp";
+  }
+  if (stock === 0) {
+    return "Hết hàng";
   }
   if (stock > 0 && stock <= 50) {
     return "Sắp hết";
@@ -162,6 +174,8 @@ export function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMatchingProducts, setTotalMatchingProducts] = useState(0);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<AdminProductRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -191,6 +205,8 @@ export function ProductsPage() {
         fetchProductManagementSummary(role),
       ]);
       setProducts(listResult.items);
+      setTotalPages(listResult.meta.pages || 1);
+      setTotalMatchingProducts(listResult.meta.total || 0);
       setSummary({
         ...summaryResult,
         topCategories: summaryResult.topCategories ?? [],
@@ -320,6 +336,24 @@ export function ProductsPage() {
     }
   }
 
+  async function handleRestore(p: AdminProductRow) {
+    if (!isAdmin) return;
+    const ok = await confirm({
+      title: "Mở bán lại",
+      message: `Bạn có muốn mở bán lại sản phẩm "${p.name}"?`,
+      variant: "info",
+      confirmLabel: "Mở bán lại",
+    });
+    if (!ok) return;
+    try {
+      await updateAdminProduct(p.id, { status: "ACTIVE" });
+      await loadProducts();
+    } catch (err) {
+      console.error("Failed to restore product:", err);
+      setError("Không thể mở bán lại sản phẩm.");
+    }
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -378,6 +412,24 @@ export function ProductsPage() {
     }
   }
 
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
+
   return (
     <div className="admin-page">
       {ModalEl}
@@ -435,6 +487,165 @@ export function ProductsPage() {
           .admin-product-grid {
             grid-template-columns: 1fr;
           }
+        }
+
+        /* Product Form Dialog Layout - 3 columns side-by-side */
+        .product-form-grid {
+          display: grid;
+          grid-template-columns: 1.15fr 0.85fr 1fr;
+          gap: 16px;
+        }
+        @media (max-width: 1024px) {
+          .product-form-grid {
+            grid-template-columns: 1.2fr 1fr;
+          }
+        }
+        @media (max-width: 768px) {
+          .product-form-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* Beautiful form section card styling */
+        .form-section-card {
+          background: rgba(255, 255, 255, 0.015);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          transition: all 0.3s ease;
+        }
+        .form-section-card:hover {
+          border-color: rgba(99, 102, 241, 0.15);
+          box-shadow: 0 8px 30px rgba(99, 102, 241, 0.03);
+        }
+
+        .form-section-title {
+          font-size: 13px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.75px;
+          color: #818cf8;
+          margin: 0 0 4px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          padding-bottom: 8px;
+        }
+
+        /* Premium Input Icon wrappers */
+        .premium-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+        .premium-input-icon {
+          position: absolute;
+          left: 12px;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+          font-size: 14px;
+        }
+        .premium-input-wrapper .admin-form-input {
+          padding-left: 32px;
+        }
+        
+        .premium-input-wrapper-prefix-text {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+        .premium-input-prefix-text {
+          position: absolute;
+          left: 12px;
+          color: #64748b;
+          font-size: 13px;
+          font-weight: 600;
+          pointer-events: none;
+        }
+        .premium-input-wrapper-prefix-text .admin-form-input {
+          padding-left: 28px;
+        }
+
+        /* Premium Upload Zone */
+        .premium-upload-zone {
+          border: 2px dashed rgba(99, 102, 241, 0.2);
+          border-radius: 12px;
+          background: rgba(99, 102, 241, 0.01);
+          padding: 12px 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-upload-zone:hover {
+          border-color: #6366f1;
+          background: rgba(99, 102, 241, 0.03);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(99, 102, 241, 0.08);
+        }
+
+        .premium-image-container {
+          position: relative;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+          max-height: 120px;
+          width: 100%;
+        }
+
+        .premium-image-preview {
+          width: 100%;
+          height: 100%;
+          max-height: 120px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .premium-image-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(5, 10, 20, 0.7);
+          opacity: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-image-container:hover .premium-image-overlay {
+          opacity: 1;
+        }
+
+        /* Shipping Grid */
+        .shipping-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        @media (max-width: 480px) {
+          .shipping-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* Spinner */
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
@@ -649,8 +860,8 @@ export function ProductsPage() {
                     </tr>
                   )}
                   {!loading && filtered.map((p) => {
-                    const statusStyle = getProductStatusStyle(p.stock, p.status);
-                    const statusLabel = getProductStatusLabel(p.stock, p.status);
+                    const statusStyle = getProductStatusStyle(p.stock, p.status, p.backendStatus);
+                    const statusLabel = getProductStatusLabel(p.stock, p.status, p.backendStatus);
 
                     return (
                       <tr key={p.id} className="admin-table-row">
@@ -756,6 +967,18 @@ export function ProductsPage() {
                                 </svg>
                               </button>
                             )}
+                            {isAdmin && p.backendStatus === "DISCONTINUED" && (
+                              <button
+                                className="admin-action-btn edit"
+                                title="Mở bán lại"
+                                style={{ width: "32px", height: "32px", borderRadius: "6px", color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)" }}
+                                onClick={() => handleRestore(p)}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -789,14 +1012,15 @@ export function ProductsPage() {
               }}
             >
               <span style={{ fontSize: "13px", color: "#64748b" }}>
-                Hiển thị {filtered.length} / {totalProductsCount.toLocaleString("vi-VN")} sản phẩm
+                Hiển thị {filtered.length > 0 ? (currentPage - 1) * 10 + 1 : 0} - {Math.min(currentPage * 10, totalMatchingProducts)} trong số {totalMatchingProducts.toLocaleString("vi-VN")} sản phẩm
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 {/* Previous Page Button */}
                 <button
                   className="admin-action-btn options"
                   style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  disabled
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="15 18 9 12 15 6" />
@@ -804,45 +1028,56 @@ export function ProductsPage() {
                 </button>
 
                 {/* Page Indicators */}
-                <button
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "6px",
-                    background: "#6366f1",
-                    color: "#fff",
-                    border: "none",
-                    fontWeight: 600,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                  }}
-                >
-                  1
-                </button>
-                <button
-                  className="admin-action-btn options"
-                  style={{ width: "32px", height: "32px", borderRadius: "6px", color: "#94a3b8", border: "none", background: "transparent", fontSize: "13px" }}
-                >
-                  2
-                </button>
-                <button
-                  className="admin-action-btn options"
-                  style={{ width: "32px", height: "32px", borderRadius: "6px", color: "#94a3b8", border: "none", background: "transparent", fontSize: "13px" }}
-                >
-                  3
-                </button>
-                <span style={{ color: "#64748b", padding: "0 4px", fontSize: "13px" }}>...</span>
-                <button
-                  className="admin-action-btn options"
-                  style={{ width: "32px", height: "32px", borderRadius: "6px", color: "#94a3b8", border: "none", background: "transparent", fontSize: "13px" }}
-                >
-                  125
-                </button>
+                {getPageNumbers().map((page, index) => {
+                  if (page === "...") {
+                    return (
+                      <span key={`dots-${index}`} style={{ color: "#64748b", padding: "0 4px", fontSize: "13px" }}>
+                        ...
+                      </span>
+                    );
+                  }
+                  const isCurrent = page === currentPage;
+                  return (
+                    <button
+                      key={`page-${page}`}
+                      onClick={() => setCurrentPage(Number(page))}
+                      className={isCurrent ? "" : "admin-action-btn options"}
+                      style={
+                        isCurrent
+                          ? {
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "6px",
+                              background: "#6366f1",
+                              color: "#fff",
+                              border: "none",
+                              fontWeight: 600,
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }
+                          : {
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "6px",
+                              color: "#94a3b8",
+                              border: "none",
+                              background: "transparent",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }
+                      }
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
 
                 {/* Next Page Button */}
                 <button
                   className="admin-action-btn options"
                   style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="9 18 15 12 9 6" />
@@ -985,82 +1220,167 @@ export function ProductsPage() {
         onSubmit={handleSubmit}
         submitting={submitting}
         submitLabel={editProduct ? "Lưu thay đổi" : "Thêm sản phẩm"}
-        size="xl"
+        size="xxl"
+        buttonsPosition="header"
       >
-          <div className="admin-form-row">
-            <FormField label="Tên sản phẩm" required>
-              <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
-            </FormField>
-            <FormField label="Mã SKU">
-              <FormInput name="sku" placeholder="VD: SKU-12345" defaultValue={editProduct?.sku} />
-            </FormField>
+        <div className="product-form-grid">
+          {/* Cột 1: Thông tin cơ bản & Mô tả */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="form-section-card" style={{ flex: 1 }}>
+              <h4 className="form-section-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Thông tin cơ bản
+              </h4>
+
+              <FormField label="Tên sản phẩm" required>
+                <FormInput name="name" placeholder="Nhập tên sản phẩm..." defaultValue={editProduct?.name} required />
+              </FormField>
+
+              <FormField label="Danh mục" required>
+                <FormSelect name="categoryId" defaultValue={editProduct?.categoryId} required>
+                  <option value="">-- Chọn danh mục --</option>
+                  {categoryOptions.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </FormSelect>
+              </FormField>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }} className="admin-form-field">
+                <label className="admin-form-label">Mô tả sản phẩm</label>
+                <FormTextarea name="description" placeholder="Nhập mô tả sản phẩm..." defaultValue={editProduct?.description} style={{ flex: 1, minHeight: '100px', resize: 'none' }} />
+              </div>
+            </div>
           </div>
 
-          <FormField label="Mô tả sản phẩm">
-            <FormTextarea name="description" placeholder="Nhập mô tả..." defaultValue={editProduct?.description} />
-          </FormField>
+          {/* Cột 2: SKU, Giá, Tồn kho & Trạng thái */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="form-section-card" style={{ flex: 1 }}>
+              <h4 className="form-section-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                Giá & Lưu trữ
+              </h4>
 
-          <FormField label="Ảnh sản phẩm">
-            <div className="admin-image-upload-zone">
-              {imageUrl ? (
-                <div className="admin-image-preview">
-                  <img src={imageUrl} alt="Preview" />
-                  <button type="button" className="admin-image-remove" onClick={() => setImageUrl("")}>X</button>
+              <FormField label="Mã SKU">
+                <div className="premium-input-wrapper">
+                  <span className="premium-input-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                  </span>
+                  <FormInput name="sku" placeholder="VD: SKU-12345" defaultValue={editProduct?.sku} />
                 </div>
-              ) : (
-                <label className="admin-image-upload-label">
-                  <input type="file" accept="image/*" className="admin-image-file-input" onChange={handleImageUpload} disabled={uploadingImage} />
-                  <span>{uploadingImage ? "Đang tải lên..." : "Tải ảnh lên"}</span>
-                </label>
-              )}
-            </div>
-          </FormField>
-
-          <div className="admin-form-row">
-            <FormField label="Danh mục" required>
-              <FormSelect name="categoryId" defaultValue={editProduct?.categoryId} required>
-                <option value="">-- Chọn danh mục --</option>
-                {categoryOptions.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </FormSelect>
-            </FormField>
-            <FormField label="Trạng thái" required>
-              <FormSelect name="status" defaultValue={editProduct?.status || "active"}>
-                <option value="active">Đang kinh doanh</option>
-                <option value="inactive">Ẩn</option>
-              </FormSelect>
-            </FormField>
-          </div>
-
-          <div className="admin-form-row">
-            <FormField label="Giá (VNĐ)" required>
-              <FormInput type="number" name="price" min="0" step="1000" defaultValue={editProduct?.price} required />
-            </FormField>
-            <FormField label="Tồn kho" required>
-              <FormInput type="number" name="stock" min="0" defaultValue={editProduct?.stock ?? 10} required />
-            </FormField>
-          </div>
-
-          <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', marginTop: '12px' }}>
-            <h4 style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Thông số Vận chuyển (GHN)</h4>
-            <div className="admin-form-row">
-              <FormField label="Khối lượng (gram)" required>
-                <FormInput type="number" name="weight" min="1" defaultValue={editProduct?.weight || 1000} required />
               </FormField>
-              <FormField label="Chiều dài (cm)" required>
-                <FormInput type="number" name="length" min="1" defaultValue={editProduct?.length || 30} required />
+
+              <FormField label="Giá bán (VNĐ)" required>
+                <div className="premium-input-wrapper-prefix-text">
+                  <span className="premium-input-prefix-text">₫</span>
+                  <FormInput type="number" name="price" min="0" step="1000" defaultValue={editProduct?.price} required style={{ paddingLeft: '24px' }} />
+                </div>
               </FormField>
-            </div>
-            <div className="admin-form-row" style={{ marginTop: '16px' }}>
-              <FormField label="Chiều rộng (cm)" required>
-                <FormInput type="number" name="width" min="1" defaultValue={editProduct?.width || 30} required />
+
+              <FormField label="Tồn kho" required>
+                <div className="premium-input-wrapper">
+                  <span className="premium-input-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  </span>
+                  <FormInput type="number" name="stock" min="0" defaultValue={editProduct?.stock ?? 10} required />
+                </div>
               </FormField>
-              <FormField label="Chiều cao (cm)" required>
-                <FormInput type="number" name="height" min="1" defaultValue={editProduct?.height || 30} required />
+
+              <FormField label="Trạng thái hiển thị" required>
+                <FormSelect name="status" defaultValue={editProduct?.status || "active"}>
+                  <option value="active">Đang kinh doanh</option>
+                  <option value="inactive">Ẩn</option>
+                </FormSelect>
               </FormField>
             </div>
           </div>
+
+          {/* Cột 3: Media & Vận chuyển */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Hình ảnh */}
+            <div className="form-section-card">
+              <h4 className="form-section-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                Hình ảnh
+              </h4>
+              <div className="admin-image-upload-zone" style={{ padding: 0, border: 'none', background: 'transparent', minHeight: 'auto' }}>
+                {imageUrl ? (
+                  <div className="premium-image-container">
+                    <img src={imageUrl} alt="Preview" className="premium-image-preview" />
+                    <div className="premium-image-overlay">
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl("")}
+                        style={{
+                          background: '#ef4444',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#ef4444'; }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><line x1="9" y1="11" x2="9" y2="17"></line><line x1="15" y1="11" x2="15" y2="17"></line></svg>
+                        Xoá ảnh
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="premium-upload-zone" style={{ width: '100%' }}>
+                    <input type="file" accept="image/*" className="admin-image-file-input" onChange={handleImageUpload} disabled={uploadingImage} style={{ display: 'none' }} />
+                    {uploadingImage ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '20px', height: '20px', border: '2px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>Đang tải...</span>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: 600 }}>Tải ảnh lên</span>
+                          <p style={{ fontSize: '10px', color: '#64748b', margin: '2px 0 0 0' }}>Tối đa 5MB</p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Vận chuyển */}
+            <div className="form-section-card" style={{ background: 'rgba(99, 102, 241, 0.02)', borderColor: 'rgba(99, 102, 241, 0.1)', flex: 1 }}>
+              <h4 className="form-section-title" style={{ color: '#a5b4fc' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                Vận chuyển (GHN)
+              </h4>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+                <FormField label="Cân nặng (g)" required>
+                  <FormInput type="number" name="weight" min="1" defaultValue={editProduct?.weight || 1000} required />
+                </FormField>
+                <FormField label="Dài (cm)" required>
+                  <FormInput type="number" name="length" min="1" defaultValue={editProduct?.length || 30} required />
+                </FormField>
+                <FormField label="Rộng (cm)" required>
+                  <FormInput type="number" name="width" min="1" defaultValue={editProduct?.width || 30} required />
+                </FormField>
+                <FormField label="Cao (cm)" required>
+                  <FormInput type="number" name="height" min="1" defaultValue={editProduct?.height || 30} required />
+                </FormField>
+              </div>
+            </div>
+          </div>
+        </div>
       </CrudModal>
       )}
     </div>

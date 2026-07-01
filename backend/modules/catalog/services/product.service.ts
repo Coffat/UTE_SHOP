@@ -442,6 +442,9 @@ export const updateAdminProduct = async (
   if (input.description !== undefined) product.description = input.description.trim();
   if (input.status && Object.values(ProductStatus).includes(input.status)) {
     product.status = input.status;
+    if (input.status === ProductStatus.ACTIVE) {
+      variant.isActive = true;
+    }
   }
 
   if (input.sku) variant.sku = input.sku.trim();

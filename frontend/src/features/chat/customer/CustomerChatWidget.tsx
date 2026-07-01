@@ -20,6 +20,29 @@ const toCurrency = (value?: number) => {
   return value.toLocaleString("vi-VN") + "đ";
 };
 
+/**
+ * Extract clarifying questions from an AI message's metadata.
+ * Returns an empty array if none present or invalid.
+ */
+const getClarifyingQuestions = (message: Message): string[] => {
+  const qs = message.metadata?.clarifyingQuestions;
+  if (!Array.isArray(qs)) return [];
+  return qs.filter((q): q is string => typeof q === "string" && q.trim().length > 0);
+};
+
+/**
+ * Lightweight analytics helper for clarify chip events.
+ * Phase 1: structured console.info for easy querying.
+ * Phase 2 (later): swap body to POST to an analytics endpoint.
+ */
+const logClarifyEvent = (
+  event: "clarify_shown" | "clarify_clicked" | "clarify_ignored",
+  messageId: string | null,
+  chipText?: string,
+) => {
+  console.info("[clarify]", { event, messageId, chipText, ts: Date.now() });
+};
+
 const getProductSuggestions = (message: Message): ProductSuggestion[] => {
   const suggestions = message.metadata?.productSuggestions;
   if (!Array.isArray(suggestions)) return [];
@@ -48,6 +71,10 @@ export function CustomerChatWidget() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ID of the AI message whose clarifying chips are currently visible (null = none)
+  const [activeClarifyMessageId, setActiveClarifyMessageId] = useState<string | null>(null);
+  // ID of the AI message whose chips are disabled while a chip send is in-flight
+  const [sendingChipMessageId, setSendingChipMessageId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const typingTimerRef = useRef<number | null>(null);
   const aiStreamCloseRef = useRef<(() => void) | null>(null);
@@ -184,6 +211,12 @@ export function CustomerChatWidget() {
           });
           aiTempMessageIdRef.current = aiMessageId;
           aiStreamCloseRef.current = null;
+          // Show clarifying chips if Pass3 returned questions
+          const clarifyingQuestions = metadata?.clarifyingQuestions;
+          if (Array.isArray(clarifyingQuestions) && clarifyingQuestions.length > 0) {
+            setActiveClarifyMessageId(aiMessageId);
+            logClarifyEvent("clarify_shown", aiMessageId);
+          }
           scrollToBottom();
         },
         onError: () => {
@@ -335,36 +368,54 @@ export function CustomerChatWidget() {
     setNextBefore(page.pagination.nextBefore);
   }, [conversation, hasMore, nextBefore]);
 
-  const send = useCallback(async () => {
-    if (!conversation || !input.trim()) return;
-    const content = input.trim();
-    const clientMessageId = createClientMessageId();
-    const optimistic: Message = {
-      _id: `tmp_${clientMessageId}`,
-      conversationId: conversation._id,
-      senderType: "customer",
-      senderId: profile?._id,
-      clientMessageId,
-      messageType: "text",
-      content,
-      createdAt: new Date().toISOString(),
-      deliveryState: "sending",
-    };
-    setInput("");
-    setMessages((prev) => [...prev, optimistic]);
-    setSending(true);
-    scrollToBottom();
-    try {
+  /**
+   * Core send logic, shared between manual input and chip clicks.
+   * Returns true on success, throws on failure.
+   */
+  const sendMessage = useCallback(
+    async (content: string, clientMessageId: string) => {
+      if (!conversation) throw new Error("no_conversation");
+      const optimistic: Message = {
+        _id: `tmp_${clientMessageId}`,
+        conversationId: conversation._id,
+        senderType: "customer",
+        senderId: profile?._id,
+        clientMessageId,
+        messageType: "text",
+        content,
+        createdAt: new Date().toISOString(),
+        deliveryState: "sending",
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      scrollToBottom();
       const response = await sendCustomerMessage(conversation._id, { content, clientMessageId });
       setConversation(response.conversation);
       upsertMessage(response.message);
       if (shouldAutoAskAi(response.conversation)) {
         startAiStream(conversation._id, response.message._id);
       }
+      return { optimistic, clientMessageId };
+    },
+    [conversation, profile?._id, scrollToBottom, shouldAutoAskAi, startAiStream, upsertMessage],
+  );
+
+  const send = useCallback(async () => {
+    if (!conversation || !input.trim()) return;
+    const content = input.trim();
+    const clientMessageId = createClientMessageId();
+    setInput("");
+    setSending(true);
+    // Dismiss any active clarify chips when user sends a new message manually
+    if (activeClarifyMessageId) {
+      logClarifyEvent("clarify_ignored", activeClarifyMessageId);
+      setActiveClarifyMessageId(null);
+    }
+    try {
+      await sendMessage(content, clientMessageId);
     } catch {
       setMessages((prev) =>
         prev.map((msg) => {
-          if (msg.clientMessageId === clientMessageId || msg._id === optimistic._id) {
+          if (msg.clientMessageId === clientMessageId) {
             return { ...msg, deliveryState: "failed" };
           }
           return msg;
@@ -373,7 +424,30 @@ export function CustomerChatWidget() {
     } finally {
       setSending(false);
     }
-  }, [conversation, input, profile?._id, scrollToBottom, shouldAutoAskAi, startAiStream, upsertMessage]);
+  }, [activeClarifyMessageId, conversation, input, sendMessage]);
+
+  /**
+   * Handle a clarifying chip click:
+   * 1. Disable chips immediately (prevent double-click)
+   * 2. Send the chip text as a customer message
+   * 3. On success → dismiss chips
+   * 4. On failure → re-enable chips so user can retry
+   */
+  const handleChipClick = useCallback(
+    async (chipText: string, sourceMessageId: string) => {
+      if (!conversation || sendingChipMessageId) return;
+      setSendingChipMessageId(sourceMessageId); // disable all chips for this bubble
+      try {
+        await sendMessage(chipText, createClientMessageId());
+        setActiveClarifyMessageId(null); // dismiss on success
+        setSendingChipMessageId(null);
+        logClarifyEvent("clarify_clicked", sourceMessageId, chipText);
+      } catch {
+        setSendingChipMessageId(null); // re-enable on failure
+      }
+    },
+    [conversation, sendMessage, sendingChipMessageId],
+  );
 
   const requestHandoff = useCallback(async () => {
     if (!conversation) return;
@@ -513,6 +587,24 @@ export function CustomerChatWidget() {
                         {msg.senderType === "ai" && msg.deliveryState === "sending" && (
                           <div className="mt-1 text-[10px] font-medium text-indigo-700/80">AI đang trả lời...</div>
                         )}
+                        {/* Clarifying question chips — Pass3 output */}
+                        {msg.senderType === "ai" &&
+                          msg._id === activeClarifyMessageId &&
+                          getClarifyingQuestions(msg).length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {getClarifyingQuestions(msg).map((q) => (
+                                <button
+                                  key={q}
+                                  type="button"
+                                  disabled={sendingChipMessageId === msg._id}
+                                  onClick={() => void handleChipClick(q, msg._id)}
+                                  className="chip-clarify"
+                                >
+                                  {q}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         {msg.senderType === "ai" && productSuggestions.length > 0 && (
                           <div className="mt-2 space-y-2">
                             {productSuggestions.map((product) => (

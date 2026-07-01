@@ -74,6 +74,10 @@ export interface StoreSettingsDto {
   apiKeyMasked: string;
   defaultShippingFee: number;
   freeShippingThreshold: number;
+  ghnApiUrl: string;
+  ghnApiToken: string;
+  ghnShopId: string;
+  ghnFromDistrictId: number;
   webhookUrl: string;
   webhookEnabled: boolean;
   logoUrl: string;
@@ -117,6 +121,10 @@ const mapToDto = (doc: IStoreSettings, websiteInfo?: { address?: string; hotline
   apiKeyMasked: maskApiKey(doc.apiKey),
   defaultShippingFee: doc.defaultShippingFee,
   freeShippingThreshold: doc.freeShippingThreshold,
+  ghnApiUrl: doc.ghnApiUrl || process.env.GHN_API_URL || 'https://dev-online-gateway.ghn.vn/shiip/public-api',
+  ghnApiToken: doc.ghnApiToken || process.env.GHN_API_TOKEN || '',
+  ghnShopId: doc.ghnShopId || process.env.GHN_SHOP_ID || '',
+  ghnFromDistrictId: doc.ghnFromDistrictId || Number(process.env.GHN_FROM_DISTRICT_ID) || 0,
   webhookUrl: doc.webhookUrl,
   webhookEnabled: doc.webhookEnabled,
   logoUrl: doc.logoUrl,

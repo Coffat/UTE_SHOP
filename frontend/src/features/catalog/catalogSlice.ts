@@ -55,6 +55,8 @@ export interface ProductReview {
   };
   rating: number;
   comment: string;
+  replyComment?: string | null;
+  repliedAt?: string | null;
   createdAt: string;
 }
 
@@ -317,13 +319,13 @@ export const fetchRelatedProducts = createAsyncThunk(
     }
   }
 );
-
 export const fetchProductReviews = createAsyncThunk(
   "catalog/fetchProductReviews",
-  async (productId: string, { rejectWithValue }) => {
+  async (args: { productId: string; page?: number; limit?: number }, { rejectWithValue }) => {
+    const { productId, page = 1, limit = 6 } = args;
     try {
       const response = await api.get(`/api/v1/products/${productId}/reviews`, {
-        params: { page: 1, limit: 6 },
+        params: { page, limit },
       });
       if (response.data?.success && response.data?.data) {
         return response.data.data as {
@@ -333,7 +335,7 @@ export const fetchProductReviews = createAsyncThunk(
           limit: number;
         };
       }
-      return { items: [], total: 0, page: 1, limit: 6 };
+      return { items: [], total: 0, page, limit };
     } catch (err) {
       console.warn(`Backend reviews fetch for ${productId} failed.`);
       return rejectWithValue("Lỗi tải đánh giá sản phẩm");

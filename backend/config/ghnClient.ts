@@ -1,20 +1,35 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import StoreSettings from '../modules/admin/models/StoreSettings.js';
 
 dotenv.config();
 
-const GHN_API_URL = process.env.GHN_API_URL || 'https://dev-online-gateway.ghn.vn/shiip/public-api';
-const GHN_API_TOKEN = process.env.GHN_API_TOKEN || '';
-const GHN_SHOP_ID = process.env.GHN_SHOP_ID || '';
+const DEFAULT_GHN_API_URL = 'https://dev-online-gateway.ghn.vn/shiip/public-api';
 
 export const ghnClient = axios.create({
-  baseURL: GHN_API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Token': GHN_API_TOKEN,
-    'ShopId': GHN_SHOP_ID,
   },
 });
+
+ghnClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const settings = await StoreSettings.findOne({ key: 'default' });
+      const apiToken = settings?.ghnApiToken || process.env.GHN_API_TOKEN || '';
+      const shopId = settings?.ghnShopId || process.env.GHN_SHOP_ID || '';
+      const apiUrl = settings?.ghnApiUrl || process.env.GHN_API_URL || DEFAULT_GHN_API_URL;
+
+      config.baseURL = apiUrl;
+      config.headers['Token'] = apiToken;
+      config.headers['ShopId'] = shopId;
+    } catch (err) {
+      console.error('Error in GHN request interceptor:', err);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Optional: Add interceptors for logging or error handling
 ghnClient.interceptors.response.use(

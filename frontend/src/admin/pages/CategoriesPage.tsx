@@ -389,16 +389,39 @@ export function CategoriesPage() {
                     </td>
                     <td>{new Date(category.createdAt).toLocaleDateString("vi-VN")}</td>
                     <td>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                        <button className="admin-btn admin-btn-ghost" onClick={() => openEdit(category)}>
-                          Sửa
+                      <div style={{ display: "flex", justifyContent: "flex-end", paddingRight: "8px", gap: "8px" }}>
+                        <button
+                          className="admin-action-btn edit"
+                          title="Sửa danh mục"
+                          onClick={() => openEdit(category)}
+                          style={{ width: "32px", height: "32px", borderRadius: "6px" }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
                         </button>
-                         <button className="admin-btn admin-btn-ghost" onClick={() => handleToggle(category)}>
-                          {category.isActive ? "Ẩn" : "Hiện"}
+                        <button
+                          className="admin-action-btn view"
+                          title={category.isActive ? "Ẩn danh mục" : "Hiển thị danh mục"}
+                          onClick={() => handleToggle(category)}
+                          style={{ width: "32px", height: "32px", borderRadius: "6px" }}
+                        >
+                          {category.isActive ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
                         </button>
                         {isAdmin && (
                           <button
-                            className="admin-btn admin-btn-ghost"
+                            className="admin-action-btn delete"
                             disabled={category.productCount > 0}
                             title={
                               category.productCount > 0
@@ -407,11 +430,18 @@ export function CategoriesPage() {
                             }
                             onClick={() => handleDelete(category)}
                             style={{
-                              color: category.productCount > 0 ? "#64748b" : "#f87171",
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "6px",
+                              color: category.productCount > 0 ? "rgba(255, 255, 255, 0.15)" : undefined,
+                              borderColor: category.productCount > 0 ? "rgba(255, 255, 255, 0.05)" : undefined,
                               cursor: category.productCount > 0 ? "not-allowed" : "pointer",
                             }}
                           >
-                            Xóa
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            </svg>
                           </button>
                         )}
                       </div>

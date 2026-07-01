@@ -94,3 +94,25 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const order = await orderService.createAdminOrder(req.body, req.user!.id);
   sendSuccess(res, 201, 'Tạo đơn hàng thành công', order);
 });
+
+// PUT /api/v1/admin/orders/:id
+export const updateOrder = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { recipient, paymentMethod, paymentStatus, note } = req.body;
+
+  const existingOrder = await orderService.getOrderById(id);
+  if (!existingOrder) return sendError(res, 404, 'Không tìm thấy đơn hàng');
+
+  if (['COMPLETED', 'CANCELLED', 'RETURNED'].includes(existingOrder.status)) {
+    return sendError(res, 400, 'Không thể cập nhật thông tin cho đơn hàng đã hoàn tất, đã hủy hoặc trả hàng');
+  }
+
+  const order = await orderService.updateOrderDetails(id, {
+    recipient,
+    paymentMethod,
+    paymentStatus,
+    note,
+  });
+  if (!order) return sendError(res, 404, 'Không tìm thấy đơn hàng');
+  sendSuccess(res, 200, 'Cập nhật đơn hàng thành công', order);
+});

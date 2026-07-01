@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { AppLogo } from "@/components/ui/AppLogo";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { RoseLineArt } from "@/icons";
 import { fetchProfile, UNAUTH, resetProfile } from "@/features/profile/profileSlice";
@@ -52,7 +51,7 @@ export function ProfileLayout() {
   return (
     <section className="mx-auto w-full max-w-[1440px] px-margin-mobile pt-28 pb-16 md:max-w-[1600px] md:px-margin-desktop md:pt-32 lg:pt-36 2xl:max-w-[1760px] 3xl:max-w-[1920px]">
       <div className="grid gap-6 xl:grid-cols-12">
-        <aside className="space-y-4 xl:col-span-3">
+        <aside className="min-w-0 space-y-4 xl:col-span-3">
           <div className="glass-panel relative overflow-hidden rounded-[24px] p-6 text-center shadow-[0_10px_40px_rgba(168,85,247,0.05)]">
             <RoseLineArt className="pointer-events-none absolute -right-1 top-2 h-28 w-24 text-soft-amethyst/25" />
             <div className="relative mx-auto mb-4 size-24 rounded-full border border-white/60 bg-soft-amethyst/60 p-1">
@@ -130,7 +129,7 @@ export function ProfileLayout() {
         </aside>
 
         {/* Cột hiển thị nội dung động */}
-        <div className="xl:col-span-9">
+        <div className="min-w-0 xl:col-span-9">
           <Outlet />
         </div>
       </div>

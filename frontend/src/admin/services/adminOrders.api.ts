@@ -213,3 +213,19 @@ export async function createAdminOrder(payload: AdminCreateOrderPayload) {
   const response = await api.post("/api/v1/admin/orders", payload);
   return response.data.data as { _id?: string; id?: string };
 }
+
+export interface AdminUpdateOrderPayload {
+  recipient?: {
+    fullName?: string;
+    phone?: string;
+    deliveryNote?: string;
+  };
+  paymentMethod?: "MOMO" | "COD" | "CASH" | "VNPAY";
+  paymentStatus?: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";
+  note?: string;
+}
+
+export async function updateAdminOrderDetails(orderId: string, payload: AdminUpdateOrderPayload) {
+  const response = await api.put(`/api/v1/admin/orders/${orderId}`, payload);
+  return response.data.data;
+}

@@ -56,16 +56,16 @@ router.patch(
   staffReviewsController.moderateReview
 );
 
-// PATCH /staff/reviews/:id/reply
-router.patch(
-  '/:id/reply',
-  authenticate,
-  authorize(...STAFF_ROLES),
-  validateId,
-  body('replyComment').notEmpty().withMessage('Nội dung phản hồi không được để trống'),
-  handleValidationErrors,
-  staffReviewsController.handleReply
-);
+  // PATCH /staff/reviews/:id/reply
+  router.patch(
+    '/:id/reply',
+    authenticate,
+    authorize(...STAFF_ROLES),
+    validateId,
+    body('replyComment').isString().withMessage('Nội dung phản hồi phải là chuỗi'),
+    handleValidationErrors,
+    staffReviewsController.handleReply
+  );
 
 // PATCH /staff/reviews/:id/hide
 router.patch(

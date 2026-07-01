@@ -219,7 +219,7 @@ export function RecipeModal({ onClose, initialData }: RecipeModalProps) {
                       </td>
                     </tr>
                   ) : (
-                    ingredients.map((ing, idx) => (
+                    ingredients.map((ing) => (
                       <tr key={ing.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                         <td style={{ padding: "12px 16px" }}>
                           <select 

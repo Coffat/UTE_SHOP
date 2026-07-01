@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CrudModal, Slideover, FormField, FormInput, FormSelect, FormTextarea } from '../AdminUI';
+import { CrudModal, Modal, FormField, FormInput, FormSelect, FormTextarea } from '../AdminUI';
 
 interface UserPointInfo {
   _id: string;
@@ -200,19 +200,20 @@ export const PointsTab: React.FC = () => {
         </FormField>
       </CrudModal>
 
-      <Slideover
+      <Modal
         isOpen={isHistoryOpen}
         title="Lịch sử điểm"
         onClose={() => setIsHistoryOpen(false)}
+        size="lg"
       >
         {selectedUser && (
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--adm-border)' }}>
-            <h4 style={{ margin: '0 0 4px', color: '#fff' }}>{selectedUser.fullName}</h4>
+          <div style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid var(--adm-border)' }}>
+            <h4 style={{ margin: '0 0 4px', color: '#fff', fontSize: '16px', fontWeight: 600 }}>{selectedUser.fullName}</h4>
             <p style={{ margin: 0, color: '#6366f1', fontWeight: 600 }}>{selectedUser.points.toLocaleString()} điểm</p>
           </div>
         )}
         
-        <div style={{ padding: '16px' }}>
+        <div>
           {isHistoryLoading ? (
             <p style={{ textAlign: 'center', color: '#94a3b8' }}>Đang tải...</p>
           ) : historyLedgers.length === 0 ? (
@@ -223,17 +224,17 @@ export const PointsTab: React.FC = () => {
                 const isPositive = ['EARNED', 'REFUNDED', 'ADMIN_ADJUST'].includes(ledger.type) && ledger.amount > 0;
                 return (
                   <div key={ledger._id} style={{ 
-                    padding: '12px', 
+                    padding: '12px 16px', 
                     background: 'rgba(255,255,255,0.02)', 
                     border: '1px solid var(--adm-border)', 
                     borderRadius: '8px',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'flex-start'
+                    alignItems: 'center'
                   }}>
                     <div>
                       <p style={{ margin: '0 0 6px', fontWeight: 500, color: '#fff', fontSize: '14px' }}>{ledger.description}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '12px', color: '#94a3b8' }}>{new Date(ledger.createdAt).toLocaleString('vi-VN')}</span>
                         <span style={{ 
                           fontSize: '11px', 
@@ -250,7 +251,7 @@ export const PointsTab: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div style={{ fontWeight: 700, color: isPositive ? '#10b981' : '#f43f5e', fontFamily: 'var(--adm-mono)' }}>
+                    <div style={{ fontWeight: 700, color: isPositive ? '#10b981' : '#f43f5e', fontFamily: 'var(--adm-mono)', fontSize: '15px' }}>
                       {isPositive ? '+' : '-'}{Math.abs(ledger.amount)}
                     </div>
                   </div>
@@ -259,7 +260,8 @@ export const PointsTab: React.FC = () => {
             </div>
           )}
         </div>
-      </Slideover>
+      </Modal>
     </div>
   );
 };
+

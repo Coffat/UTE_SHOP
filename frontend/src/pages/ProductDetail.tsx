@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { FreeMode, Navigation, Thumbs, EffectFade } from "swiper/modules";
+import { FreeMode, Navigation, Thumbs, EffectFade, Autoplay, Pagination } from "swiper/modules";
 
 import "swiper/css";
 import "swiper/css/free-mode";
 import "swiper/css/navigation";
 import "swiper/css/thumbs";
 import "swiper/css/effect-fade";
+import "swiper/css/pagination";
 
 import { parseDecimalPrice } from "@/lib/price";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
-import { ProductRowSection } from "@/components/sections/ProductRowSection";
+import { ProductCard } from "@/components/ui/ProductCard";
 import {
   fetchProductById,
   fetchProductVariants,
@@ -63,13 +64,19 @@ export function ProductDetail() {
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
+  const [reviewPage, setReviewPage] = useState(1);
+
+  // Reset review page when product changes
+  useEffect(() => {
+    setReviewPage(1);
+  }, [id]);
 
   // Tải chi tiết sản phẩm và biến thể
   useEffect(() => {
     if (id) {
       void dispatch(fetchProductById(id));
       void dispatch(fetchProductVariants(id));
-      void dispatch(fetchProductReviews(id));
+      void dispatch(fetchProductReviews({ productId: id, page: 1, limit: 6 }));
       void dispatch(fetchRelatedProducts(id));
       void dispatch(incrementProductViews(id));
     }
@@ -268,6 +275,14 @@ export function ProductDetail() {
   ];
 
   const productsToRender = mappedRelatedProducts.length > 0 ? mappedRelatedProducts : SIMILAR_PRODUCTS;
+
+  const totalReviewPages = selectedProductReviewsMeta ? Math.ceil(selectedProductReviewsMeta.total / selectedProductReviewsMeta.limit) : 1;
+  const handleReviewPageChange = (newPage: number) => {
+    if (id) {
+      setReviewPage(newPage);
+      void dispatch(fetchProductReviews({ productId: id, page: newPage, limit: 6 }));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-lavender-mist pt-24 pb-20">
@@ -545,8 +560,38 @@ export function ProductDetail() {
                     <p className="mt-4 text-sm leading-relaxed text-midnight-purple">
                       {review.comment}
                     </p>
+                    {review.replyComment && (
+                      <div className="mt-3.5 rounded-xl border-l-2 border-primary/40 bg-soft-amethyst/10 p-3 text-xs text-midnight-purple leading-relaxed">
+                        <strong className="text-primary font-bold block mb-1">Phản hồi từ UTE SHOP:</strong>
+                        {review.replyComment}
+                      </div>
+                    )}
                   </article>
                 ))}
+              </div>
+            )}
+
+            {totalReviewPages > 1 && (
+              <div className="mt-8 flex justify-center items-center gap-4">
+                <button
+                  onClick={() => handleReviewPageChange(reviewPage - 1)}
+                  disabled={reviewPage === 1}
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-2xl bg-white/70 border border-crystal-border/80 hover:bg-white text-midnight-purple disabled:opacity-40 disabled:pointer-events-none transition shadow-sm cursor-pointer"
+                >
+                  <MaterialIcon name="chevron_left" className="text-[20px]" />
+                  <span>Trước</span>
+                </button>
+                <span className="text-sm font-semibold text-deep-plum">
+                  Trang {reviewPage} / {totalReviewPages}
+                </span>
+                <button
+                  onClick={() => handleReviewPageChange(reviewPage + 1)}
+                  disabled={reviewPage === totalReviewPages}
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-2xl bg-white/70 border border-crystal-border/80 hover:bg-white text-midnight-purple disabled:opacity-40 disabled:pointer-events-none transition shadow-sm cursor-pointer"
+                >
+                  <span>Sau</span>
+                  <MaterialIcon name="chevron_right" className="text-[20px]" />
+                </button>
               </div>
             )}
           </div>
@@ -554,21 +599,76 @@ export function ProductDetail() {
 
         {/* Similar Products */}
         <div className="pt-12 border-t border-crystal-border/60">
-          <ProductRowSection
-            title="Sản phẩm tương tự"
-            subtitle="Có thể bạn sẽ yêu thích những thiết kế cùng bộ sưu tập."
-            products={productsToRender}
-          />
+          <div className="mb-8">
+            <h2 className="font-home-heading text-2xl font-bold text-primary sm:text-3xl md:text-4xl">Sản phẩm tương tự</h2>
+            <p className="font-home-heading mt-1 max-w-2xl text-sm text-dusk-gray md:text-base">
+              Có thể bạn sẽ yêu thích những thiết kế cùng bộ sưu tập.
+            </p>
+          </div>
+          <Swiper
+            modules={[Autoplay, Pagination]}
+            spaceBetween={24}
+            slidesPerView={1}
+            autoplay={{
+              delay: 3500,
+              disableOnInteraction: false,
+            }}
+            pagination={{
+              clickable: true,
+              dynamicBullets: true,
+            }}
+            breakpoints={{
+              640: { slidesPerView: 2 },
+              768: { slidesPerView: 3 },
+              1024: { slidesPerView: 4 },
+            }}
+            className="pb-10"
+          >
+            {productsToRender.slice(0, 10).map((product) => (
+              <SwiperSlide key={product.id} className="h-auto">
+                <ProductCard {...product} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
 
         {/* Recently Viewed */}
-        {recentlyViewed.filter(p => p.id !== selectedProduct._id).length > 0 && (
-          <div className="pt-12 mt-12 border-t border-crystal-border/60">
-            <ProductRowSection
-              title="Sản phẩm đã xem"
-              subtitle="Nhìn lại những lựa chọn bạn đã lướt qua."
-              products={recentlyViewed.filter(p => p.id !== selectedProduct._id)}
-            />
+        {recentlyViewed.filter((p: any) => p.id !== selectedProduct._id).length > 0 && (
+          <div className="pt-12 mt-8 border-t border-crystal-border/60">
+            <div className="mb-8">
+              <h2 className="font-home-heading text-2xl font-bold text-primary sm:text-3xl md:text-4xl">Sản phẩm đã xem</h2>
+              <p className="font-home-heading mt-1 max-w-2xl text-sm text-dusk-gray md:text-base">
+                Nhìn lại những lựa chọn bạn đã lướt qua.
+              </p>
+            </div>
+            <Swiper
+              modules={[Autoplay, Pagination]}
+              spaceBetween={24}
+              slidesPerView={1}
+              autoplay={{
+                delay: 4000,
+                disableOnInteraction: false,
+              }}
+              pagination={{
+                clickable: true,
+                dynamicBullets: true,
+              }}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                768: { slidesPerView: 3 },
+                1024: { slidesPerView: 4 },
+              }}
+              className="pb-10"
+            >
+              {recentlyViewed
+                .filter((p: any) => p.id !== selectedProduct._id)
+                .slice(0, 10)
+                .map((product: any) => (
+                  <SwiperSlide key={product.id} className="h-auto">
+                    <ProductCard {...product} />
+                  </SwiperSlide>
+                ))}
+            </Swiper>
           </div>
         )}
 

@@ -33,8 +33,8 @@ const stockLevelSchema = new Schema<IStockLevel>(
   { timestamps: true }
 );
 
-stockLevelSchema.index({ warehouse: 1, productVariant: 1 }, { unique: true, sparse: true });
-stockLevelSchema.index({ warehouse: 1, material: 1 }, { unique: true, sparse: true });
+stockLevelSchema.index({ warehouse: 1, productVariant: 1 }, { unique: true, partialFilterExpression: { productVariant: { $gt: null } } });
+stockLevelSchema.index({ warehouse: 1, material: 1 }, { unique: true, partialFilterExpression: { material: { $gt: null } } });
 
 const StockLevel = mongoose.model<IStockLevel>('StockLevel', stockLevelSchema);
 export default StockLevel;

@@ -39,6 +39,9 @@ router.post('/', validateAdminCreateOrder, adminOrdersController.createOrder);
 // GET /admin/orders/:id
 router.get('/:id', validateOrderId, adminOrdersController.getOrder);
 
+// PUT /admin/orders/:id
+router.put('/:id', validateOrderId, adminOrdersController.updateOrder);
+
 // PATCH /admin/orders/:id/status
 router.patch('/:id/status', validateChangeStatus, adminOrdersController.changeStatus);
 

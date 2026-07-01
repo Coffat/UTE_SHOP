@@ -21,6 +21,8 @@ interface Voucher {
 interface Campaign {
   _id: string;
   name: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const VoucherTab: React.FC = () => {
@@ -28,6 +30,7 @@ export const VoucherTab: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   
   const [formData, setFormData] = useState({
     code: '',
@@ -78,20 +81,25 @@ export const VoucherTab: React.FC = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload: any = {
         ...formData,
         discountValue: Number(formData.discountValue),
         maxDiscountAmount: formData.maxDiscountAmount ? Number(formData.maxDiscountAmount) : undefined,
-        usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined,
+        usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
         minOrderAmount: Number(formData.minOrderAmount),
       };
-      if (!payload.campaign) delete payload.campaign;
+      if (!payload.campaign) payload.campaign = null;
 
-      const res = await fetch('/api/v1/vouchers', {
-        method: 'POST',
+      const url = editingVoucher 
+        ? `/api/v1/vouchers/${editingVoucher._id}`
+        : '/api/v1/vouchers';
+      const method = editingVoucher ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -102,17 +110,50 @@ export const VoucherTab: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setIsModalOpen(false);
+        setEditingVoucher(null);
         fetchVouchers();
         setFormData({
           code: '', discountType: 'FIXED_AMOUNT', discountValue: '', maxDiscountAmount: '',
           usageLimit: '', minOrderAmount: '', startDate: '', endDate: '', campaign: ''
         });
       } else {
-        alert(data.message || 'Lỗi tạo voucher');
+        alert(data.message || 'Lỗi lưu voucher');
       }
     } catch (error) {
-      console.error('Error creating voucher:', error);
+      console.error('Error saving voucher:', error);
     }
+  };
+
+  const handleOpenCreate = () => {
+    setEditingVoucher(null);
+    setFormData({
+      code: '',
+      discountType: 'FIXED_AMOUNT',
+      discountValue: '',
+      maxDiscountAmount: '',
+      usageLimit: '',
+      minOrderAmount: '',
+      startDate: '',
+      endDate: '',
+      campaign: '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (v: Voucher) => {
+    setEditingVoucher(v);
+    setFormData({
+      code: v.code,
+      discountType: v.discountType,
+      discountValue: v.discountValue.toString(),
+      maxDiscountAmount: v.maxDiscountAmount ? v.maxDiscountAmount.toString() : '',
+      usageLimit: v.usageLimit ? v.usageLimit.toString() : '',
+      minOrderAmount: v.minOrderAmount.toString(),
+      startDate: v.startDate,
+      endDate: v.endDate,
+      campaign: v.campaign?._id || '',
+    });
+    setIsModalOpen(true);
   };
 
   const handleToggle = async (id: string, currentStatus: boolean) => {
@@ -139,7 +180,7 @@ export const VoucherTab: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexShrink: 0 }}>
         <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#fff', margin: 0 }}>Danh sách Voucher</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenCreate}
           className="admin-btn admin-btn-primary"
         >
           + Thêm Voucher Mới
@@ -198,18 +239,37 @@ export const VoucherTab: React.FC = () => {
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <button 
-                      onClick={() => handleToggle(v._id, v.isActive)}
-                      className="admin-action-glass-btn"
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        color: v.isActive ? '#f43f5e' : '#10b981',
-                        border: `1px solid ${v.isActive ? 'rgba(244, 63, 94, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
-                      }}
-                    >
-                      {v.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
-                    </button>
+                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                      <button style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        color: "#3b82f6",
+                        padding: "6px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s"
+                      }} title="Sửa voucher" className="admin-action-glass-btn" onClick={() => handleOpenEdit(v)}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={() => handleToggle(v._id, v.isActive)}
+                        className="admin-action-glass-btn"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          color: v.isActive ? '#f43f5e' : '#10b981',
+                          border: `1px solid ${v.isActive ? 'rgba(244, 63, 94, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                        }}
+                      >
+                        {v.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -220,11 +280,11 @@ export const VoucherTab: React.FC = () => {
 
       <CrudModal
         isOpen={isModalOpen}
-        mode="create"
-        title="Thêm Voucher Mới"
+        mode={editingVoucher ? "edit" : "create"}
+        title={editingVoucher ? "Chỉnh sửa Voucher" : "Thêm Voucher Mới"}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreate}
-        submitLabel="Tạo Voucher"
+        onSubmit={handleSubmit}
+        submitLabel={editingVoucher ? "Lưu thay đổi" : "Tạo Voucher"}
         size="lg"
       >
         <div className="admin-form-group">
@@ -232,6 +292,7 @@ export const VoucherTab: React.FC = () => {
             <FormField label="Mã Voucher" required>
               <FormInput 
                 required 
+                disabled={!!editingVoucher}
                 value={formData.code} 
                 onChange={e => setFormData({...formData, code: e.target.value})} 
                 placeholder="VD: SUMMER2024" 

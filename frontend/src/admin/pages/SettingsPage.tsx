@@ -50,6 +50,10 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setApiKeyMasked: (v: string) => void;
   setDefaultShippingFee: (v: number) => void;
   setFreeShippingThreshold: (v: number) => void;
+  setGhnApiUrl: (v: string) => void;
+  setGhnApiToken: (v: string) => void;
+  setGhnShopId: (v: string) => void;
+  setGhnFromDistrictId: (v: number) => void;
   setWebhookUrl: (v: string) => void;
   setWebhookEnabled: (v: boolean) => void;
   setLogoUrl: (v: string) => void;
@@ -79,6 +83,10 @@ function applySettingsToForm(settings: StoreSettings, setters: {
   setters.setApiKeyMasked(settings.apiKeyMasked);
   setters.setDefaultShippingFee(settings.defaultShippingFee);
   setters.setFreeShippingThreshold(settings.freeShippingThreshold);
+  setters.setGhnApiUrl(settings.ghnApiUrl ?? "https://dev-online-gateway.ghn.vn/shiip/public-api");
+  setters.setGhnApiToken(settings.ghnApiToken ?? "");
+  setters.setGhnShopId(settings.ghnShopId ?? "");
+  setters.setGhnFromDistrictId(settings.ghnFromDistrictId ?? 0);
   setters.setWebhookUrl(settings.webhookUrl);
   setters.setWebhookEnabled(settings.webhookEnabled);
   setters.setLogoUrl(settings.logoUrl);
@@ -121,6 +129,10 @@ export function SettingsPage() {
   const [apiKeyMasked, setApiKeyMasked] = useState("ute_shop_live_****");
   const [defaultShippingFee, setDefaultShippingFee] = useState(30000);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
+  const [ghnApiUrl, setGhnApiUrl] = useState("https://dev-online-gateway.ghn.vn/shiip/public-api");
+  const [ghnApiToken, setGhnApiToken] = useState("");
+  const [ghnShopId, setGhnShopId] = useState("");
+  const [ghnFromDistrictId, setGhnFromDistrictId] = useState(0);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookEnabled, setWebhookEnabled] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
@@ -165,6 +177,10 @@ export function SettingsPage() {
           setApiKeyMasked,
           setDefaultShippingFee,
           setFreeShippingThreshold,
+          setGhnApiUrl,
+          setGhnApiToken,
+          setGhnShopId,
+          setGhnFromDistrictId,
           setWebhookUrl,
           setWebhookEnabled,
           setLogoUrl,
@@ -257,6 +273,10 @@ export function SettingsPage() {
     sessionTimeout,
     defaultShippingFee,
     freeShippingThreshold,
+    ghnApiUrl,
+    ghnApiToken,
+    ghnShopId,
+    ghnFromDistrictId,
     webhookUrl,
     webhookEnabled,
     logoUrl,
@@ -293,6 +313,10 @@ export function SettingsPage() {
         setApiKeyMasked,
         setDefaultShippingFee,
         setFreeShippingThreshold,
+        setGhnApiUrl,
+        setGhnApiToken,
+        setGhnShopId,
+        setGhnFromDistrictId,
         setWebhookUrl,
         setWebhookEnabled,
         setLogoUrl,
@@ -1395,6 +1419,58 @@ export function SettingsPage() {
                   style={inputStyle}
                 />
                 <span style={{ fontSize: "11px", color: "var(--adm-text-muted)" }}>Đặt 0 nếu không áp dụng miễn phí ship</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "28px 0 20px" }}>
+              <div style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <h4 style={{ fontSize: "14.5px", fontWeight: "600", color: "#fff", margin: 0 }}>Tích hợp Giao Hàng Nhanh (GHN)</h4>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", maxWidth: "640px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>GHN API Token</label>
+                <input
+                  type="text"
+                  value={ghnApiToken}
+                  onChange={(e) => setGhnApiToken(e.target.value)}
+                  placeholder="Nhập token GHN"
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>GHN Shop ID</label>
+                <input
+                  type="text"
+                  value={ghnShopId}
+                  onChange={(e) => setGhnShopId(e.target.value)}
+                  placeholder="Nhập Shop ID"
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>Mã quận/huyện gửi hàng (From District ID)</label>
+                <input
+                  type="number"
+                  value={ghnFromDistrictId}
+                  onChange={(e) => setGhnFromDistrictId(Number(e.target.value) || 0)}
+                  placeholder="VD: 1450"
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "var(--adm-text-dim)" }}>GHN API URL</label>
+                <input
+                  type="text"
+                  value={ghnApiUrl}
+                  onChange={(e) => setGhnApiUrl(e.target.value)}
+                  placeholder="https://dev-online-gateway.ghn.vn/shiip/public-api"
+                  style={inputStyle}
+                />
               </div>
             </div>
           </div>

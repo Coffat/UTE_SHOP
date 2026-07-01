@@ -384,16 +384,40 @@ export function BlogsPage() {
                     </td>
                     <td>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                        <button className="admin-btn admin-btn-ghost" onClick={() => openEdit(blog)}>
-                          Sửa
+                        <button style={{
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          color: "#3b82f6",
+                          padding: "6px",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s"
+                        }} title="Sửa bài viết" className="admin-action-glass-btn" onClick={() => openEdit(blog)}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
                         </button>
                         {isAdmin && (
-                          <button
-                            className="admin-btn admin-btn-ghost"
-                            onClick={() => handleDelete(blog)}
-                            style={{ color: "#f87171" }}
-                          >
-                            Xóa
+                          <button style={{
+                            background: "rgba(255,255,255,0.03)",
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            color: "#ef4444",
+                            padding: "6px",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.2s"
+                          }} title="Xóa bài viết" className="admin-action-glass-btn" onClick={() => handleDelete(blog)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            </svg>
                           </button>
                         )}
                       </div>

@@ -6,6 +6,7 @@ import asyncHandler from '../../../shared/utils/asyncHandler.js';
 import { authenticate, authorize } from '../../../shared/middlewares/authenticate.js';
 import {
   validateCreateVoucher,
+  validateUpdateVoucher,
   validateToggleVoucher,
 } from '../middlewares/marketing.validator.js';
 
@@ -51,6 +52,13 @@ router.patch(
   authenticate, authorize('ADMIN', 'SALES'),
   validateToggleVoucher,
   asyncHandler(voucherController.toggleVoucher)
+);
+
+router.patch(
+  '/:id',
+  authenticate, authorize('ADMIN', 'SALES'),
+  validateUpdateVoucher,
+  asyncHandler(voucherController.updateVoucher)
 );
 
 export default router;

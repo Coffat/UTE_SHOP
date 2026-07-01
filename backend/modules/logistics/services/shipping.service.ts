@@ -1,4 +1,5 @@
 import { ghnClient } from '../../../config/ghnClient.js';
+import StoreSettings from '../../admin/models/StoreSettings.js';
 import { 
   CalculateFeeClientRequest, 
   GHNAvailableServiceRequest, 
@@ -57,8 +58,10 @@ export class ShippingService {
    */
   private static async getAvailableServices(fromDistrictId: number, toDistrictId: number): Promise<number | null> {
     try {
+      const settings = await StoreSettings.findOne({ key: 'default' });
+      const shopId = settings?.ghnShopId || Number(process.env.GHN_SHOP_ID);
       const payload: GHNAvailableServiceRequest = {
-        shop_id: Number(process.env.GHN_SHOP_ID),
+        shop_id: Number(shopId),
         from_district: fromDistrictId,
         to_district: toDistrictId
       };
@@ -89,7 +92,8 @@ export class ShippingService {
     if (!cart_items || cart_items.length === 0) return 0;
 
     const dimensions = this.calculateDimensions(cart_items);
-    const fromDistrictId = Number(process.env.GHN_FROM_DISTRICT_ID);
+    const settings = await StoreSettings.findOne({ key: 'default' });
+    const fromDistrictId = settings?.ghnFromDistrictId || Number(process.env.GHN_FROM_DISTRICT_ID) || 0;
 
     // Cache Key: from_to_ward_weight_length_width_height_insurance
     const cacheKey = `${fromDistrictId}_${to_district_id}_${to_ward_code}_${dimensions.weight}_${dimensions.length}_${dimensions.width}_${dimensions.height}_${subtotal}`;

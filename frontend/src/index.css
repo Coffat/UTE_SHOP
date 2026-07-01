@@ -261,4 +261,45 @@
   .active-press:active {
     transform: scale(0.98);
   }
+
+  /* ── Clarifying Question Chips (chatbot Pass3) ─────────────────────────── */
+  .chip-clarify {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid #a5b4fc; /* indigo-300 */
+    background-color: #eef2ff; /* indigo-50 */
+    padding: 0.2rem 0.7rem;
+    font-size: 11px;
+    font-weight: 500;
+    color: #4338ca; /* indigo-700 */
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    animation: clarify-fade-in 0.25s ease both;
+    white-space: nowrap;
+  }
+
+  .chip-clarify:hover:not(:disabled) {
+    background-color: #e0e7ff; /* indigo-100 */
+  }
+
+  .chip-clarify:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .chip-clarify:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @keyframes clarify-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

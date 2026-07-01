@@ -96,6 +96,26 @@ export const toggleVoucher = async (id: string, isActive: boolean): Promise<IVou
   return Voucher.findByIdAndUpdate(id, { isActive }, { new: true });
 };
 
+export const updateVoucher = async (id: string, data: Partial<IVoucher>): Promise<IVoucher | null> => {
+  if (data.campaign) {
+    const campaign = await Campaign.findById(data.campaign);
+    if (!campaign) throw new AppError('Chiến dịch không tồn tại', 400);
+    
+    const vStart = data.startDate ? new Date(data.startDate) : null;
+    const vEnd = data.endDate ? new Date(data.endDate) : null;
+    const cStart = new Date(campaign.startDate);
+    const cEnd = new Date(campaign.endDate);
+    
+    if (vStart && vStart < cStart) {
+      throw new AppError(`Thời gian bắt đầu của Voucher phải nằm trong khoảng thời gian diễn ra Chiến dịch (từ ${cStart.toLocaleDateString('vi-VN')} đến ${cEnd.toLocaleDateString('vi-VN')})`, 400);
+    }
+    if (vEnd && vEnd > cEnd) {
+      throw new AppError(`Thời gian kết thúc của Voucher phải nằm trong khoảng thời gian diễn ra Chiến dịch (từ ${cStart.toLocaleDateString('vi-VN')} đến ${cEnd.toLocaleDateString('vi-VN')})`, 400);
+    }
+  }
+  return Voucher.findByIdAndUpdate(id, data, { new: true });
+};
+
 export type SerializedCustomerVoucher = {
   _id: string;
   code: string;

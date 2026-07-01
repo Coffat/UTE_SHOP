@@ -1,12 +1,11 @@
-import { useId, useRef } from "react";
+import { useId } from "react";
 import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+import { Autoplay, Pagination } from "swiper/modules";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { ProductCard, type Product } from "@/components/ui/ProductCard";
 
 import "swiper/css";
-import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 type TopProductsSliderProps = {
@@ -17,26 +16,6 @@ type TopProductsSliderProps = {
   viewAllHref?: string;
 };
 
-function SliderArrowIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      className={`h-4 w-4 ${className}`.trim()}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M9 6L15 12L9 18"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function TopProductsSlider({
   title,
   subtitle,
@@ -44,8 +23,6 @@ export function TopProductsSlider({
   isLoading = false,
   viewAllHref = "/products",
 }: TopProductsSliderProps) {
-  const prevRef = useRef<HTMLButtonElement>(null);
-  const nextRef = useRef<HTMLButtonElement>(null);
   const paginationId = useId().replace(/:/g, "");
 
   if (isLoading) {
@@ -109,34 +86,18 @@ export function TopProductsSlider({
         </div>
       </div>
 
-      {/* Swiper Container with conditional loading guard */}
-      <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[auto_minmax(0,1fr)_auto]">
-        <button
-          ref={prevRef}
-          className="prev-btn hidden h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-white/90 shadow-sm text-primary transition-[color,background-color,box-shadow,transform,opacity] duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90 disabled:opacity-45 md:flex"
-          aria-label="Previous slide"
-        >
-          <SliderArrowIcon className="rotate-180" />
-        </button>
-
-        <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-[0_12px_44px_rgba(49,27,146,0.04)]">
-          <Swiper
-          modules={[Navigation, Pagination]}
-          navigation={{
-            prevEl: prevRef.current,
-            nextEl: nextRef.current,
-          }}
-          onBeforeInit={(swiper) => {
-            // Re-assign navigation elements correctly on swiper initialization
-            if (swiper.params.navigation && typeof swiper.params.navigation === "object") {
-              swiper.params.navigation.prevEl = prevRef.current;
-              swiper.params.navigation.nextEl = nextRef.current;
-            }
+      {/* Swiper Container with Autoplay and no side arrow buttons */}
+      <div className="w-full glass-panel rounded-3xl p-4 sm:p-5 shadow-[0_12px_44px_rgba(49,27,146,0.04)]">
+        <Swiper
+          modules={[Autoplay, Pagination]}
+          autoplay={{
+            delay: 4000,
+            disableOnInteraction: false,
           }}
           pagination={{
             el: `#${paginationId}`,
             clickable: true,
-            dynamicBullets: false,
+            dynamicBullets: true,
           }}
           spaceBetween={16}
           slidesPerView={1}
@@ -170,15 +131,6 @@ export function TopProductsSlider({
           id={paginationId}
           className="swiper-pagination mt-4 flex justify-center [&_.swiper-pagination-bullet]:mx-1 [&_.swiper-pagination-bullet]:h-2.5 [&_.swiper-pagination-bullet]:w-2.5 [&_.swiper-pagination-bullet]:bg-dusk-gray/35 [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet-active]:bg-primary"
         />
-        </div>
-
-        <button
-          ref={nextRef}
-          className="next-btn hidden h-10 w-10 items-center justify-center rounded-full border border-crystal-border bg-white/90 shadow-sm text-primary transition-[color,background-color,box-shadow,transform,opacity] duration-300 hover:bg-white hover:text-deep-plum hover:shadow active:scale-90 disabled:opacity-45 md:flex"
-          aria-label="Next slide"
-        >
-          <SliderArrowIcon />
-        </button>
       </div>
     </section>
   );

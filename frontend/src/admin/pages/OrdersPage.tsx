@@ -5,11 +5,15 @@ import {
   fetchAdminOrders,
   fetchAllAdminOrdersForExport,
   changeOrderStatus,
+  updateAdminOrderDetails,
+  fetchAdminOrderById,
   type OrdersSummary,
 } from "../services/adminOrders.api";
 import {
   fetchStaffOrders,
   changeStaffOrderStatus,
+  updateStaffOrderDetails,
+  fetchStaffOrderById,
 } from "../services/staffOrders.api";
 import {
   getNextBackendStatus,
@@ -19,6 +23,7 @@ import {
 } from "../services/mappers/order.mapper";
 import { OrderDetailModal } from "../components/OrderDetailModal";
 import { OrderFiltersPanel } from "../components/OrderFiltersPanel";
+import { CrudModal, FormField, FormInput, FormSelect } from "../components/AdminUI";
 import { CreateOrderModal } from "../components/CreateOrderModal";
 import {
   EMPTY_ORDER_FILTERS,
@@ -125,11 +130,74 @@ export function OrdersPage() {
   const [exporting, setExporting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  // Edit order state
+  const [selectedOrderToEdit, setSelectedOrderToEdit] = useState<AdminOrderRow | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFullName, setEditFullName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editDeliveryNote, setEditDeliveryNote] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<"MOMO" | "COD" | "CASH" | "VNPAY">("COD");
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"PAID" | "UNPAID">("UNPAID");
+  const [editNote, setEditNote] = useState("");
+
+  const openEditOrder = async (order: AdminOrderRow) => {
+    try {
+      console.log("Fetching order detail for ID:", order.id, "isAdmin:", isAdmin);
+      const fullOrder = isAdmin
+        ? await fetchAdminOrderById(order.id)
+        : await fetchStaffOrderById(order.id);
+      console.log("Fetched full order details:", fullOrder);
+      if (!fullOrder) {
+        throw new Error("Không nhận được dữ liệu phản hồi từ server");
+      }
+      setSelectedOrderToEdit(order);
+      setEditFullName(fullOrder.recipient?.fullName || order.customerName || "");
+      setEditPhone(fullOrder.recipient?.phone || order.customerPhone || "");
+      setEditDeliveryNote(fullOrder.recipient?.deliveryNote || "");
+      setEditPaymentMethod(fullOrder.paymentMethod || "COD");
+      setEditPaymentStatus(fullOrder.paymentStatus === "PAID" ? "PAID" : "UNPAID");
+      setEditNote(fullOrder.note || "");
+      setShowEditModal(true);
+    } catch (err: any) {
+      console.error("Lỗi khi tải chi tiết đơn hàng:", err);
+      alert("Không thể tải thông tin chi tiết đơn hàng: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleUpdateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderToEdit) return;
+    try {
+      const payload = {
+        recipient: {
+          fullName: editFullName,
+          phone: editPhone,
+          deliveryNote: editDeliveryNote,
+        },
+        paymentMethod: editPaymentMethod,
+        paymentStatus: editPaymentStatus as any,
+        note: editNote,
+      };
+
+      if (isAdmin) {
+        await updateAdminOrderDetails(selectedOrderToEdit.id, payload);
+      } else {
+        await updateStaffOrderDetails(selectedOrderToEdit.id, payload);
+      }
+
+      setShowEditModal(false);
+      loadOrders();
+      window.dispatchEvent(new Event("admin-orders-updated"));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Không thể cập nhật thông tin đơn hàng");
+    }
+  };
+
   const activeFilterCount = countActiveOrderFilters(advancedFilters);
 
   const buildListParams = useCallback(() => ({
     page: currentPage,
-    limit: 10,
+    limit: 7,
     search: search.trim() || undefined,
     statusGroup: statusFilter !== "all" ? uiStatusToStatusGroup(statusFilter) : undefined,
     dateFrom: advancedFilters.dateFrom || undefined,
@@ -312,6 +380,24 @@ export function OrdersPage() {
 
   const attentionLabelColor = (label: string) =>
     label === "Đã hủy" ? "#f43f5e" : "#f59e0b";
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   return (
     <div className="admin-page" style={{ minHeight: 0 }}>
@@ -782,6 +868,33 @@ export function OrdersPage() {
                             <circle cx="12" cy="12" r="3" />
                           </svg>
                         </button>
+                        {(() => {
+                          const canEdit = order.status !== "completed" && order.status !== "cancelled";
+                          return (
+                            <button style={{
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              color: canEdit ? "#94a3b8" : "rgba(255,255,255,0.1)",
+                              padding: "6px",
+                              borderRadius: "6px",
+                              cursor: canEdit ? "pointer" : "not-allowed",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "all 0.2s"
+                            }} 
+                              title={canEdit ? "Sửa thông tin đơn hàng" : "Không thể sửa đơn hàng đã hoàn tất hoặc đã hủy"} 
+                              className="admin-action-glass-btn" 
+                              disabled={!canEdit}
+                              onClick={() => openEditOrder(order)}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </button>
+                          );
+                        })()}
                         <button style={{
                           background: "rgba(255,255,255,0.03)",
                           border: "1px solid rgba(255,255,255,0.06)",
@@ -819,25 +932,71 @@ export function OrdersPage() {
             <span style={{ color: "#64748b", fontSize: "13px" }}>
               Tổng {totalCount.toLocaleString("vi-VN")} đơn
             </span>
-            <div className="admin-pagination-btns" style={{ display: "flex", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <button
-                className="admin-pagination-btn"
-                style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage <= 1 ? "#64748b" : "#94a3b8", cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
-                disabled={currentPage <= 1 || loading}
+                className="admin-action-btn options"
+                style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
-                Prev
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
               </button>
-              <button className="admin-pagination-btn active" style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "none", background: "#6366f1", color: "#fff", fontWeight: 600, cursor: "default" }}>
-                Trang {currentPage} / {totalPages}
-              </button>
+
+              {getPageNumbers().map((page, index) => {
+                if (page === "...") {
+                  return (
+                    <span key={`dots-${index}`} style={{ color: "#64748b", padding: "0 4px", fontSize: "13px" }}>
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = page === currentPage;
+                return (
+                  <button
+                    key={`page-${page}`}
+                    onClick={() => setCurrentPage(Number(page))}
+                    className={isCurrent ? "" : "admin-action-btn options"}
+                    style={
+                      isCurrent
+                        ? {
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "6px",
+                            background: "#6366f1",
+                            color: "#fff",
+                            border: "none",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }
+                        : {
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "6px",
+                            color: "#94a3b8",
+                            border: "none",
+                            background: "transparent",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }
+                    }
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+
               <button
-                className="admin-pagination-btn"
-                style={{ height: "32px", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", border: "1px solid var(--adm-border)", background: "rgba(255,255,255,0.02)", color: currentPage >= totalPages ? "#64748b" : "#94a3b8", cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
-                disabled={currentPage >= totalPages || loading}
+                className="admin-action-btn options"
+                style={{ width: "32px", height: "32px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               >
-                Next
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </button>
             </div>
             <div style={{
@@ -850,7 +1009,7 @@ export function OrdersPage() {
               padding: "6px 12px",
               cursor: "pointer"
             }}>
-              <span style={{ fontSize: "13px", color: "#e2e8f0" }}>10 / trang</span>
+              <span style={{ fontSize: "13px", color: "#e2e8f0" }}>7 / trang</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -959,7 +1118,7 @@ export function OrdersPage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, minHeight: 0, overflowY: "auto" }}>
+            <div className="admin-scrollbar" style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, minHeight: 0, overflowY: "auto" }}>
               {attentionOrders.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Không có đơn cần chú ý.</p>
               ) : (
@@ -1029,40 +1188,120 @@ export function OrdersPage() {
       />
 
       {isAdmin && (
-        <>
-          <OrderFiltersPanel
-            isOpen={showFilters}
-            filters={draftFilters}
-            statusFilter={draftStatus}
-            onChange={setDraftFilters}
-            onStatusChange={setDraftStatus}
-            onApply={() => {
-              setAdvancedFilters(draftFilters);
-              setStatusFilter(draftStatus);
-              setCurrentPage(1);
-              setShowFilters(false);
-            }}
-            onReset={() => {
-              setAdvancedFilters(EMPTY_ORDER_FILTERS);
-              setDraftFilters(EMPTY_ORDER_FILTERS);
-              setStatusFilter("all");
-              setDraftStatus("all");
-              setCurrentPage(1);
-              setShowFilters(false);
-            }}
-            onClose={() => setShowFilters(false)}
-          />
-          <CreateOrderModal
-            isOpen={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            onCreated={() => {
-              setActionMessage("Tạo đơn hàng thành công.");
-              loadOrders();
-              window.dispatchEvent(new Event("admin-orders-updated"));
-            }}
-          />
-        </>
+        <CreateOrderModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            setActionMessage("Tạo đơn hàng thành công.");
+            loadOrders();
+            window.dispatchEvent(new Event("admin-orders-updated"));
+          }}
+        />
       )}
+
+      <OrderFiltersPanel
+        isOpen={showFilters}
+        filters={draftFilters}
+        statusFilter={draftStatus}
+        onChange={setDraftFilters}
+        onStatusChange={setDraftStatus}
+        onApply={() => {
+          setAdvancedFilters(draftFilters);
+          setStatusFilter(draftStatus);
+          setCurrentPage(1);
+          setShowFilters(false);
+        }}
+        onReset={() => {
+          setAdvancedFilters(EMPTY_ORDER_FILTERS);
+          setDraftFilters(EMPTY_ORDER_FILTERS);
+          setStatusFilter("all");
+          setDraftStatus("all");
+          setCurrentPage(1);
+          setShowFilters(false);
+        }}
+        onClose={() => setShowFilters(false)}
+      />
+
+      <CrudModal
+        isOpen={showEditModal}
+        mode="edit"
+        title={`Cập nhật đơn hàng: ${selectedOrderToEdit?.orderCode || ""}`}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateOrder}
+        submitLabel="Lưu thay đổi"
+        size="lg"
+      >
+        <div className="admin-form-row">
+          <FormField label="Họ tên người nhận" required>
+            <FormInput
+              placeholder="Nhập tên người nhận..."
+              required
+              value={editFullName}
+              onChange={(e) => setEditFullName(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Số điện thoại người nhận" required>
+            <FormInput
+              placeholder="0xxx xxx xxx"
+              required
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+            />
+          </FormField>
+        </div>
+
+        <FormField label="Địa chỉ nhận hàng (Ghi chú giao hàng)">
+          <FormInput
+            placeholder="Số nhà, tên đường, phường/xã..."
+            value={editDeliveryNote}
+            onChange={(e) => setEditDeliveryNote(e.target.value)}
+          />
+        </FormField>
+
+        <div className="admin-form-row">
+          <FormField label="Phương thức thanh toán" required>
+            <FormSelect
+              value={editPaymentMethod}
+              onChange={(e) => setEditPaymentMethod(e.target.value as any)}
+            >
+              <option value="COD">COD (Thanh toán khi nhận hàng)</option>
+              <option value="MOMO">MOMO (Ví điện tử MoMo)</option>
+              <option value="CASH">CASH (Tiền mặt tại quầy)</option>
+              <option value="VNPAY">VNPAY (Thanh toán trực tuyến)</option>
+            </FormSelect>
+          </FormField>
+          <FormField label="Trạng thái thanh toán" required>
+            <FormSelect
+              value={editPaymentStatus}
+              onChange={(e) => setEditPaymentStatus(e.target.value as any)}
+            >
+              <option value="UNPAID">Chưa thanh toán</option>
+              <option value="PAID">Đã thanh toán</option>
+            </FormSelect>
+          </FormField>
+        </div>
+
+        <FormField label="Ghi chú đơn hàng (Nội bộ)">
+          <textarea
+            placeholder="Nhập ghi chú cho đơn hàng..."
+            className="admin-form-input"
+            style={{
+              width: "100%",
+              height: "80px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid var(--adm-border)",
+              borderRadius: "6px",
+              color: "#fff",
+              padding: "8px 12px",
+              fontSize: "13px",
+              outline: "none",
+              resize: "vertical"
+            }}
+            value={editNote}
+            onChange={(e) => setEditNote(e.target.value)}
+          />
+        </FormField>
+      </CrudModal>
     </div>
   );
 }

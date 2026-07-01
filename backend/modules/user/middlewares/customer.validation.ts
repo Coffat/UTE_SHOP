@@ -5,8 +5,8 @@ export const validateUpdateCustomerStatus = [
   param('id').isMongoId().withMessage('Mã định danh khách hàng không hợp lệ'),
   body('status')
     .notEmpty().withMessage('Trạng thái là bắt buộc')
-    .isIn(['ACTIVE', 'BANNED', 'PENDING', 'SUSPENDED'])
-    .withMessage('Trạng thái phải thuộc ACTIVE, BANNED, PENDING hoặc SUSPENDED'),
+    .isIn(['ACTIVE', 'BANNED'])
+    .withMessage('Trạng thái phải thuộc ACTIVE hoặc BANNED'),
   validateRequest,
 ];
 
@@ -16,7 +16,7 @@ export const validateCustomerListQuery = [
   query('search').optional().trim(),
   query('sortBy').optional().trim(),
   query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('sortOrder phải là asc hoặc desc'),
-  query('status').optional().isIn(['ACTIVE', 'BANNED', 'PENDING', 'SUSPENDED']).withMessage('status không hợp lệ'),
+  query('status').optional().isIn(['ACTIVE', 'BANNED']).withMessage('status không hợp lệ'),
   validateRequest,
 ];
 
@@ -39,7 +39,7 @@ export const validateCreateCustomer = [
     .isMobilePhone('any').withMessage('Số điện thoại không hợp lệ'),
   body('status')
     .optional()
-    .isIn(['ACTIVE', 'BANNED', 'PENDING', 'SUSPENDED'])
+    .isIn(['ACTIVE', 'BANNED'])
     .withMessage('Trạng thái không hợp lệ'),
   validateRequest,
 ];

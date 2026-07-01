@@ -47,7 +47,7 @@ export function ConfirmModal({
   const IconComp = cfg.icon;
 
   return (
-    <div className="admin-modal-overlay" onClick={onCancel}>
+    <div className={`admin-modal-overlay ${isOpen ? "open" : ""}`} onClick={onCancel}>
       <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
         <div className="admin-modal-icon-wrap" style={{ background: cfg.bg }}>
           <span style={{ color: cfg.color }}><IconComp /></span>
@@ -104,6 +104,59 @@ export function Slideover({ isOpen, title, onClose, children, width = "480px" }:
   );
 }
 
+// ── General Center Modal Component (Non-form display dialog) ──────────────────
+interface ModalProps {
+  isOpen: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  size?: "md" | "lg" | "xl";
+}
+
+export function Modal({ isOpen, title, onClose, children, size = "md" }: ModalProps) {
+  if (!isOpen) return null;
+
+  const sizeClass = size === "xl" ? "admin-crud-modal--xl" : size === "lg" ? "admin-crud-modal--lg" : "";
+
+  return (
+    <div
+      className={`admin-crud-modal-overlay ${isOpen ? "open" : ""}`}
+      onClick={onClose}
+      role="presentation"
+      style={{ zIndex: 1000, backdropFilter: "blur(4px)" }}
+    >
+      <div
+        className={`admin-crud-modal ${sizeClass}`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        style={{
+          background: "var(--adm-bg)",
+          border: "1px solid var(--adm-border)",
+          borderRadius: "12px",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)",
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        <div className="admin-crud-modal-header" style={{ padding: "20px 24px", borderBottom: "1px solid var(--adm-border)" }}>
+          <h2 className="admin-crud-modal-title" style={{ fontSize: "18px", fontWeight: 600 }}>
+            {title}
+          </h2>
+          <button type="button" className="admin-crud-modal-close" onClick={onClose} aria-label="Đóng" style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px", padding: "6px" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div className="admin-crud-modal-body" style={{ padding: "24px", maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CRUD Modal (center form dialog) ───────────────────────────────────────────
 interface CrudModalProps {
   isOpen: boolean;
@@ -116,6 +169,7 @@ interface CrudModalProps {
   cancelLabel?: string;
   children: ReactNode;
   size?: "md" | "lg" | "xl" | "xxl";
+  buttonsPosition?: "footer" | "header";
 }
 
 export function CrudModal({
@@ -129,6 +183,7 @@ export function CrudModal({
   cancelLabel = "Hủy",
   children,
   size = "md",
+  buttonsPosition = "footer",
 }: CrudModalProps) {
   if (!isOpen) return null;
 
@@ -151,27 +206,43 @@ export function CrudModal({
         aria-modal="true"
         aria-labelledby="admin-crud-modal-title"
       >
-        <div className="admin-crud-modal-header">
-          <h2 id="admin-crud-modal-title" className="admin-crud-modal-title">
+        <div className="admin-crud-modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <h2 id="admin-crud-modal-title" className="admin-crud-modal-title" style={{ flex: 1 }}>
             {resolvedTitle}
           </h2>
-          <button type="button" className="admin-crud-modal-close" onClick={onClose} aria-label="Đóng">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          
+          {buttonsPosition === "header" && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginRight: "8px" }}>
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose} disabled={submitting} style={{ padding: '6px 12px', fontSize: '13px', height: '32px' }}>
+                {cancelLabel}
+              </button>
+              <button type="submit" form="crud-modal-form" className="admin-btn admin-btn-primary" disabled={submitting} style={{ padding: '6px 12px', fontSize: '13px', height: '32px' }}>
+                {submitting ? "Đang lưu..." : resolvedSubmitLabel}
+              </button>
+            </div>
+          )}
+
+          {buttonsPosition !== "header" && (
+            <button type="button" className="admin-crud-modal-close" onClick={onClose} aria-label="Đóng">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
         </div>
-        <form className="admin-crud-modal-form admin-form" onSubmit={onSubmit}>
-          <div className="admin-crud-modal-body">{children}</div>
-          <div className="admin-form-actions">
-            <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose} disabled={submitting}>
-              {cancelLabel}
-            </button>
-            <button type="submit" className="admin-btn admin-btn-primary" disabled={submitting}>
-              {submitting ? "Đang lưu..." : resolvedSubmitLabel}
-            </button>
-          </div>
+        <form id="crud-modal-form" className="admin-crud-modal-form admin-form" onSubmit={onSubmit}>
+          <div className="admin-crud-modal-body" style={{ padding: buttonsPosition === "header" ? "20px 24px" : "24px" }}>{children}</div>
+          {buttonsPosition === "footer" && (
+            <div className="admin-form-actions">
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose} disabled={submitting}>
+                {cancelLabel}
+              </button>
+              <button type="submit" className="admin-btn admin-btn-primary" disabled={submitting}>
+                {submitting ? "Đang lưu..." : resolvedSubmitLabel}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -7,8 +7,14 @@ function formatTime(iso: string) {
 }
 
 function formatQty(n: any): string {
-  const num = typeof n === "object" && n !== null ? Number(n.toString()) : Number(n);
-  return Number.isInteger(num) ? String(num) : num.toFixed(2);
+  if (n === null || n === undefined) return "0";
+  // Handle MongoDB Decimal128 format from JSON
+  if (typeof n === "object" && n.$numberDecimal !== undefined) {
+    const num = Math.abs(Number(n.$numberDecimal));
+    return Number.isNaN(num) ? "0" : (Number.isInteger(num) ? String(num) : num.toFixed(2));
+  }
+  const num = typeof n === "object" ? Math.abs(Number(n.toString())) : Math.abs(Number(n));
+  return Number.isNaN(num) ? "0" : (Number.isInteger(num) ? String(num) : num.toFixed(2));
 }
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -144,7 +150,9 @@ export function WarehouseTransactionsPage() {
                   ) : items.map((t) => {
                     const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.ADJUSTMENT;
                     const sl = t.stockLevel || {} as any;
-                    const itemName = sl?.material?.name || sl?.productVariant?.sizeName || sl?.productVariant?.sku || "—";
+                    const pName = sl?.productVariant?.product?.name;
+                    const variantDetails = sl?.productVariant?.sizeName ? ` (${sl.productVariant.sizeName})` : (sl?.productVariant?.sku ? ` (${sl.productVariant.sku})` : '');
+                    const itemName = sl?.material?.name || (pName ? `${pName}${variantDetails}` : sl?.productVariant?.sku || "—");
                     const unit = sl?.material?.unit || "cái";
                     const qty = formatQty(t.quantity);
                     return (

@@ -121,3 +121,41 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
     orderService.toStaffOrderDto(updatedOrder, userRole)
   );
 });
+
+// PUT /api/v1/staff/orders/:id
+export const updateOrder = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const userRole = (req.user as any).role;
+
+  if (!STAFF_ROLES.includes(userRole)) {
+    return sendError(res, 403, 'Bạn không có quyền truy cập');
+  }
+
+  const order = await orderService.getOrderById(id);
+  if (!order) return sendError(res, 404, 'Không tìm thấy đơn hàng');
+
+  if (['COMPLETED', 'CANCELLED', 'RETURNED'].includes(order.status)) {
+    return sendError(res, 400, 'Không thể cập nhật thông tin cho đơn hàng đã hoàn tất, đã hủy hoặc trả hàng');
+  }
+
+  const beforeOrder = order.toObject();
+  const updatedOrder = await orderService.updateOrderDetails(id, req.body);
+
+  if (!updatedOrder) return sendError(res, 404, 'Không tìm thấy đơn hàng để cập nhật');
+
+  await writeAuditLog(
+    req,
+    'UPDATE_INFO',
+    'Order',
+    id,
+    beforeOrder,
+    updatedOrder.toObject()
+  );
+
+  sendSuccess(
+    res,
+    200,
+    'Cập nhật thông tin đơn hàng thành công',
+    orderService.toStaffOrderDto(updatedOrder, userRole)
+  );
+});

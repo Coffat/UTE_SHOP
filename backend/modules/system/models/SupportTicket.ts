@@ -9,6 +9,9 @@ export interface ISupportTicket extends Document {
   message: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
   userId?: mongoose.Types.ObjectId;
+  replyMessage?: string | null;
+  repliedBy?: mongoose.Types.ObjectId | null;
+  repliedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,7 +39,10 @@ const supportTicketSchema = new Schema<ISupportTicket>(
       },
       default: 'OPEN'
     },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: false }
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    replyMessage: { type: String, default: null },
+    repliedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    repliedAt: { type: Date, default: null }
   },
   {
     timestamps: true

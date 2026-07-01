@@ -64,7 +64,7 @@ export const publishProduct = asyncHandler(async (req: Request, res: Response) =
 
 export const discontinueProduct = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const product = await productService.discontinueProduct(id);
+  const product = await productService.discontinueAdminProduct(id);
   if (!product) return sendError(res, 404, 'Không tìm thấy sản phẩm');
   sendSuccess(res, 200, 'Sản phẩm đã ngừng kinh doanh', product);
 });

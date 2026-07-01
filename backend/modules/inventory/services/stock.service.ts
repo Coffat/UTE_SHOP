@@ -147,107 +147,123 @@ export const importStock = async (params: ImportStockParams): Promise<IStockLeve
     warehouseId = (warehouse._id as mongoose.Types.ObjectId).toString();
   }
 
-  const session = await mongoose.startSession();
   let finalStockLevel: IStockLevel | null = null;
 
-  try {
-    await session.withTransaction(async () => {
-      if (newMaterialName && !materialId && !variantId) {
-        const newMat = await Material.create([{ name: newMaterialName.trim(), unit: newMaterialUnit?.trim() || 'Cái' }], { session });
-        materialId = (newMat[0]._id as mongoose.Types.ObjectId).toString();
+  const executeInventoryOperations = async (session: mongoose.ClientSession | null) => {
+    if (newMaterialName && !materialId && !variantId) {
+      const newMat = await Material.create([{ name: newMaterialName.trim(), unit: newMaterialUnit?.trim() || 'Cái' }], { session });
+      materialId = (newMat[0]._id as mongoose.Types.ObjectId).toString();
+    }
+
+    if (producedFromMaterials) {
+      if (!variantId) throw new Error("Phải chọn thành phẩm để sản xuất từ nguyên liệu");
+      // import Recipe
+      const Recipe = (await import('../../catalog/models/Recipe.js')).default;
+      const recipe = await Recipe.findOne({ productVariant: variantId }).session(session);
+      if (!recipe) throw new Error("Chưa có công thức (Recipe) cho thành phẩm này");
+
+      const overrideMap = new Map<string, number>();
+      if (overrides) {
+        overrides.forEach(o => overrideMap.set(o.materialId.toString(), o.amount));
       }
 
-      if (producedFromMaterials) {
-        if (!variantId) throw new Error("Phải chọn thành phẩm để sản xuất từ nguyên liệu");
-        // import Recipe
-        const Recipe = (await import('../../catalog/models/Recipe.js')).default;
-        const recipe = await Recipe.findOne({ productVariant: variantId }).session(session);
-        if (!recipe) throw new Error("Chưa có công thức (Recipe) cho thành phẩm này");
-
-        const overrideMap = new Map<string, number>();
-        if (overrides) {
-          overrides.forEach(o => overrideMap.set(o.materialId.toString(), o.amount));
+      let totalCOGS = 0;
+      for (const ingredient of recipe.ingredients) {
+        const matIdStr = ingredient.material.toString();
+        const standardAmount = Number(ingredient.amount.toString());
+        const wastePercent = Number(ingredient.wastePercent.toString());
+        
+        let requiredAmount = (standardAmount * quantity) * (1 + wastePercent / 100);
+        if (overrideMap.has(matIdStr)) {
+          requiredAmount = overrideMap.get(matIdStr)!;
         }
 
-        let totalCOGS = 0;
-        for (const ingredient of recipe.ingredients) {
-          const matIdStr = ingredient.material.toString();
-          const standardAmount = Number(ingredient.amount.toString());
-          const wastePercent = Number(ingredient.wastePercent.toString());
-          
-          let requiredAmount = (standardAmount * quantity) * (1 + wastePercent / 100);
-          if (overrideMap.has(matIdStr)) {
-            requiredAmount = overrideMap.get(matIdStr)!;
-          }
-
-          const matStock = await StockLevel.findOne({
-            warehouse: warehouseId,
-            material: ingredient.material,
-          }).populate('material', 'costPerUnit').session(session);
-
-          if (!matStock) throw new Error(`Kho không có nguyên liệu ${ingredient.material} để sản xuất`);
-
-          const currentMatQty = Number(matStock.quantity.toString());
-          if (currentMatQty < requiredAmount) {
-            throw new Error(`Không đủ nguyên liệu ${ingredient.material}. Cần: ${requiredAmount}, Có: ${currentMatQty}`);
-          }
-
-          const matCost = matStock.material && (matStock.material as any).costPerUnit ? Number((matStock.material as any).costPerUnit.toString()) : 0;
-          totalCOGS += matCost * requiredAmount;
-
-          const newMatQty = currentMatQty - requiredAmount;
-          matStock.quantity = mongoose.Types.Decimal128.fromString(newMatQty.toString()) as any;
-          await matStock.save({ session });
-
-          await StockTransaction.create([{
-            stockLevel: matStock._id,
-            type: TransactionType.EXPORT,
-            quantity: requiredAmount,
-            reason: `Sản xuất thành phẩm ${variantId}`,
-            performedBy,
-          }], { session });
-        }
-
-        // Set cost for Variant (Optionally average cost)
-        const ProductVariant = mongoose.model('ProductVariant');
-        const variantCost = totalCOGS / quantity;
-        await ProductVariant.findByIdAndUpdate(variantId, { price: variantCost }, { session });
-      }
-
-      let stockLevel = await StockLevel.findOne({
-        warehouse: warehouseId,
-        ...(variantId ? { productVariant: variantId } : { material: materialId }),
-      }).session(session);
-
-      if (!stockLevel) {
-        stockLevel = new StockLevel({
+        const matStock = await StockLevel.findOne({
           warehouse: warehouseId,
-          productVariant: variantId || null,
-          material: materialId || null,
-          quantity: mongoose.Types.Decimal128.fromString(quantity.toString()) as any,
-        });
-        await stockLevel.save({ session });
-      } else {
-        const currentQty = Number(stockLevel.quantity.toString());
-        const newQty = currentQty + quantity;
-        stockLevel.quantity = mongoose.Types.Decimal128.fromString(newQty.toString()) as any;
-        await stockLevel.save({ session });
+          material: ingredient.material,
+        }).populate('material', 'costPerUnit').session(session);
+
+        if (!matStock) throw new Error(`Kho không có nguyên liệu ${ingredient.material} để sản xuất`);
+
+        const currentMatQty = Number(matStock.quantity.toString());
+        if (currentMatQty < requiredAmount) {
+          throw new Error(`Không đủ nguyên liệu ${ingredient.material}. Cần: ${requiredAmount}, Có: ${currentMatQty}`);
+        }
+
+        const matCost = matStock.material && (matStock.material as any).costPerUnit ? Number((matStock.material as any).costPerUnit.toString()) : 0;
+        totalCOGS += matCost * requiredAmount;
+
+        const newMatQty = currentMatQty - requiredAmount;
+        matStock.quantity = mongoose.Types.Decimal128.fromString(newMatQty.toString()) as any;
+        await matStock.save({ session });
+
+        await StockTransaction.create([{
+          stockLevel: matStock._id,
+          type: TransactionType.EXPORT,
+          quantity: requiredAmount,
+          reason: `Sản xuất thành phẩm ${variantId}`,
+          performedBy,
+        }], { session });
       }
 
-      await StockTransaction.create([{
-        stockLevel: stockLevel._id,
-        type: TransactionType.IMPORT,
-        quantity,
-        unitPrice: unitPrice ? mongoose.Types.Decimal128.fromString(unitPrice.toString()) : undefined,
-        totalCost: totalCost ? mongoose.Types.Decimal128.fromString(totalCost.toString()) : undefined,
-        reason,
-        performedBy,
-      }], { session });
+      // Set cost for Variant (Optionally average cost)
+      const ProductVariant = mongoose.model('ProductVariant');
+      const variantCost = totalCOGS / quantity;
+      await ProductVariant.findByIdAndUpdate(variantId, { price: variantCost }, { session });
+    }
 
-      finalStockLevel = stockLevel;
+    let stockLevel = await StockLevel.findOne({
+      warehouse: warehouseId,
+      ...(variantId ? { productVariant: variantId } : { material: materialId }),
+    }).session(session);
+
+    if (!stockLevel) {
+      stockLevel = new StockLevel({
+        warehouse: warehouseId,
+        productVariant: variantId || null,
+        material: materialId || null,
+        quantity: mongoose.Types.Decimal128.fromString(quantity.toString()) as any,
+      });
+      await stockLevel.save({ session });
+    } else {
+      const currentQty = Number(stockLevel.quantity.toString());
+      const newQty = currentQty + quantity;
+      stockLevel.quantity = mongoose.Types.Decimal128.fromString(newQty.toString()) as any;
+      await stockLevel.save({ session });
+    }
+
+    await StockTransaction.create([{
+      stockLevel: stockLevel._id,
+      type: TransactionType.IMPORT,
+      quantity,
+      unitPrice: unitPrice ? mongoose.Types.Decimal128.fromString(unitPrice.toString()) : undefined,
+      totalCost: totalCost ? mongoose.Types.Decimal128.fromString(totalCost.toString()) : undefined,
+      reason,
+      performedBy,
+    }], { session });
+
+    finalStockLevel = stockLevel;
+  };
+
+  // Try running with transaction session
+  let session: mongoose.ClientSession | null = null;
+  try {
+    session = await mongoose.startSession();
+    await session.withTransaction(async () => {
+      await executeInventoryOperations(session);
     });
+  } catch (err: any) {
+    // If it's a standalone server, run operations directly without session
+    if (err.message && (err.message.includes('replica set') || err.code === 20)) {
+      console.warn('⚠️ MongoDB is running as standalone. Executing import without transaction...');
+      await executeInventoryOperations(null);
+    } else {
+      throw err;
+    }
   } finally {
-    session.endSession();
+    if (session) {
+      session.endSession();
+    }
   }
 
   if (!finalStockLevel) {
@@ -279,7 +295,11 @@ export const getStockLevels = async (warehouseId?: string, type?: 'material' | '
 export const getWarehouseSummary = async () => {
   const [allLevels, todayTransactions] = await Promise.all([
     StockLevel.find({})
-      .populate('productVariant', 'sku sizeName')
+      .populate({
+        path: 'productVariant',
+        select: 'sku sizeName product',
+        populate: { path: 'product', select: 'name' }
+      })
       .populate('material', 'name unit'),
     StockTransaction.find({
       timestamp: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
@@ -294,7 +314,11 @@ export const getWarehouseSummary = async () => {
   for (const level of allLevels) {
     const qty = Number(level.quantity.toString());
     const min = level.minThreshold ? Number(level.minThreshold.toString()) : 0;
-    const name = (level.material as any)?.name || (level.productVariant as any)?.sizeName || 'Unknown';
+    
+    const pv = level.productVariant as any;
+    const pName = pv?.product?.name;
+    const variantDetails = pv?.sizeName ? ` (${pv.sizeName})` : (pv?.sku ? ` (${pv.sku})` : '');
+    const name = (level.material as any)?.name || (pName ? `${pName}${variantDetails}` : pv?.sku || 'Unknown');
     const unit = (level.material as any)?.unit || 'cái';
 
     if (qty <= 0) {
@@ -317,7 +341,11 @@ export const getWarehouseSummary = async () => {
       path: 'stockLevel',
       populate: [
         { path: 'material', select: 'name unit' },
-        { path: 'productVariant', select: 'sku sizeName' },
+        { 
+          path: 'productVariant', 
+          select: 'sku sizeName product',
+          populate: { path: 'product', select: 'name' }
+        },
       ],
     })
     .populate('performedBy', 'fullName');
@@ -371,7 +399,11 @@ export const getTransactions = async ({ type, dateFrom, dateTo, page = 1, limit 
         path: 'stockLevel',
         populate: [
           { path: 'material', select: 'name unit' },
-          { path: 'productVariant', select: 'sku sizeName' },
+          { 
+            path: 'productVariant', 
+            select: 'sku sizeName product',
+            populate: { path: 'product', select: 'name' }
+          },
           { path: 'warehouse', select: 'name' },
         ],
       })
@@ -382,7 +414,10 @@ export const getTransactions = async ({ type, dateFrom, dateTo, page = 1, limit 
   const filteredItems = search
     ? items.filter(t => {
         const sl = t.stockLevel as any;
-        const name = sl?.material?.name || sl?.productVariant?.sizeName || sl?.productVariant?.sku || '';
+        const pName = sl?.productVariant?.product?.name || '';
+        const vSku = sl?.productVariant?.sku || '';
+        const vSize = sl?.productVariant?.sizeName || '';
+        const name = sl?.material?.name || `${pName} ${vSku} ${vSize}`;
         const performer = (t.performedBy as any)?.fullName || '';
         const q = search.toLowerCase();
         return name.toLowerCase().includes(q) || performer.toLowerCase().includes(q) || t.reason?.toLowerCase().includes(q);

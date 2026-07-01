@@ -206,6 +206,7 @@ export class UserRepository {
                 email: 1,
                 phone: 1,
                 status: 1,
+                points: 1,
                 loyalty: 1,
                 createdAt: 1,
                 ordersCount: { $size: '$orders' },
@@ -256,7 +257,7 @@ export class UserRepository {
     }).exec();
   }
 
-  async updateCustomerStatus(id: string, status: 'ACTIVE' | 'BANNED' | 'PENDING' | 'SUSPENDED') {
+  async updateCustomerStatus(id: string, status: 'ACTIVE' | 'BANNED') {
     return User.findOneAndUpdate(
       { _id: id, role: 'CUSTOMER' },
       { status },

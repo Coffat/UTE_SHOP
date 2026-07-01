@@ -50,4 +50,13 @@ router.patch(
   staffOrdersController.changeStatus
 );
 
+// PUT /staff/orders/:id
+router.put(
+  '/:id',
+  authenticate,
+  authorize(...STAFF_ROLES),
+  validateOrderId,
+  staffOrdersController.updateOrder
+);
+
 export default router;

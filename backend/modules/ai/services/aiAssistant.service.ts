@@ -59,6 +59,8 @@ import type { EffectiveAiRuntime } from '../types/ai.types.js';
 import { parsePass1Decision } from '../tools/toolParser.js';
 import { executeToolFromDecision } from '../tools/toolRegistry.js';
 import { recordAiToolCall } from './aiToolCall.service.js';
+import { shouldRunPass3 } from './aiClarifyTrigger.js';
+import { generateClarifyingQuestions } from './aiClarify.service.js';
 import type { AiPass1Decision, ParsedPass1Decision } from '../tools/tool.types.js';
 import {
   acquireConversationStreamLock,
@@ -1186,11 +1188,31 @@ export const streamAiReplyForCustomer = async ({
       notifyHandoff(handoffReason);
     }
 
+    // --- Pass3: Clarifying Questions ---
+    // Runs only after Pass2 streaming completes — user already sees the full answer.
+    // Any failure is silently swallowed; the main response is never affected.
+    let clarifyingQuestions: string[] | undefined;
+    if (!handoffReason && shouldRunPass3(customerQuery, resolvedIntent)) {
+      const questions = await generateClarifyingQuestions(
+        activeRuntime,
+        customerQuery,
+        abortSignal,
+      );
+      if (questions && questions.length > 0) {
+        clarifyingQuestions = questions;
+      }
+    }
+
     const messageMetadata = buildChatMetadata({
       latencyMs,
       handoffReason,
-      templateType: productSuggestions.length > 0 ? 'product_suggestions' : 'plain_text',
+      templateType: clarifyingQuestions
+        ? 'clarifying'
+        : productSuggestions.length > 0
+          ? 'product_suggestions'
+          : 'plain_text',
       productSuggestions: productSuggestions.length > 0 ? productSuggestions : undefined,
+      clarifyingQuestions,
     });
 
     const persistedContent = truncateChatMessageContent(finalContent);
